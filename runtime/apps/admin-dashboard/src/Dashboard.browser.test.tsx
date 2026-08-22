@@ -104,7 +104,11 @@ describe('Notary admin dashboard', () => {
   test('filters the unified trace collection and opens a trace', async () => {
     renderDashboard('/traces');
     await page.getByLabelText('Search traces').fill('**benchmark**');
-    await expect.element(page.getByText('deepseek-v4-flash')).toBeVisible();
+    await expect
+      .element(
+        page.getByRole('list', { name: 'Traces' }).getByText('deepseek-v4-flash', { exact: true }),
+      )
+      .toBeVisible();
     await expect.element(page.getByText('gpt-5.2', { exact: true })).not.toBeInTheDocument();
     await page.getByRole('list', { name: 'Traces' }).getByRole('button').click();
     await expect.element(page.getByText('trc-20260727-benchmark').first()).toBeVisible();
