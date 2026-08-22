@@ -3,15 +3,7 @@
 set -eu
 
 download_root="${NOTARY_DOWNLOAD_ROOT:-https://notary.exalto.ai/downloads/releases}"
-channel="${NOTARY_CHANNEL:-latest}"
 install_dir="${NOTARY_INSTALL_DIR:-${HOME}/.local/bin}"
-
-case "$channel" in
-  ""|.*|*..*|*[!a-zA-Z0-9._-]*)
-    echo "Invalid Notary release channel: $channel" >&2
-    exit 1
-    ;;
-esac
 
 system="$(uname -s)"
 machine="$(uname -m)"
@@ -33,22 +25,22 @@ if [ "$platform" = "darwin" ] && [ "$architecture" != "aarch64" ]; then
   exit 1
 fi
 
-pointer="$(curl -fsSL "$download_root/$channel")"
+pointer="$(curl -fsSL "$download_root/latest")"
 case "$pointer" in
   *" "*) ;;
-  *) echo "The $channel release pointer is malformed" >&2; exit 1 ;;
+  *) echo "The latest release pointer is malformed" >&2; exit 1 ;;
 esac
 build_id="${pointer%% *}"
 version="${pointer#* }"
 case "$build_id" in
   ""|.*|*..*|*[!a-zA-Z0-9._-]*)
-    echo "The $channel build identifier is malformed" >&2
+    echo "The latest build identifier is malformed" >&2
     exit 1
     ;;
 esac
 case "$version" in
   ""|.*|*..*|*" "*|*[!a-zA-Z0-9._-]*)
-    echo "The $channel version is malformed" >&2
+    echo "The latest version is malformed" >&2
     exit 1
     ;;
 esac
@@ -76,7 +68,7 @@ mkdir -p "$install_dir"
 install -m 0755 "$temporary_dir/notary-runtime-${version}-${platform}-${architecture}/notaryctl" "$install_dir/notaryctl"
 install -m 0755 "$temporary_dir/notary-runtime-${version}-${platform}-${architecture}/notaryd" "$install_dir/notaryd"
 
-echo "Installed Notary $version from $channel (notaryctl and notaryd) to $install_dir"
+echo "Installed Notary $version from latest (notaryctl and notaryd) to $install_dir"
 case ":$PATH:" in
   *":$install_dir:"*) ;;
   *) echo "Add $install_dir to your PATH, then run: notaryd" ;;

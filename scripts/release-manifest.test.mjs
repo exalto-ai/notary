@@ -30,6 +30,7 @@ test('release manifest is deterministic and binds every installable payload', as
     releaseDir,
     buildId: 'a'.repeat(40) + '-123-1',
     commitSha: 'a'.repeat(40),
+    publicSourceSha: 'b'.repeat(40),
     version,
     publishedAt: '2026-08-13T12:34:56Z',
     publicOrigin: 'https://notary.exalto.ai',
@@ -40,6 +41,7 @@ test('release manifest is deterministic and binds every installable payload', as
   assert.equal(first.platforms['darwin-aarch64'].signature, signature);
   assert.equal(first.artifacts['linux-x86_64'].notaryctl.name, 'notaryctl-linux-x86_64');
   assert.equal(first.artifacts['linux-x86_64'].notaryd.name, 'notaryd-linux-x86_64');
+  assert.equal(first.public_source_sha, 'b'.repeat(40));
   assert.match(first.desktop['darwin-aarch64'].updater.url, /\/builds\/[a-f0-9-]+\//);
 });
 
@@ -49,6 +51,7 @@ test('release manifest rejects incomplete releases and unsafe identities', async
     releaseDir,
     buildId: '../latest',
     commitSha: 'a'.repeat(40),
+    publicSourceSha: 'b'.repeat(40),
     version,
     publishedAt: '2026-08-13T12:34:56Z',
     publicOrigin: 'https://notary.exalto.ai',
@@ -58,6 +61,7 @@ test('release manifest rejects incomplete releases and unsafe identities', async
     releaseDir,
     buildId: 'a'.repeat(40) + '-123-1',
     commitSha: 'a'.repeat(40),
+    publicSourceSha: 'b'.repeat(40),
     version,
     publishedAt: '2026-08-13T12:34:56Z',
     publicOrigin: 'https://notary.exalto.ai',
@@ -69,7 +73,7 @@ test('channel pointer binds the exact immutable manifest', async () => {
   const manifestFile = path.join(directory, 'release.json');
   const signatureFile = path.join(directory, 'release.json.sig');
   await writeFile(manifestFile, JSON.stringify({
-    schema_version: 'notary/release/v1',
+    schema_version: 'notary/release/v2',
     build_id: 'a'.repeat(40) + '-123-1',
   }));
   await writeFile(signatureFile, signature);
