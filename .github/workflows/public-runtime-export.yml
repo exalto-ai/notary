@@ -1,0 +1,144 @@
+name: Export public Runtime
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - main
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact validated main SHA to export
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: public-runtime-export
+  cancel-in-progress: false
+
+jobs:
+  project:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      SOURCE_SHA: ${{ github.event.inputs.source_sha || github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+      - name: Require exact Main validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/require-main-validation.sh "$SOURCE_SHA"
+      - name: Create deterministic projection
+        run: |
+          set -euo pipefail
+          projection="$RUNNER_TEMP/public-runtime"
+          validation="$RUNNER_TEMP/public-runtime-validation"
+          scripts/export-public-runtime.sh "$GITHUB_WORKSPACE" "$projection" "$SOURCE_SHA"
+          mkdir -p "$validation"
+          rsync --archive "$projection/" "$validation/"
+          git -C "$validation" init --quiet
+          git -C "$validation" add --all -- .
+          scripts/audit-public-runtime.sh "$validation"
+          echo "PUBLIC_RUNTIME_PROJECTION=$projection" >> "$GITHUB_ENV"
+          echo "PUBLIC_RUNTIME_VALIDATION=$validation" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.95.0
+          components: rustfmt, clippy
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Validate Runtime workspace
+        working-directory: ${{ env.PUBLIC_RUNTIME_VALIDATION }}
+        run: |
+          cargo fmt --manifest-path runtime/Cargo.toml --check --all
+          cargo clippy --locked --manifest-path runtime/Cargo.toml --workspace --all-targets --all-features -- -D warnings
+          cargo test --locked --manifest-path runtime/Cargo.toml --workspace --all-targets --all-features
+      - name: Validate public web assets
+        working-directory: ${{ env.PUBLIC_RUNTIME_VALIDATION }}
+        run: |
+          npm --prefix runtime/apps/admin-dashboard ci
+          npm --prefix runtime/apps/admin-dashboard run build
+          npm --prefix runtime/apps/admin-dashboard run check:local-docs
+          npm --prefix apps/notary-app ci
+          npm --prefix apps/notary-app run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: public-runtime-projection
+          path: ${{ env.PUBLIC_RUNTIME_PROJECTION }}
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  desktop:
+    needs: project
+    runs-on: macos-14
+    timeout-minutes: 90
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: public-runtime-projection
+          path: public-runtime
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.95.0
+          components: clippy
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: public-runtime/apps/notary-app/package-lock.json
+      - name: Build desktop from projected source
+        working-directory: public-runtime
+        run: |
+          npm --prefix apps/notary-app ci
+          npm --prefix apps/notary-app run prepare:sidecar:debug
+          cargo clippy --manifest-path apps/notary-app/src-tauri/Cargo.toml --all-targets -- -D warnings
+          npm --prefix apps/notary-app exec -- tauri build --debug --bundles app
+
+  publish:
+    needs: [project, desktop]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_SHA: ${{ github.event.inputs.source_sha || github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: public-runtime-projection
+          path: projection
+      - name: Scan projected source for secrets
+        run: >-
+          docker run --rm
+          --volume "$GITHUB_WORKSPACE/projection:/repo:ro"
+          ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          dir --config=/repo/.gitleaks.toml --redact --verbose /repo
+      - name: Publish changed projection
+        env:
+          PUBLIC_RUNTIME_DEPLOY_KEY: ${{ secrets.PUBLIC_RUNTIME_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$PUBLIC_RUNTIME_DEPLOY_KEY"
+          key="$RUNNER_TEMP/public-runtime-deploy-key"
+          known_hosts="$RUNNER_TEMP/github-known-hosts"
+          printf '%s\n' "$PUBLIC_RUNTIME_DEPLOY_KEY" > "$key"
+          chmod 0600 "$key"
+          curl --fail --silent --show-error --location https://api.github.com/meta \
+            | jq -r '.ssh_keys[] | "github.com " + .' > "$known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o UserKnownHostsFile=$known_hosts -o StrictHostKeyChecking=yes"
+          public_checkout="$RUNNER_TEMP/notary-runtime-public"
+          git clone git@github.com:exalto-ai/notary-runtime.git "$public_checkout"
+          git -C "$public_checkout" config user.name "Notary Runtime Export"
+          git -C "$public_checkout" config user.email "runtime-export@users.noreply.github.com"
+          "$GITHUB_WORKSPACE/scripts/publish-public-runtime.sh" \
+            "$GITHUB_WORKSPACE/projection" "$public_checkout" "$SOURCE_SHA"
