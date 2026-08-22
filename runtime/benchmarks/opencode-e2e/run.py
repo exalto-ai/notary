@@ -884,11 +884,13 @@ def base_result(arguments: argparse.Namespace) -> dict[str, Any]:
             "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
             "workflow_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
             "runner_image": os.environ.get("ImageOS", sys.platform),
+            "runtime_build_id": os.environ.get("NOTARY_RUNTIME_BUILD_ID"),
+            "hosted_rollout_id": os.environ.get("NOTARY_HOSTED_ROLLOUT_ID"),
         },
         "versions": {
             "notaryctl": command_version(arguments.notaryctl, "--version"),
+            "notaryd": command_version(arguments.notaryd, "--version"),
             "opencode": command_version(arguments.opencode, "--version"),
-            "rust": command_version("rustc", "--version"),
             "node": command_version("node", "--version"),
         },
         "model": {
@@ -952,6 +954,7 @@ def write_step_summary(result: dict[str, Any]) -> None:
         f"- Model: `{result['model']['requested_openrouter_model']}`",
         f"- Attempts / traces / eligible: {summary.get('attempt_count', 0)} / {summary.get('model_turns', 0)} / {summary.get('eligible_traces', 0)}",
         f"- Agent / proof / share / total: {summary.get('opencode_wall_ms', 0)} ms / {summary.get('proof_wall_ms', 0)} ms / {summary.get('share_wall_ms', 0)} ms / {result.get('total_wall_ms', 0)} ms",
+        f"- Runtime build / hosted rollout: `{result['source'].get('runtime_build_id') or 'unknown'}` / `{result['source'].get('hosted_rollout_id') or 'unknown'}`",
     ]
     if result.get("failure_code"):
         lines.append(

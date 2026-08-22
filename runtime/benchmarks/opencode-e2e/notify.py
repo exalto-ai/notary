@@ -52,6 +52,7 @@ def slack_payload(result: dict[str, Any]) -> dict[str, Any]:
     summary = result.get("summary") if isinstance(result.get("summary"), dict) else {}
     tokens = summary.get("tokens") if isinstance(summary.get("tokens"), dict) else {}
     model = result.get("model") if isinstance(result.get("model"), dict) else {}
+    source = result.get("source") if isinstance(result.get("source"), dict) else {}
     run_url = None
     if os.environ.get("GITHUB_SERVER_URL") and os.environ.get("GITHUB_REPOSITORY") and os.environ.get("GITHUB_RUN_ID"):
         run_url = (
@@ -87,6 +88,14 @@ def slack_payload(result: dict[str, Any]) -> dict[str, Any]:
                 f"{duration(summary.get('proof_wall_ms'))} / "
                 f"{duration(summary.get('share_wall_ms'))} / "
                 f"{duration(result.get('total_wall_ms'))}"
+            ),
+        },
+        {
+            "type": "mrkdwn",
+            "text": (
+                "*Runtime / hosted rollout*\n"
+                f"`{source.get('runtime_build_id') or 'unknown'}` / "
+                f"`{source.get('hosted_rollout_id') or 'unknown'}`"
             ),
         },
     ]

@@ -77,8 +77,10 @@ python3 runtime/benchmarks/opencode-e2e/test_runner.py -v
 
 `.github/workflows/opencode-e2e.yml` runs every Monday and supports manual
 dispatch. The reviewed default is `openrouter/cohere/north-mini-code:free`;
-changing it starts a new observational timing series. Configure these
-repository secrets:
+changing it starts a new observational timing series. The workflow installs
+the current published `latest` Runtime instead of rebuilding the checkout, and
+records that build ID plus the hosted rollout ID when the deployment exposes
+one. Configure these repository secrets:
 
 - `OPENROUTER_FREE_TIER_API_KEY`
 - `NOTARY_E2E_API_KEY`

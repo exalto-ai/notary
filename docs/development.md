@@ -112,6 +112,13 @@ separate notary container without making a billable inference. Use
 `notary-server serve --profile-sessions` only in an isolated Linux cgroup with one measured session
 at a time.
 
+The manual `Runtime resource profiles` workflow owns the fixed 15 MiB JSON
+stack profile, 64 KiB local Proxy-TLS profile, and 32,768-token split profile.
+The non-blocking `S3 storage canary` workflow owns the real presigned-upload
+round trip. It runs only with dedicated `NOTARY_CANARY_S3_*` repository
+secrets and variables; scheduled runs report a notice and skip until that
+isolated bucket is configured. Neither workflow is a merge or release gate.
+
 ## Container validation
 
 For Compose or deployment changes, run the digest-resolution test and validate

@@ -1,0 +1,120 @@
+name: Runtime resource profiles
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Fixed resource profile to run
+        required: true
+        default: json-stack
+        type: choice
+        options:
+          - json-stack
+          - proxy-local
+          - proxy-split
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-profile-${{ inputs.profile }}
+  cancel-in-progress: false
+
+jobs:
+  json-stack:
+    if: inputs.profile == 'json-stack'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.95.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Parse the full 15 MiB attestable JSON envelope
+        run: >-
+          cargo test --release --manifest-path runtime/Cargo.toml
+          -p notary-core --test json_stack_safety
+          escape_dense_json_parses_through_the_full_attestable_envelope
+          -- --ignored --nocapture
+
+  proxy-local:
+    if: inputs.profile == 'proxy-local'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.95.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Profile a 64 KiB escape-dense JSON proof
+        env:
+          TLSN_PROFILE_BYTES: "65536"
+          TLSN_PROFILE_JSON: "1"
+        run: >-
+          cargo test --release --manifest-path runtime/Cargo.toml
+          -p notary-core --test proxy_tls_profile
+          profiles_proxy_tls_http_commitment_and_proof
+          -- --ignored --nocapture
+
+  proxy-split:
+    if: inputs.profile == 'proxy-split'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.95.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the generic notary and profile client
+        run: >-
+          cargo build --release --locked --target-dir target
+          --manifest-path runtime/Cargo.toml
+          -p notary-server --bin notary-server
+          -p notary-core --test proxy_tls_split_profile
+      - name: Start a memory-limited profiling notary
+        id: notary
+        run: |
+          set -euo pipefail
+          key="$RUNNER_TEMP/notary-profile.key"
+          openssl rand -hex 32 > "$key"
+          chmod 0400 "$key"
+          public_key="$(target/release/notary-server public-key --signing-key-file "$key")"
+          docker run --detach --name notary-profile --memory 4g --network host \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/target/release/notary-server,dst=/usr/local/bin/notary-server,readonly" \
+            --mount "type=bind,src=$key,dst=/run/notary-profile.key,readonly" \
+            --mount type=bind,src=/etc/ssl/certs,dst=/etc/ssl/certs,readonly \
+            ubuntu:24.04 \
+            /usr/local/bin/notary-server serve \
+              --listen 127.0.0.1:7047 \
+              --signing-key-file /run/notary-profile.key \
+              --allow-host api.openai.com \
+              --profile-sessions
+          for _ in $(seq 1 30); do
+            if timeout 1 bash -c '</dev/tcp/127.0.0.1/7047' 2>/dev/null; then
+              echo "public_key=$public_key" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs notary-profile >&2
+          exit 1
+      - name: Profile a 32,768-token split capture and proof
+        env:
+          TLSN_PROFILE_TOKENS: "32768"
+          TLSN_NOTARY_ADDR: 127.0.0.1:7047
+          TLSN_NOTARY_PUBLIC_KEY: ${{ steps.notary.outputs.public_key }}
+        run: >-
+          cargo test --release --locked --target-dir target
+          --manifest-path runtime/Cargo.toml
+          -p notary-core --test proxy_tls_split_profile
+          profiles_capture_and_notarization_in_a_separate_notary_container
+          -- --ignored --nocapture
+      - name: Report notary resource measurements
+        if: always()
+        run: docker logs notary-profile || true
+      - name: Stop profiling notary
+        if: always()
+        run: docker rm --force notary-profile >/dev/null 2>&1 || true

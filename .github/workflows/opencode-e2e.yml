@@ -31,9 +31,6 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v6
 
-      - name: Install Rust 1.95.0
-        uses: dtolnay/rust-toolchain@1.95.0
-
       - name: Install Node 24.14.1
         uses: actions/setup-node@v6
         with:
@@ -42,8 +39,23 @@ jobs:
       - name: Install OpenCode 1.18.11
         run: npm install --global opencode-ai@1.18.11
 
-      - name: Build released Notary binaries
-        run: cargo build --manifest-path runtime/Cargo.toml --target-dir target --release --locked -p notaryctl --bin notaryctl -p notaryd --bin notaryd
+      - name: Install the published Runtime release
+        env:
+          PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://notary.exalto.ai' }}
+        run: |
+          set -euo pipefail
+          release_root="$PUBLIC_ORIGIN/downloads/releases"
+          pointer="$(curl --fail --silent --show-error --location "$release_root/latest")"
+          build_id="${pointer%% *}"
+          test -n "$build_id"
+          installer="$RUNNER_TEMP/install-notary.sh"
+          curl --fail --silent --show-error --location "$PUBLIC_ORIGIN/install.sh" --output "$installer"
+          runtime_bin="$RUNNER_TEMP/notary-runtime/bin"
+          NOTARY_DOWNLOAD_ROOT="$release_root" NOTARY_INSTALL_DIR="$runtime_bin" sh "$installer"
+          {
+            echo "NOTARY_RUNTIME_BIN=$runtime_bin"
+            echo "NOTARY_RUNTIME_BUILD_ID=$build_id"
+          } >> "$GITHUB_ENV"
 
       - name: Test canary parser and safety gates
         run: python3 runtime/benchmarks/opencode-e2e/test_runner.py -v
@@ -56,8 +68,8 @@ jobs:
           python3 runtime/benchmarks/opencode-e2e/run.py \
             --model "$CANARY_MODEL" \
             --opencode "$(command -v opencode)" \
-            --notaryctl "$GITHUB_WORKSPACE/target/release/notaryctl" \
-            --notaryd "$GITHUB_WORKSPACE/target/release/notaryd" \
+            --notaryctl "$NOTARY_RUNTIME_BIN/notaryctl" \
+            --notaryd "$NOTARY_RUNTIME_BIN/notaryd" \
             --result "$RUNNER_TEMP/opencode-e2e-result.json"
 
       - name: Post sanitized Slack summary

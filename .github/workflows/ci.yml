@@ -2,26 +2,20 @@ name: CI
 
 on:
   pull_request:
-    paths-ignore:
-      - "LICENSE*"
   push:
     branches:
       - main
-    paths-ignore:
-      - "LICENSE*"
 
 permissions:
   contents: read
   pull-requests: read
 
-# Only the newest revision of a PR needs feedback; obsolete runs consume runners
-# and delay the result for the commit a reviewer will actually merge.
+# Only the newest revision of a pull request or main branch needs validation.
+# Releases and deployments are separate manual workflows, so cancelling an
+# obsolete main run cannot interrupt either operation.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  # A newer PR revision makes an older run obsolete. A main run may already be
-  # inside the production deployment, however, and must be allowed to finish
-  # so that it cannot be cancelled halfway through a multi-service rollout.
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 jobs:
   changes:
@@ -33,7 +27,6 @@ jobs:
       desktop: ${{ steps.filter.outputs.desktop }}
       docs: ${{ steps.filter.outputs.docs }}
       containers: ${{ steps.filter.outputs.containers }}
-      cli: ${{ steps.filter.outputs.cli }}
       windows_update: ${{ steps.filter.outputs.windows_update }}
     steps:
       - uses: actions/checkout@v6
@@ -44,15 +37,14 @@ jobs:
         with:
           filters: |
             rust:
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
               - 'platform/**'
               - 'runtime/**'
             app:
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/release.yml'
+              - '.github/workflows/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'platform/crates/notary-api/**'
@@ -63,9 +55,7 @@ jobs:
               - 'scripts/release-manifest.mjs'
               - 'scripts/release-manifest.test.mjs'
             desktop:
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/desktop-dmg.yml'
-              - '.github/workflows/release.yml'
+              - '.github/workflows/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
@@ -75,7 +65,7 @@ jobs:
               - 'runtime/config/updater-public-key.txt'
               - 'apps/notary-app/**'
             docs:
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
               - 'runtime/README.md'
               - 'runtime/AGENTS.md'
               - 'runtime/docs/**'
@@ -83,9 +73,7 @@ jobs:
               - 'runtime/apps/admin-dashboard/scripts/check-local-docs.mjs'
               - 'runtime/apps/admin-dashboard/src/generated/openapi.json'
             containers:
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/deploy.yml'
-              - '.github/workflows/release.yml'
+              - '.github/workflows/**'
               - '.dockerignore'
               - 'Dockerfile'
               - 'Cargo.toml'
@@ -95,28 +83,8 @@ jobs:
               - 'compose.yml'
               - 'deploy/**'
               - 'platform/web/**'
-            cli:
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/release.yml'
-              - '.github/workflows/desktop-dmg.yml'
-              - 'Cargo.toml'
-              - 'Cargo.lock'
-              - 'rust-toolchain.toml'
-              - 'runtime/LICENSE*'
-              - 'runtime/THIRD-PARTY-NOTICES.md'
-              - 'runtime/crates/notaryd/**'
-              - 'runtime/crates/notary-core/**'
-              - 'runtime/crates/notaryctl/**'
-              - 'runtime/crates/notary-updater/**'
-              - 'runtime/skills/**'
-              - 'platform/web/public/install.sh'
-              - 'platform/web/scripts/test-install.sh'
-              - 'apps/notary-app/**'
-              - 'runtime/config/updater-public-key.txt'
-              - 'scripts/release-manifest.mjs'
-              - 'scripts/release-manifest.test.mjs'
             windows_update:
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
               - 'Cargo.lock'
               - 'runtime/Cargo.lock'
               - 'runtime/crates/notaryd/**'
@@ -139,6 +107,7 @@ jobs:
       - run: cargo fmt --manifest-path runtime/Cargo.toml --check -p notary-core -p notaryd -p notaryctl -p notary-updater -p notary-server
       - run: runtime/tooling/check-boundary.sh
       - run: python3 -m unittest runtime/tooling/test_check_boundary.py
+      - run: bash .github/scripts/test-require-main-validation.sh
       - name: Install native build tools
         run: |
           if command -v cc >/dev/null \
@@ -157,7 +126,12 @@ jobs:
   postgres-integration:
     name: PostgreSQL integration
     needs: [changes, rust]
-    if: ${{ always() && needs.changes.outputs.rust == 'true' && needs.rust.result == 'success' }}
+    if: >-
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.rust == 'true' &&
+      needs.rust.result == 'success'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
@@ -293,6 +267,32 @@ jobs:
           node-version: 24
       - run: node scripts/check-terminology.mjs
       - run: node platform/web/scripts/test-brand.mjs
+
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan repository history
+        # gitleaks v8.30.1
+        uses: docker://ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+        env:
+          # The container runs as a different UID than actions/checkout. Git
+          # otherwise refuses the mount, and Gitleaks treats the zero-commit
+          # scan as success.
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: safe.directory
+          GIT_CONFIG_VALUE_0: /github/workspace
+          GITLEAKS_LOG_OPTS: >-
+            ${{ github.event_name == 'pull_request'
+              && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha)
+              || format('{0}..{1}', github.event.before, github.sha) }}
+        with:
+          args: git --config=/github/workspace/.gitleaks.toml --redact --verbose --log-opts=${{ env.GITLEAKS_LOG_OPTS }} /github/workspace
 
   docs:
     name: Local workflow documentation
@@ -432,15 +432,16 @@ jobs:
             exit 1
           fi
 
-  required:
-    name: Required checks
+  validation:
+    name: ${{ github.event_name == 'pull_request' && 'Required checks' || 'Main validation' }}
     if: always()
-    needs: [changes, rust, postgres-integration, windows-update, app, desktop, docs, containers, terminology]
+    needs: [changes, rust, postgres-integration, windows-update, app, desktop, docs, containers, terminology, gitleaks]
     runs-on: ubuntu-24.04
     env:
       CHANGES_RESULT: ${{ needs.changes.result }}
       RUST_CHANGED: ${{ needs.changes.outputs.rust }}
       RUST_RESULT: ${{ needs.rust.result }}
+      POSTGRES_REQUIRED: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.rust == 'true' }}
       POSTGRES_RESULT: ${{ needs.postgres-integration.result }}
       WINDOWS_UPDATE_REQUIRED: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.windows_update == 'true' }}
       WINDOWS_UPDATE_RESULT: ${{ needs.windows-update.result }}
@@ -453,6 +454,7 @@ jobs:
       CONTAINERS_CHANGED: ${{ needs.changes.outputs.containers }}
       CONTAINERS_RESULT: ${{ needs.containers.result }}
       TERMINOLOGY_RESULT: ${{ needs.terminology.result }}
+      GITLEAKS_RESULT: ${{ needs.gitleaks.result }}
     steps:
       - name: Require every selected check to pass
         run: |
@@ -478,37 +480,11 @@ jobs:
           }
 
           require_selected Rust "$RUST_CHANGED" "$RUST_RESULT"
-          require_selected PostgreSQL "$RUST_CHANGED" "$POSTGRES_RESULT"
+          require_selected PostgreSQL "$POSTGRES_REQUIRED" "$POSTGRES_RESULT"
           require_selected "Windows client update" "$WINDOWS_UPDATE_REQUIRED" "$WINDOWS_UPDATE_RESULT"
           require_selected SPA "$APP_CHANGED" "$APP_RESULT"
           require_selected Desktop "$DESKTOP_REQUIRED" "$DESKTOP_RESULT"
           require_selected Documentation "$DOCS_CHANGED" "$DOCS_RESULT"
           require_selected Deployment "$CONTAINERS_CHANGED" "$CONTAINERS_RESULT"
           require_selected Terminology true "$TERMINOLOGY_RESULT"
-
-  deploy:
-    name: Production deployment
-    needs: [changes, required]
-    if: >-
-      always() &&
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      needs.changes.outputs.containers == 'true' &&
-      needs.required.result == 'success'
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
-
-  publish-cli:
-    name: Publish website CLI
-    needs: [changes, required, deploy]
-    if: >-
-      always() &&
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      needs.changes.outputs.cli == 'true' &&
-      needs.required.result == 'success' &&
-      (needs.deploy.result == 'success' || needs.deploy.result == 'skipped')
-    uses: ./.github/workflows/release.yml
-    with:
-      channel: latest
-    secrets: inherit
+          require_selected Gitleaks true "$GITLEAKS_RESULT"
