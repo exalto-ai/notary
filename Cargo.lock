@@ -4910,7 +4910,7 @@ dependencies = [
 
 [[package]]
 name = "notary-app"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "notary-core",
  "notary-updater",
@@ -4929,7 +4929,7 @@ dependencies = [
 
 [[package]]
 name = "notary-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "argon2",
@@ -4975,7 +4975,7 @@ dependencies = [
 
 [[package]]
 name = "notary-server"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5012,7 +5012,7 @@ dependencies = [
 
 [[package]]
 name = "notary-updater"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -5031,7 +5031,7 @@ dependencies = [
 
 [[package]]
 name = "notaryctl"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
