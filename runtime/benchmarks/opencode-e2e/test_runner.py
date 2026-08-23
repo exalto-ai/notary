@@ -395,6 +395,86 @@ class ShippedFixtureTests(unittest.TestCase):
                 self.assertNotEqual(completed.returncode, 0)
 
 
+# The intended fixes live here, not beside the fixtures: `initialize_fixture` copies a fixture
+# directory wholesale into the agent workspace, so a solution stored there would be handed to
+# the model and published in the trace.
+FIXTURE_SOLUTIONS = {
+    "retry-after": (
+        "retry_after.py",
+        "    return max(0, int(delay_seconds))",
+        "    return max(0, math.ceil(delay_seconds))",
+    ),
+    "slugify": (
+        "slugify.py",
+        '    slug = "".join(character if character.isalnum() else SEPARATOR'
+        " for character in lowered)\n    slug = slug.strip(SEPARATOR)",
+        "    slug = _ALLOWED.sub(SEPARATOR, lowered).strip(SEPARATOR)",
+    ),
+    "semver-compare": (
+        "semver.py",
+        '    return -1 if (left_pre or "") < (right_pre or "") else 1',
+        "    if left_pre is None:\n        return 1\n    if right_pre is None:\n"
+        "        return -1\n    return -1 if left_pre < right_pre else 1",
+    ),
+}
+
+
+class FixtureEndToEndTests(unittest.TestCase):
+    """Walk the path the runner takes, minus the provider call and notarization."""
+
+    def fixtures(self) -> list[Path]:
+        return run.discover_fixtures(Path(__file__).resolve().parent / "fixtures")
+
+    def test_each_fixture_walks_the_full_gate_path(self) -> None:
+        for path in self.fixtures():
+            with self.subTest(fixture=path.name):
+                self.assertIn(path.name, FIXTURE_SOLUTIONS)
+                filename, before, after = FIXTURE_SOLUTIONS[path.name]
+                with tempfile.TemporaryDirectory() as directory:
+                    workspace = Path(directory) / "fixture-attempt-1"
+                    loaded = run.load_fixture(path)
+                    run.initialize_fixture(path, workspace)
+
+                    initial = run.safe_run(loaded["test_command"], cwd=workspace, timeout=60)
+                    self.assertNotEqual(initial.returncode, 0, "fixture must fail first")
+                    self.assertEqual(run.changed_files(workspace)[0], [])
+
+                    target = workspace / filename
+                    source = target.read_text(encoding="utf-8")
+                    self.assertIn(before, source)
+                    target.write_text(source.replace(before, after), encoding="utf-8")
+
+                    final = run.safe_run(loaded["test_command"], cwd=workspace, timeout=60)
+                    self.assertEqual(final.returncode, 0, final.stdout + final.stderr)
+
+                    files, stats = run.changed_files(workspace)
+                    self.assertEqual(set(files), loaded["allowed_files"])
+                    self.assertTrue(run.validate_changed_files(files, loaded["allowed_files"]))
+                    self.assertGreater(stats["added_lines"], 0)
+
+    def test_the_gate_rejects_an_edit_outside_the_allowlist(self) -> None:
+        for path in self.fixtures():
+            with self.subTest(fixture=path.name):
+                with tempfile.TemporaryDirectory() as directory:
+                    workspace = Path(directory) / "fixture-attempt-1"
+                    loaded = run.load_fixture(path)
+                    run.initialize_fixture(path, workspace)
+                    filename, before, after = FIXTURE_SOLUTIONS[path.name]
+
+                    target = workspace / filename
+                    target.write_text(
+                        target.read_text(encoding="utf-8").replace(before, after),
+                        encoding="utf-8",
+                    )
+                    (workspace / "TASK.md").write_text("tampered\n", encoding="utf-8")
+                    (workspace / "sneaked.py").write_text("x = 1\n", encoding="utf-8")
+
+                    files, _ = run.changed_files(workspace)
+                    self.assertIn("TASK.md", files)
+                    self.assertIn("sneaked.py", files)
+                    self.assertFalse(run.validate_changed_files(files, loaded["allowed_files"]))
+
+
 class NotificationTests(unittest.TestCase):
     def test_payload_is_compact_and_contains_only_public_links(self) -> None:
         payload = notify.slack_payload(
