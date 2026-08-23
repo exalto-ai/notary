@@ -23,6 +23,7 @@ use super::public::purge_expired_trace_rate_limits;
 
 const CLAIM_TIMEOUT_SECS: i64 = 15 * 60;
 const LISTING_PREVIEW_CHARS: usize = 180;
+const LISTING_PREVIEW_TOOL_CALLS: usize = 4;
 const VERIFICATION_INTERVAL_SECS: u64 = 2;
 const MAX_JOBS_PER_TICK: usize = 4;
 const RATE_LIMIT_CLEANUP_INTERVAL_SECS: u64 = 10 * 60;
@@ -435,9 +436,8 @@ fn trace_message_preview(
                     message.get("role").and_then(serde_json::Value::as_str) == Some(preferred_role)
                 });
                 if let Some(preview) = preferred
-                    .and_then(message_text)
-                    .or_else(|| messages.iter().find_map(message_text))
-                    .and_then(compact_preview)
+                    .and_then(message_preview)
+                    .or_else(|| messages.iter().find_map(message_preview))
                 {
                     return Some(preview);
                 }
@@ -447,10 +447,9 @@ fn trace_message_preview(
     None
 }
 
-fn message_text(message: &serde_json::Value) -> Option<&str> {
-    message
-        .get("parts")?
-        .as_array()?
+fn message_preview(message: &serde_json::Value) -> Option<String> {
+    let parts = message.get("parts")?.as_array()?;
+    if let Some(text) = parts
         .iter()
         .find(|part| {
             part.get("type").and_then(serde_json::Value::as_str) == Some("text")
@@ -461,6 +460,39 @@ fn message_text(message: &serde_json::Value) -> Option<&str> {
         })
         .and_then(|part| part.get("content"))
         .and_then(serde_json::Value::as_str)
+    {
+        return compact_preview(text);
+    }
+    tool_call_preview(parts)
+}
+
+/// An agent turn often opens with a tool call and carries no text part. Name the calls the
+/// message actually made rather than leaving the listing without a preview.
+fn tool_call_preview(parts: &[serde_json::Value]) -> Option<String> {
+    let mut names: Vec<&str> = Vec::new();
+    for part in parts {
+        if part.get("type").and_then(serde_json::Value::as_str) != Some("tool_call") {
+            continue;
+        }
+        let Some(name) = part
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+        else {
+            continue;
+        };
+        if !names.contains(&name) {
+            names.push(name);
+        }
+        if names.len() == LISTING_PREVIEW_TOOL_CALLS {
+            break;
+        }
+    }
+    if names.is_empty() {
+        return None;
+    }
+    compact_preview(&format!("Tool calls: {}", names.join(", ")))
 }
 
 fn compact_preview(value: &str) -> Option<String> {
@@ -1194,6 +1226,67 @@ mod tests {
         let output = output.unwrap();
         assert!(output.ends_with('…'));
         assert_eq!(output.chars().count(), LISTING_PREVIEW_CHARS + 1);
+    }
+
+    #[test]
+    fn names_tool_calls_when_a_message_carries_no_text_part() {
+        let trace = serde_json::to_vec(&serde_json::json!({
+            "resourceSpans": [{"scopeSpans": [{"spans": [{"attributes": [
+                {
+                    "key": "gen_ai.output.messages",
+                    "value": {"stringValue": serde_json::to_string(&serde_json::json!([
+                        {"role": "assistant", "parts": [
+                            {"type": "tool_call", "id": "call_1", "name": "read", "arguments": {}},
+                            {"type": "tool_call", "id": "call_2", "name": "read", "arguments": {}},
+                            {"type": "tool_call", "id": "call_3", "name": "edit", "arguments": {}}
+                        ]}
+                    ])).unwrap()}
+                }
+            ]}]}]}]
+        }))
+        .unwrap();
+        let (input, output) = trace_previews(&trace).unwrap();
+        assert_eq!(input, None);
+        assert_eq!(output.as_deref(), Some("Tool calls: read, edit"));
+    }
+
+    #[test]
+    fn prefers_disclosed_text_over_a_tool_call_summary() {
+        let trace = serde_json::to_vec(&serde_json::json!({
+            "resourceSpans": [{"scopeSpans": [{"spans": [{"attributes": [
+                {
+                    "key": "gen_ai.output.messages",
+                    "value": {"stringValue": serde_json::to_string(&serde_json::json!([
+                        {"role": "assistant", "parts": [
+                            {"type": "tool_call", "id": "call_1", "name": "read", "arguments": {}},
+                            {"type": "text", "content": "Patched the rounding."}
+                        ]}
+                    ])).unwrap()}
+                }
+            ]}]}]}]
+        }))
+        .unwrap();
+        let (_, output) = trace_previews(&trace).unwrap();
+        assert_eq!(output.as_deref(), Some("Patched the rounding."));
+    }
+
+    #[test]
+    fn leaves_a_preview_absent_when_a_tool_call_has_no_name() {
+        let trace = serde_json::to_vec(&serde_json::json!({
+            "resourceSpans": [{"scopeSpans": [{"spans": [{"attributes": [
+                {
+                    "key": "gen_ai.output.messages",
+                    "value": {"stringValue": serde_json::to_string(&serde_json::json!([
+                        {"role": "assistant", "parts": [
+                            {"type": "tool_call", "id": "call_1", "name": "  ", "arguments": {}}
+                        ]}
+                    ])).unwrap()}
+                }
+            ]}]}]}]
+        }))
+        .unwrap();
+        let (_, output) = trace_previews(&trace).unwrap();
+        assert_eq!(output, None);
     }
 
     fn verified_package(archive: &[u8]) -> VerifiedPackage {
