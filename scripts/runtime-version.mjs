@@ -27,7 +27,10 @@ async function read(root, relative) {
 async function write(root, relative, value) {
   const file = path.join(root, relative);
   const current = await readFile(file, 'utf8');
-  const serialized = current.includes('\r\n') ? value.replaceAll('\n', '\r\n') : value;
+  const crlf = current.includes('\r\n');
+  const bareLf = current.replaceAll('\r\n', '').includes('\n');
+  if (crlf && bareLf) throw new Error(`${relative} uses mixed line endings`);
+  const serialized = crlf ? value.replaceAll('\n', '\r\n') : value;
   await writeFile(file, serialized);
 }
 
