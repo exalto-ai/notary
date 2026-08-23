@@ -163,7 +163,7 @@ jobs:
           export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o UserKnownHostsFile=$known_hosts -o StrictHostKeyChecking=yes"
           public_checkout="$RUNNER_TEMP/notary-runtime-public"
           git clone git@github.com:exalto-ai/notary-runtime.git "$public_checkout"
-          git -C "$public_checkout" config user.name "Notary Runtime Export"
-          git -C "$public_checkout" config user.email "runtime-export@users.noreply.github.com"
+          git -C "$public_checkout" config user.name "exalto-ai"
+          git -C "$public_checkout" config user.email "k@exalto.ai"
           "$GITHUB_WORKSPACE/scripts/publish-public-runtime.sh" \
             "$GITHUB_WORKSPACE/projection" "$public_checkout" "$SOURCE_SHA"
