@@ -50,7 +50,7 @@ To build from source instead, install Rust 1.95.0 and a C toolchain, then run:
 
 ```bash
 git clone https://github.com/exalto-ai/notary-runtime.git
-cd notary-runtime
+cd notary-runtime/runtime
 cargo install --locked --path crates/notaryd --bin notaryd
 cargo install --locked --path crates/notaryctl --bin notaryctl
 ```

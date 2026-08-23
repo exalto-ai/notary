@@ -43,6 +43,8 @@ jobs:
               - 'rust-toolchain.toml'
               - 'platform/**'
               - 'runtime/**'
+              - 'scripts/*public-runtime*'
+              - 'scripts/public-runtime/**'
             app:
               - '.github/workflows/**'
               - 'Cargo.toml'
@@ -54,6 +56,8 @@ jobs:
               - 'apps/notary-app/src-tauri/tauri.release.conf.json'
               - 'scripts/release-manifest.mjs'
               - 'scripts/release-manifest.test.mjs'
+              - 'scripts/*public-runtime*'
+              - 'scripts/public-runtime/**'
             desktop:
               - '.github/workflows/**'
               - 'Cargo.toml'
@@ -64,6 +68,8 @@ jobs:
               - 'runtime/crates/notary-updater/**'
               - 'runtime/config/updater-public-key.txt'
               - 'apps/notary-app/**'
+              - 'scripts/*public-runtime*'
+              - 'scripts/public-runtime/**'
             docs:
               - '.github/workflows/**'
               - 'runtime/README.md'
@@ -72,6 +78,7 @@ jobs:
               - 'runtime/skills/**'
               - 'runtime/apps/admin-dashboard/scripts/check-local-docs.mjs'
               - 'runtime/apps/admin-dashboard/src/generated/openapi.json'
+              - 'scripts/public-runtime/**'
             containers:
               - '.github/workflows/**'
               - '.dockerignore'
