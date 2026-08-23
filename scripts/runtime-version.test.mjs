@@ -93,7 +93,9 @@ test('version checks and synchronization accept Windows CRLF checkouts', async (
 
 test('version synchronization rejects mixed line endings', async () => {
   const root = await fixture();
-  const target = path.join(root, 'runtime/Cargo.toml');
+  const canonical = path.join(root, 'runtime/Cargo.toml');
+  const originalCanonical = await readFile(canonical, 'utf8');
+  const target = path.join(root, 'apps/notary-app/package-lock.json');
   const contents = await readFile(target, 'utf8');
   await writeFile(target, contents.replace('\n', '\r\n'));
   const current = await currentRuntimeVersion(root);
@@ -102,4 +104,5 @@ test('version synchronization rejects mixed line endings', async () => {
     () => setRuntimeVersion(root, `${major}.${minor}.${patch + 1}`),
     /mixed line endings/,
   );
+  assert.equal(await readFile(canonical, 'utf8'), originalCanonical);
 });

@@ -4,6 +4,15 @@ import path from 'node:path';
 
 const stableVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const runtimePackages = ['notary-core', 'notary-server', 'notary-updater', 'notaryctl', 'notaryd'];
+const writableVersionFiles = [
+  'Cargo.lock',
+  'apps/notary-app/package-lock.json',
+  'apps/notary-app/package.json',
+  'apps/notary-app/src-tauri/Cargo.toml',
+  'apps/notary-app/src-tauri/tauri.conf.json',
+  'runtime/Cargo.lock',
+  'runtime/Cargo.toml',
+];
 
 function parseVersion(value) {
   const match = stableVersion.exec(value);
@@ -24,12 +33,15 @@ async function read(root, relative) {
   return (await readFile(path.join(root, relative), 'utf8')).replaceAll('\r\n', '\n');
 }
 
+function hasMixedLineEndings(value) {
+  return value.includes('\r\n') && value.replaceAll('\r\n', '').includes('\n');
+}
+
 async function write(root, relative, value) {
   const file = path.join(root, relative);
   const current = await readFile(file, 'utf8');
   const crlf = current.includes('\r\n');
-  const bareLf = current.replaceAll('\r\n', '').includes('\n');
-  if (crlf && bareLf) throw new Error(`${relative} uses mixed line endings`);
+  if (hasMixedLineEndings(current)) throw new Error(`${relative} uses mixed line endings`);
   const serialized = crlf ? value.replaceAll('\n', '\r\n') : value;
   await writeFile(file, serialized);
 }
@@ -71,6 +83,11 @@ export async function setRuntimeVersion(root, version) {
   const current = await currentRuntimeVersion(root);
   if (compareVersions(version, current) <= 0) {
     throw new Error(`release version ${version} must be greater than the current version ${current}`);
+  }
+  for (const relative of writableVersionFiles) {
+    if (hasMixedLineEndings(await readFile(path.join(root, relative), 'utf8'))) {
+      throw new Error(`${relative} uses mixed line endings`);
+    }
   }
 
   const runtimeCargo = replaceExactlyOnce(
