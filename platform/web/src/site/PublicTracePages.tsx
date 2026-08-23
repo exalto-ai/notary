@@ -29,7 +29,7 @@ import {
   reportPublicTrace,
   verifyTracePackage,
 } from '../platform-api/client';
-import { binaryFileSize, sessionDate } from './format';
+import { binaryFileSize, listingDate, sessionDate } from './format';
 
 type ListedTracesResponse = Awaited<ReturnType<typeof getListedTraces>>;
 type ListedTrace = ListedTracesResponse['items'][number];
@@ -84,6 +84,7 @@ export function ListedTracesPreview({
 }) {
   const [shares, setShares] = useState<ListedTrace[] | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
   useEffect(() => {
     let cancelled = false;
     loadShares({ limit: 5 })
@@ -96,54 +97,51 @@ export function ListedTracesPreview({
     return () => {
       cancelled = true;
     };
-  }, [loadShares]);
+  }, [loadShares, reloadToken]);
   const visible = shares || [];
   return (
     <section className="section library-preview">
-      <div className="trace-heading">
-        <div>
-          <span className="eyebrow">Public domain</span>
-          <h2>Traces from the community.</h2>
-        </div>
+      <div className="section-head">
+        <span className="eyebrow">Public traces</span>
+        <h2>Traces from the community.</h2>
+        <p>
+          Notarized traces their publishers chose to list. Each one carries the notary evidence
+          needed to verify it independently.
+        </p>
       </div>
       {shares === null && !loadError ? (
-        <div className="collection-pending" role="status">
-          <b>Loading public Traces…</b>
-          <span>Finding the latest public traces.</span>
+        <div
+          className="preview-share-list preview-share-list--loading"
+          role="status"
+          aria-label="Loading traces"
+        >
+          {[0, 1, 2, 3, 4].map((row) => (
+            <div key={row}>
+              <i />
+              <i />
+            </div>
+          ))}
         </div>
       ) : loadError ? (
         <div className="collection-pending" role="alert">
-          <b>Public Traces couldn’t load.</b>
-          <span>Open Traces to try again.</span>
+          <b>Public traces couldn’t load.</b>
+          <span>The listing request failed.</span>
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              setLoadError(false);
+              setShares(null);
+              setReloadToken((token) => token + 1);
+            }}
+          >
+            Try again
+          </button>
         </div>
       ) : visible.length ? (
-        <section className="preview-share-list" aria-label="Featured public traces">
+        <section className="preview-share-list" aria-label="Public traces">
           {visible.map((share) => (
-            <a href={`/s/${encodeURIComponent(share.trace_id)}`} key={share.trace_id}>
-              <header>
-                <b>{share.title || 'Shared Notarized trace'}</b>
-                <ProviderIdentity
-                  provider={share.provider}
-                  detail={`${share.model} · shared by ${share.publisher}`}
-                />
-              </header>
-              {share.password_protected ? (
-                <p className="preview-share-protected">
-                  <span>Protected</span>Password required to view disclosed messages.
-                </p>
-              ) : (
-                <div className="preview-share-snippets">
-                  <p>
-                    <span>Prompt</span>
-                    {share.input_preview || 'No prompt preview.'}
-                  </p>
-                  <p>
-                    <span>Response</span>
-                    {share.output_preview || 'No response preview.'}
-                  </p>
-                </div>
-              )}
-            </a>
+            <PreviewTraceRow key={share.trace_id} share={share} />
           ))}
         </section>
       ) : (
@@ -153,9 +151,46 @@ export function ListedTracesPreview({
         </div>
       )}
       <a className="button button-dark" href="/traces">
-        Browse Traces
+        Browse traces
       </a>
     </section>
+  );
+}
+
+function PreviewTraceRow({ share }: { share: ListedTrace }) {
+  const sharedDate = share.shared_at ? listingDate(share.shared_at) : null;
+  return (
+    <a className="preview-share-row" href={`/s/${encodeURIComponent(share.trace_id)}`}>
+      {share.password_protected ? (
+        <p className="preview-share-protected">
+          <span>Protected</span>Password required to view disclosed messages.
+        </p>
+      ) : (
+        <div className="preview-share-exchange">
+          <p>
+            <span>Prompt</span>
+            <span>{share.input_preview || 'No prompt preview.'}</span>
+          </p>
+          {share.output_preview && (
+            <p>
+              <span>Response</span>
+              <span>{share.output_preview}</span>
+            </p>
+          )}
+        </div>
+      )}
+      <div className="preview-share-facts">
+        <ProviderIdentity provider={share.provider} detail={share.model} />
+        <span className="preview-share-publisher">{share.publisher}</span>
+        {sharedDate && share.shared_at && (
+          <time dateTime={new Date(share.shared_at * 1000).toISOString()}>{sharedDate}</time>
+        )}
+        <b className="preview-share-state">
+          <i />
+          Notarized
+        </b>
+      </div>
+    </a>
   );
 }
 
