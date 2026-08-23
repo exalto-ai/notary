@@ -1,7 +1,78 @@
-.preview-share-list {
+/*
+ * Landing rail. The browse index keeps dense rows; this surface is a marketing read where a few
+ * traces should show their whole exchange rather than one clipped line.
+ */
+.listed-trace-rail {
   display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 82%;
+  gap: 16px;
   margin: 30px 0 26px;
-  border-top: 1px solid var(--line);
+  padding-bottom: 14px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-color: var(--line) transparent;
+  scrollbar-width: thin;
+}
+
+.listed-trace-card {
+  display: grid;
+  /* The single column must be 0-min: an auto column sizes to max-content, so one long model
+     slug would widen the column and push every child past the card edge. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 14px;
+  min-height: 208px;
+  /* Grid items default to min-width:auto, which lets a long model slug widen the whole card. */
+  min-width: 0;
+  padding: 16px 18px 15px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink);
+  scroll-snap-align: start;
+  text-decoration: none;
+}
+
+.listed-trace-card:hover { border-color: var(--action); }
+.listed-trace-card > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* The shared state mark pushes itself right inside a row; in a card header it leads. */
+.listed-trace-card > header .listed-trace-state { margin-left: 0; }
+.listed-trace-card > header time { color: var(--muted); font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .03em; }
+.listed-trace-body { display: grid; align-content: start; gap: 14px; min-height: 0; }
+.listed-trace-body p { display: grid; gap: 6px; margin: 0; overflow: hidden; font-size: 14px; line-height: 1.5; }
+.listed-trace-body p > span { color: var(--muted); font: 500 9px 'IBM Plex Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+.listed-trace-card-prompt { display: -webkit-box; color: var(--ink); }
+.listed-trace-card-response,
+.listed-trace-card-protected { color: var(--body-copy); }
+/* Clamp the exchange so a long prompt cannot push the facts out of the card. */
+.listed-trace-card-prompt,
+.listed-trace-card-response,
+.listed-trace-card-protected { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; }
+.listed-trace-card-prompt { -webkit-line-clamp: 5; }
+.listed-trace-card-response { -webkit-line-clamp: 3; }
+.listed-trace-card-protected { -webkit-line-clamp: 3; }
+.listed-trace-card-publisher { display: grid; gap: 4px; margin: 0; overflow: hidden; font-size: 13px; line-height: 1.4; }
+.listed-trace-card-publisher > span { color: var(--muted); font: 500 9px 'IBM Plex Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+/* Provider leads, model trails; both truncate so a long slug cannot collide with the mark. */
+.listed-trace-card > footer { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); color: var(--muted); font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .03em; }
+.listed-trace-card > footer .provider-identity { flex: 0 1 auto; min-width: 0; color: var(--muted); font-size: 10px; }
+.listed-trace-card > footer .provider-identity__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.listed-trace-card-model { flex: 0 1 auto; min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.listed-trace-card > footer > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.listed-trace-rail--loading .listed-trace-card { align-content: start; gap: 12px; grid-template-rows: none; }
+.listed-trace-rail--loading i { display: block; height: 12px; background: var(--line-soft); }
+.listed-trace-rail--loading i:nth-child(1) { width: 62%; }
+.listed-trace-rail--loading i:nth-child(2) { width: 92%; }
+.listed-trace-rail--loading i:nth-child(3) { width: 74%; }
+
+@media (min-width: 720px) {
+  .listed-trace-rail { grid-auto-columns: calc((100% - 16px) / 2); }
+}
+
+@media (min-width: 1080px) {
+  .listed-trace-rail { grid-auto-columns: calc((100% - 32px) / 3); }
 }
 
 .listed-trace-row {
@@ -251,6 +322,12 @@
   .share-evidence-rail { padding: 32px 0 0; }
   .share-page-header { grid-template-columns: 1fr; }
   .share-verification-mark { min-width: 0; }
+}
+
+/* Below this width the two facts truncate to a few characters each; stack them instead. */
+@media (max-width: 480px) {
+  .listed-trace-card > footer { display: grid; gap: 4px; }
+  .listed-trace-card-model { text-align: left; }
 }
 
 @media (max-width: 640px) {

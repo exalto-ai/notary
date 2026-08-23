@@ -1251,7 +1251,7 @@ describe('hosted site', () => {
 
     const preview = page.getByLabelText('Public traces');
     await expect.element(preview).toBeVisible();
-    expect(request).toEqual({ limit: 5 });
+    expect(request).toEqual({ limit: 9 });
     expect(preview.element().querySelectorAll('[data-provider-icon="openai"]')).toHaveLength(1);
     expect(preview.element().querySelectorAll('[data-provider-icon="anthropic"]')).toHaveLength(1);
   });
@@ -1270,12 +1270,12 @@ describe('hosted site', () => {
 
     const preview = page.getByLabelText('Public traces');
     await expect.element(preview).toBeVisible();
-    const row = preview.element().querySelector('.listed-trace-row');
-    expect(row.textContent.match(/Prompt for share-1/g)).toHaveLength(1);
-    expect(row.textContent).not.toContain('No response preview.');
-    expect(row.querySelectorAll('.listed-trace-exchange p')).toHaveLength(1);
-    expect(row.querySelector('.listed-trace-state').textContent).toBe('Notarized');
-    expect(row.querySelector('time')).toBeTruthy();
+    const card = preview.element().querySelector('.listed-trace-card');
+    expect(card.textContent.match(/Prompt for share-1/g)).toHaveLength(1);
+    expect(card.textContent).not.toContain('No response preview.');
+    expect(card.querySelector('.listed-trace-card-response')).toBeNull();
+    expect(card.querySelector('.listed-trace-state').textContent).toBe('Notarized');
+    expect(card.querySelector('time')).toBeTruthy();
   });
 
   test('offers a retry when the landing preview listing fails', async () => {

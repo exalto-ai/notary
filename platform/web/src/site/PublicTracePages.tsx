@@ -87,7 +87,7 @@ export function ListedTracesPreview({
   const [reloadToken, setReloadToken] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    loadShares({ limit: 5 })
+    loadShares({ limit: 9 })
       .then((payload) => {
         if (!cancelled) setShares(payload.items);
       })
@@ -110,9 +110,14 @@ export function ListedTracesPreview({
         </p>
       </div>
       {shares === null && !loadError ? (
-        <div className="listed-trace-skeleton" role="status" aria-label="Loading traces">
-          {[0, 1, 2, 3, 4].map((row) => (
-            <div key={row}>
+        <div
+          className="listed-trace-rail listed-trace-rail--loading"
+          role="status"
+          aria-label="Loading traces"
+        >
+          {[0, 1, 2].map((card) => (
+            <div className="listed-trace-card" key={card}>
+              <i />
               <i />
               <i />
             </div>
@@ -135,9 +140,9 @@ export function ListedTracesPreview({
           </button>
         </div>
       ) : visible.length ? (
-        <section className="preview-share-list" aria-label="Public traces">
+        <section className="listed-trace-rail" aria-label="Public traces">
           {visible.map((share) => (
-            <ListedTraceRow key={share.trace_id} share={share} />
+            <ListedTraceCard key={share.trace_id} share={share} />
           ))}
         </section>
       ) : (
@@ -153,9 +158,57 @@ export function ListedTracesPreview({
   );
 }
 
+function ListedTraceCard({ share }: { share: ListedTrace }) {
+  const sharedDate = share.shared_at ? listingDate(share.shared_at) : null;
+  const inputPreview = share.input_preview;
+  const outputPreview = share.output_preview;
+  return (
+    <a className="listed-trace-card" href={`/s/${encodeURIComponent(share.trace_id)}`}>
+      <header>
+        <b className="listed-trace-state">
+          <i />
+          Notarized
+        </b>
+        {sharedDate && share.shared_at && (
+          <time dateTime={new Date(share.shared_at * 1000).toISOString()}>{sharedDate}</time>
+        )}
+      </header>
+      <div className="listed-trace-body">
+        {share.password_protected ? (
+          <p className="listed-trace-card-protected">
+            <span>Protected</span>
+            Password required to view disclosed messages.
+          </p>
+        ) : (
+          <>
+            <p className="listed-trace-card-prompt">
+              <span>Prompt</span>
+              {inputPreview || 'No prompt preview.'}
+            </p>
+            {outputPreview && (
+              <p className="listed-trace-card-response">
+                <span>Response</span>
+                {outputPreview}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+      <p className="listed-trace-card-publisher">
+        <span>Submitted by</span>
+        {share.publisher}
+      </p>
+      <footer>
+        <ProviderIdentity provider={share.provider} />
+        <span className="listed-trace-card-model">{share.model}</span>
+      </footer>
+    </a>
+  );
+}
+
 /*
- * One row shape serves the landing preview and the browse index. The listing API aliases `title`
- * to `input_preview`, so the prompt is the row's subject and is never also printed as a title.
+ * One row shape serves the browse index. The listing API aliases `title` to `input_preview`,
+ * so the prompt is the row's subject and is never also printed as a title.
  */
 function ListedTraceRow({ share }: { share: ListedTrace }) {
   const sharedDate = share.shared_at ? listingDate(share.shared_at) : null;
