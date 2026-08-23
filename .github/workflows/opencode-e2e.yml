@@ -12,6 +12,7 @@ on:
     - cron: "17 16 * * 1"
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -30,6 +31,20 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v6
+
+      - name: Resolve hosted rollout provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run="$(gh api --method GET \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/deploy.yml/runs" \
+            -f event=workflow_dispatch -f status=success -f per_page=1)"
+          run_id="$(jq -r '.workflow_runs[0].id // empty' <<<"$run")"
+          if test -n "$run_id"; then
+            attempt="$(jq -r '.workflow_runs[0].run_attempt' <<<"$run")"
+            echo "NOTARY_HOSTED_ROLLOUT_ID=prod-$run_id-$attempt" >> "$GITHUB_ENV"
+          fi
 
       - name: Install Node 24.14.1
         uses: actions/setup-node@v6

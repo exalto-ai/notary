@@ -244,14 +244,16 @@ volume until its outbox is empty and the rollback window has closed.
 
 ## Production rollout
 
-Production is deployed only by the `Production deployment` job in CI. A push
-to `main` first completes the required Rust, PostgreSQL, SPA, documentation,
-and deployment-configuration checks. CI then calls the reusable Fly workflow;
-the Fly workflow has no independent push or manual trigger.
+Production is deployed only by manually dispatching the `Deploy to Fly.io`
+workflow from `main`. Supply either one exact source SHA to promote or one
+successful prior workflow run ID to roll back. The workflow requires a source
+SHA to be reachable from `main` and to have its own successful `Main
+validation` result. It deploys the complete notary, API, and web set; there is
+no component matrix and no approval or reviewer gate.
 
 Fly remains the image builder and registry. The workflow uses `fly deploy
 --build-only --push` to build all three images before changing any Machine and
-gives each image a tag unique to the commit and CI run. The rollout then uses
+gives each image a tag unique to the commit and workflow run. The rollout then uses
 that tag to resolve an immutable `sha256` digest and deploys only the digest.
 It therefore neither rebuilds nor promotes a different image:
 
@@ -262,8 +264,12 @@ It therefore neither rebuilds nor promotes a different image:
    release migration runs before the new API starts and must remain writable by
    the recorded rollback image.
 3. Deploy the web gateway and check the public readiness route again.
-4. For a client-affecting change, build every CLI platform, upload and verify
-   one immutable object set, then move the website's `latest` pointer.
+
+Each successful run uploads one private `production-rollout.json` artifact
+with its `prod-<run-id>-<attempt>` rollout ID, source SHA, immutable digest
+set, migration action, timestamps, and previous digest set. GitHub's production
+environment supplies secrets and creates the single deployment record, but it
+has no approval protection.
 
 The deployment preflight sends an unauthenticated request to the V2 activation
 route and requires its exact `401` response before the server rollout begins.
@@ -278,6 +284,13 @@ migrations are forward-only and the previous API must remain usable against
 the newly migrated schema. If API restoration fails, rollback deliberately
 keeps the V2 server running because it is compatible with both API contracts;
 it never restores the V1 server against a possibly V2-only API.
+
+For an intentional rollback, dispatch the same workflow with a successful
+prior run ID. It downloads that run's manifest and restores its exact web, API,
+and notary digests in reverse rollout order using the Fly configuration from
+the manifest's recorded source SHA. It never runs the recorded API's release
+command and never claims to reverse database migrations. The rollback itself
+produces a new successful rollout manifest.
 
 ### Rolling compatibility contract
 
@@ -301,9 +314,10 @@ hide it.
 For a break-glass, operator-driven deployment from the repository root, use the
 same build-then-deploy split and retain the previous image references for
 rollback. For this V2 cutover, deploy the notary-server first and the API
-second, as CI does. Roll back the API to its dual-contract image before rolling
+second, as the workflow does. Roll back the API to its dual-contract image before rolling
 the server back to V1.
-Normal production changes must go through CI:
+Normal production changes must go through the manual Actions workflow. For a
+break-glass reconstruction of the same steps:
 
 ```bash
 label="manual-$(git rev-parse --short=12 HEAD)-$(date -u +%Y%m%d%H%M%S)"
