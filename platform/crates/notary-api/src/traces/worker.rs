@@ -449,19 +449,15 @@ fn trace_message_preview(
 
 fn message_preview(message: &serde_json::Value) -> Option<String> {
     let parts = message.get("parts")?.as_array()?;
-    if let Some(text) = parts
+    // An agent turn commonly carries an empty text part beside its tool calls, so a text part
+    // only wins when it actually yields a preview. Otherwise fall through to the call summary.
+    if let Some(preview) = parts
         .iter()
-        .find(|part| {
-            part.get("type").and_then(serde_json::Value::as_str) == Some("text")
-                && part
-                    .get("content")
-                    .and_then(serde_json::Value::as_str)
-                    .is_some()
-        })
-        .and_then(|part| part.get("content"))
-        .and_then(serde_json::Value::as_str)
+        .filter(|part| part.get("type").and_then(serde_json::Value::as_str) == Some("text"))
+        .filter_map(|part| part.get("content").and_then(serde_json::Value::as_str))
+        .find_map(compact_preview)
     {
-        return compact_preview(text);
+        return Some(preview);
     }
     tool_call_preview(parts)
 }
@@ -1248,6 +1244,26 @@ mod tests {
         let (input, output) = trace_previews(&trace).unwrap();
         assert_eq!(input, None);
         assert_eq!(output.as_deref(), Some("Tool calls: read, edit"));
+    }
+
+    #[test]
+    fn summarizes_tool_calls_when_the_text_part_is_empty() {
+        let trace = serde_json::to_vec(&serde_json::json!({
+            "resourceSpans": [{"scopeSpans": [{"spans": [{"attributes": [
+                {
+                    "key": "gen_ai.output.messages",
+                    "value": {"stringValue": serde_json::to_string(&serde_json::json!([
+                        {"role": "assistant", "parts": [
+                            {"type": "text", "content": ""},
+                            {"type": "tool_call", "id": "call_1", "name": "read", "arguments": {}}
+                        ]}
+                    ])).unwrap()}
+                }
+            ]}]}]}]
+        }))
+        .unwrap();
+        let (_, output) = trace_previews(&trace).unwrap();
+        assert_eq!(output.as_deref(), Some("Tool calls: read"));
     }
 
     #[test]
