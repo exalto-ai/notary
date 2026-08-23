@@ -38,6 +38,7 @@ jobs:
           filters: |
             rust:
               - '.github/workflows/**'
+              - '.github/scripts/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
@@ -115,6 +116,7 @@ jobs:
       - run: runtime/tooling/check-boundary.sh
       - run: python3 -m unittest runtime/tooling/test_check_boundary.py
       - run: bash .github/scripts/test-require-main-validation.sh
+      - run: scripts/test-public-runtime-export.sh
       - name: Install native build tools
         run: |
           if command -v cc >/dev/null \

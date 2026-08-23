@@ -13,14 +13,16 @@ if ! [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
   exit 1
 fi
 
-if diff --recursive --brief --exclude=.git --exclude=.notary-source.json \
-    "$projection" "$public_checkout" >/dev/null; then
+changes="$(rsync --archive --checksum --no-times --omit-dir-times \
+  --dry-run --itemize-changes --delete --exclude=.git --exclude=.notary-source.json \
+  "$projection/" "$public_checkout/")"
+if test -z "$changes"; then
   echo "Public Runtime projection is unchanged; export is a no-op."
   exit 0
 fi
 
 rsync --archive --delete --exclude=.git "$projection/" "$public_checkout/"
-git -C "$public_checkout" add --all -- .
+git -C "$public_checkout" add --all --force -- .
 if git -C "$public_checkout" diff --cached --quiet; then
   echo "Public Runtime projection is unchanged; export is a no-op."
   exit 0
