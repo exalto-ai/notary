@@ -33,11 +33,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ env.SOURCE_SHA }}
+          ref: main
+          sparse-checkout: .github/scripts
+          persist-credentials: false
       - name: Require exact Main validation
         env:
           GH_TOKEN: ${{ github.token }}
         run: .github/scripts/require-main-validation.sh "$SOURCE_SHA"
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
       - name: Create deterministic projection
         run: |
           set -euo pipefail
@@ -47,7 +53,7 @@ jobs:
           mkdir -p "$validation"
           rsync --archive "$projection/" "$validation/"
           git -C "$validation" init --quiet
-          git -C "$validation" add --all -- .
+          git -C "$validation" add --all --force -- .
           scripts/audit-public-runtime.sh "$validation"
           echo "PUBLIC_RUNTIME_PROJECTION=$projection" >> "$GITHUB_ENV"
           echo "PUBLIC_RUNTIME_VALIDATION=$validation" >> "$GITHUB_ENV"
@@ -74,11 +80,14 @@ jobs:
           npm --prefix runtime/apps/admin-dashboard run check:local-docs
           npm --prefix apps/notary-app ci
           npm --prefix apps/notary-app run build
+      - name: Archive validated projection
+        run: >-
+          tar --create --file "$RUNNER_TEMP/public-runtime-projection.tar"
+          --directory "$PUBLIC_RUNTIME_PROJECTION" .
       - uses: actions/upload-artifact@v7
         with:
           name: public-runtime-projection
-          path: ${{ env.PUBLIC_RUNTIME_PROJECTION }}
-          include-hidden-files: true
+          path: ${{ runner.temp }}/public-runtime-projection.tar
           if-no-files-found: error
           retention-days: 1
 
@@ -90,7 +99,11 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: public-runtime-projection
-          path: public-runtime
+          path: ${{ runner.temp }}
+      - name: Extract validated projection
+        run: |
+          mkdir public-runtime
+          tar --extract --file "$RUNNER_TEMP/public-runtime-projection.tar" --directory public-runtime
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.95.0
@@ -115,16 +128,26 @@ jobs:
     env:
       SOURCE_SHA: ${{ github.event.inputs.source_sha || github.event.workflow_run.head_sha }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          sparse-checkout: scripts
+          persist-credentials: false
       - uses: actions/download-artifact@v8
         with:
           name: public-runtime-projection
-          path: projection
+          path: ${{ runner.temp }}
+      - name: Extract validated projection
+        run: |
+          mkdir projection
+          tar --extract --file "$RUNNER_TEMP/public-runtime-projection.tar" --directory projection
       - name: Scan projected source for secrets
         run: >-
           docker run --rm
           --volume "$GITHUB_WORKSPACE/projection:/repo:ro"
+          --volume "$GITHUB_WORKSPACE/.gitleaks.toml:/gitleaks.toml:ro"
           ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
-          dir --config=/repo/.gitleaks.toml --redact --verbose /repo
+          dir --config=/gitleaks.toml --redact --verbose /repo
       - name: Publish changed projection
         env:
           PUBLIC_RUNTIME_DEPLOY_KEY: ${{ secrets.PUBLIC_RUNTIME_DEPLOY_KEY }}
