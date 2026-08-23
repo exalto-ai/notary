@@ -28,8 +28,11 @@ The repository must have:
 - Zero required reviewers on both environments. Branch or tag policies may
   still restrict where the workflow runs.
 
-`NOTARY_PUBLIC_ORIGIN` is optional. When unset, the workflow compiles and
-verifies release URLs against `https://notary.exalto.ai`.
+`NOTARY_PUBLIC_ORIGIN` is an optional repository variable, not a secret. It
+changes the public origin compiled into clients and written into signed
+manifests, and defaults to `https://notary.exalto.ai`. The workflow checks that
+the configured origin is reachable, but final publication verification always
+checks the production Tigris origin and `https://notary.exalto.ai`.
 
 The release signing private key must also be backed up outside GitHub. Its
 matching public key is committed at
@@ -56,7 +59,7 @@ The version commit is expected to change only:
 
 - `runtime/Cargo.toml` and `runtime/Cargo.lock`
 - `Cargo.lock`
-- `apps/notary-app/package.json` and `package-lock.json`
+- `apps/notary-app/package.json` and `apps/notary-app/package-lock.json`
 - `apps/notary-app/src-tauri/Cargo.toml` and `tauri.conf.json`
 
 Every CLI binary, daemon binary, desktop package, manifest, tag, and public
@@ -81,7 +84,9 @@ gh run watch <run-id> --repo exalto-ai/notary
 
 Do not merge or push another change to `main` until the **Validate and tag
 release sources** job finishes. The workflow deliberately fails if `main`
-advances before it has tagged the exact private and public sources.
+advances before it has tagged the exact private and public sources. Plan for
+this freeze to last up to six hours: the job may wait for both Main validation
+and the corresponding public Runtime export.
 
 The workflow performs these steps:
 
@@ -183,10 +188,18 @@ Confirm that:
 
 ## Failure and recovery
 
-If a job after the version commit fails, use **Re-run failed jobs** on the same
-workflow run. A retry accepts an existing tag only when it still points to the
-exact commit chosen by that run. Immutable build objects are safe to upload
-again.
+If a job after the version commit fails, promptly use **Re-run failed jobs** on
+the same workflow run. A retry accepts an existing tag only when it still
+points to the exact commit chosen by that run. Immutable build objects are safe
+to upload again.
+
+The CLI build artifacts are retained for one day; desktop and manifest
+artifacts are retained for three days. Publication needs the complete set, so
+the one-day CLI retention is the effective retry window. After those artifacts
+expire, the run cannot be completed and its version cannot be dispatched
+again: the version commit has already advanced `main`, and releases must be
+strictly increasing. Fix the cause and release the next patch version from the
+current green `main` instead.
 
 If `main` advanced before source tagging, do not force the old run through. The
 workflow rejects it by design; choose the next stable version and release from
@@ -197,15 +210,20 @@ build, so a failure during build, signing, upload, or verification leaves the
 previous release selected. Investigate a pointer-stage failure before retrying,
 because one of the two non-atomic pointers may already have moved.
 
-Rotate the updater key only through a release signed by the old key that also
-teaches clients the new public key.
+To rotate the updater key, first publish a bridge release whose channel,
+manifest, and updater bundle are signed by the old key but whose new binaries
+embed the new public key. Keep that bridge release selected long enough for
+clients to install it before signing a later channel with the new key. A client
+that skips the bridge release cannot authenticate the new key and requires a
+manual reinstall.
 
 ## Manifest v1 transition
 
 The published 0.1.0 client understands only release-manifest v1. The first v2
 release binds the public source SHA and requires a one-time manual upgrade:
 
-- macOS and Linux CLI users rerun `install.sh`.
+- macOS and Linux CLI users reinstall with
+  `curl -fsSL https://notary.exalto.ai/install.sh | sh`.
 - Windows users replace their binaries from the new ZIP.
 - Desktop users install the new signed DMG.
 

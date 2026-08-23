@@ -275,6 +275,7 @@ When behavior changes, update every affected surface. In particular:
 | Artifact or disclosure rule | core producer and verifier, artifact guide, architecture, share admission |
 | Notary trust policy | architecture, key lifecycle, local service, hosted public copy |
 | Deployment or migration order | Fly guide, database guide, workflow comments |
+| Runtime or desktop release | release runbook, desktop guide, getting started, workflow comments, public download copy |
 | Dashboard workflow | dashboard guide, screenshots, fixture, browser tests |
 | Hosted route or flow | generated hosted OpenAPI, hosted-platform map, focused account/billing/share guide, public copy when user-visible |
 | Repository boundary or path | both READMEs, development map, public source-install copy, boundary check, CI/release paths |
