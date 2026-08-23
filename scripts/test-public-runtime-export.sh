@@ -27,6 +27,11 @@ git init --bare --quiet --initial-branch=main "$bare"
 git clone --quiet "$bare" "$checkout"
 git -C "$checkout" config user.name "$export_name"
 git -C "$checkout" config user.email "$export_email"
+if scripts/publish-public-runtime.sh \
+  "$first" "$checkout" "$source_sha" >/dev/null 2>&1; then
+  echo "publisher accepted a missing expected identity" >&2
+  exit 1
+fi
 GIT_AUTHOR_NAME="Unexpected ambient author" \
   GIT_AUTHOR_EMAIL="unexpected-author@example.com" \
   GIT_COMMITTER_NAME="Unexpected ambient committer" \

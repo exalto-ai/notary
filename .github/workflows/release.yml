@@ -105,8 +105,6 @@ jobs:
             diff -u <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") || true
             exit 1
           fi
-          git config user.name "$RELEASE_GIT_NAME"
-          git config user.email "$RELEASE_GIT_EMAIL"
           git add -- \
             Cargo.lock \
             apps/notary-app/package-lock.json \
@@ -115,7 +113,11 @@ jobs:
             apps/notary-app/src-tauri/tauri.conf.json \
             runtime/Cargo.lock \
             runtime/Cargo.toml
-          git commit -m "Release Runtime v$VERSION (#364)"
+          GIT_AUTHOR_NAME="$RELEASE_GIT_NAME" \
+            GIT_AUTHOR_EMAIL="$RELEASE_GIT_EMAIL" \
+            GIT_COMMITTER_NAME="$RELEASE_GIT_NAME" \
+            GIT_COMMITTER_EMAIL="$RELEASE_GIT_EMAIL" \
+            git commit -m "Release Runtime v$VERSION (#364)"
           release_sha="$(git rev-parse HEAD)"
           expected_identity="$(printf '%s <%s>\n%s <%s>' \
             "$RELEASE_GIT_NAME" "$RELEASE_GIT_EMAIL" \
@@ -243,9 +245,9 @@ jobs:
               exit 1
             }
           else
-            git -c user.name="$RELEASE_GIT_NAME" \
-              -c user.email="$RELEASE_GIT_EMAIL" \
-              tag --annotate "$private_tag" "$RELEASE_SHA" \
+            GIT_COMMITTER_NAME="$RELEASE_GIT_NAME" \
+              GIT_COMMITTER_EMAIL="$RELEASE_GIT_EMAIL" \
+              git tag --annotate "$private_tag" "$RELEASE_SHA" \
               --message "Notary Runtime v$VERSION"
             tagger_identity="$(git for-each-ref \
               --format='%(taggername) %(taggeremail)' "refs/tags/$private_tag")"
