@@ -8,6 +8,11 @@ on:
         required: false
         default: openrouter/cohere/north-mini-code:free
         type: string
+      fixture:
+        description: Fixture directory name to pin; empty draws one at random
+        required: false
+        default: ""
+        type: string
   schedule:
     - cron: "17 16 * * 1"
 
@@ -27,6 +32,7 @@ jobs:
     environment: opencode-e2e
     env:
       CANARY_MODEL: ${{ inputs.model || 'openrouter/cohere/north-mini-code:free' }}
+      CANARY_FIXTURE: ${{ inputs.fixture }}
 
     steps:
       - name: Check out source
@@ -80,7 +86,17 @@ jobs:
           OPENROUTER_FREE_TIER_API_KEY: ${{ secrets.OPENROUTER_FREE_TIER_API_KEY }}
           NOTARYD_E2E_API_KEY: ${{ secrets.NOTARY_E2E_API_KEY }}
         run: |
+          fixtures=runtime/benchmarks/opencode-e2e/fixtures
+          if test -n "$CANARY_FIXTURE"; then
+            case "$CANARY_FIXTURE" in
+              */*|.*) echo "Fixture must be a directory name under $fixtures." >&2; exit 1 ;;
+            esac
+            set -- --fixture "$fixtures/$CANARY_FIXTURE"
+          else
+            set --
+          fi
           python3 runtime/benchmarks/opencode-e2e/run.py \
+            "$@" \
             --model "$CANARY_MODEL" \
             --opencode "$(command -v opencode)" \
             --notaryctl "$NOTARY_RUNTIME_BIN/notaryctl" \
