@@ -101,6 +101,8 @@ jobs:
               - 'runtime/crates/notaryd/**'
               - 'runtime/crates/notaryctl/**'
               - 'runtime/crates/notary-updater/**'
+              - 'scripts/runtime-version.mjs'
+              - 'scripts/runtime-version.test.mjs'
 
   rust:
     name: Rust
@@ -109,6 +111,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.95.0
@@ -188,6 +193,8 @@ jobs:
           key: client-update-windows
       - name: Test Windows-specific client workflows
         run: |
+          node --test scripts/runtime-version.test.mjs
+          node scripts/runtime-version.mjs --check
           cargo test --locked --manifest-path runtime/Cargo.toml -p notary-updater --lib
           cargo test --locked --manifest-path runtime/Cargo.toml -p notaryctl skill_install --lib
           cargo test --locked --manifest-path runtime/Cargo.toml -p notaryd artifact_store::tests --lib
