@@ -110,11 +110,7 @@ export function ListedTracesPreview({
         </p>
       </div>
       {shares === null && !loadError ? (
-        <div
-          className="preview-share-list preview-share-list--loading"
-          role="status"
-          aria-label="Loading traces"
-        >
+        <div className="listed-trace-skeleton" role="status" aria-label="Loading traces">
           {[0, 1, 2, 3, 4].map((row) => (
             <div key={row}>
               <i />
@@ -141,7 +137,7 @@ export function ListedTracesPreview({
       ) : visible.length ? (
         <section className="preview-share-list" aria-label="Public traces">
           {visible.map((share) => (
-            <PreviewTraceRow key={share.trace_id} share={share} />
+            <ListedTraceRow key={share.trace_id} share={share} />
           ))}
         </section>
       ) : (
@@ -157,35 +153,49 @@ export function ListedTracesPreview({
   );
 }
 
-function PreviewTraceRow({ share }: { share: ListedTrace }) {
+/*
+ * One row shape serves the landing preview and the browse index. The listing API aliases `title`
+ * to `input_preview`, so the prompt is the row's subject and is never also printed as a title.
+ */
+function ListedTraceRow({ share }: { share: ListedTrace }) {
   const sharedDate = share.shared_at ? listingDate(share.shared_at) : null;
+  const inputPreview = share.input_preview;
+  const outputPreview = share.output_preview;
   return (
-    <a className="preview-share-row" href={`/s/${encodeURIComponent(share.trace_id)}`}>
+    <a className="listed-trace-row" href={`/s/${encodeURIComponent(share.trace_id)}`}>
       {share.password_protected ? (
-        <p className="preview-share-protected">
-          <span>Protected</span>Password required to view disclosed messages.
+        <p className="listed-trace-protected">
+          <span>Protected</span>
+          <span>Password required to view disclosed messages.</span>
         </p>
-      ) : (
-        <div className="preview-share-exchange">
-          <p>
-            <span>Prompt</span>
-            <span>{share.input_preview || 'No prompt preview.'}</span>
-          </p>
-          {share.output_preview && (
+      ) : inputPreview || outputPreview ? (
+        <div className="listed-trace-exchange">
+          {inputPreview && (
+            <p>
+              <span>Prompt</span>
+              <span>{inputPreview}</span>
+            </p>
+          )}
+          {outputPreview && (
             <p>
               <span>Response</span>
-              <span>{share.output_preview}</span>
+              <span>{outputPreview}</span>
             </p>
           )}
         </div>
+      ) : (
+        <p className="listed-trace-protected listed-trace-missing">
+          <span />
+          <span>No prompt or response preview.</span>
+        </p>
       )}
-      <div className="preview-share-facts">
+      <div className="listed-trace-facts">
         <ProviderIdentity provider={share.provider} detail={share.model} />
-        <span className="preview-share-publisher">{share.publisher}</span>
+        <span className="listed-trace-publisher">{share.publisher}</span>
         {sharedDate && share.shared_at && (
           <time dateTime={new Date(share.shared_at * 1000).toISOString()}>{sharedDate}</time>
         )}
-        <b className="preview-share-state">
+        <b className="listed-trace-state">
           <i />
           Notarized
         </b>
@@ -750,67 +760,15 @@ function PublicTracesLoading() {
       <header className="share-library-titlebar">
         <h1>Traces</h1>
       </header>
-      <div className="share-library-skeleton" role="status" aria-label="Loading public Traces">
+      <div className="listed-trace-skeleton" role="status" aria-label="Loading public Traces">
         {[1, 2, 3].map((row) => (
           <div key={row}>
             <i />
-            <span>
-              <i />
-              <i />
-            </span>
+            <i />
           </div>
         ))}
       </div>
     </main>
-  );
-}
-
-function PublicTraceRow({ share }: { share: ListedTrace }) {
-  const sharedDate = share.shared_at ? sessionDate(share.shared_at) : null;
-  const inputPreview = share.input_preview;
-  const outputPreview = share.output_preview;
-  return (
-    <a
-      className={`share-index-row${share.password_protected ? ' share-index-row--protected' : ''}`}
-      href={`/s/${encodeURIComponent(share.trace_id)}`}
-    >
-      <header>
-        <div className="share-index-heading">
-          <b>{share.title || 'Shared Notarized trace'}</b>
-          <small>
-            <ProviderIdentity provider={share.provider} detail={`shared by ${share.publisher}`} />
-            <span>{share.model}</span>
-            {sharedDate && share.shared_at && (
-              <time dateTime={new Date(share.shared_at * 1000).toISOString()}>{sharedDate}</time>
-            )}
-          </small>
-        </div>
-        <span className="share-index-open">Notarized · Open trace</span>
-      </header>
-      {share.password_protected ? (
-        <p className="share-index-protected">
-          <span>Protected</span>Password required to view disclosed messages.
-        </p>
-      ) : (
-        <div className="share-index-previews">
-          {inputPreview && (
-            <p>
-              <span>Input</span>
-              {inputPreview}
-            </p>
-          )}
-          {outputPreview && (
-            <p>
-              <span>Response</span>
-              {outputPreview}
-            </p>
-          )}
-          {!inputPreview && !outputPreview && (
-            <p className="share-index-preview-missing">No prompt or response preview.</p>
-          )}
-        </div>
-      )}
-    </a>
   );
 }
 
@@ -997,14 +955,11 @@ export function PublicTraces({
           <p>Search needs three letters or numbers together.</p>
         </section>
       ) : loadingPage ? (
-        <div className="share-library-skeleton" role="status" aria-label="Loading filtered traces">
+        <div className="listed-trace-skeleton" role="status" aria-label="Loading filtered traces">
           {[1, 2, 3].map((row) => (
             <div key={row}>
               <i />
-              <span>
-                <i />
-                <i />
-              </span>
+              <i />
             </div>
           ))}
         </div>
@@ -1020,7 +975,7 @@ export function PublicTraces({
         <>
           <section className="share-index" aria-label="Public traces">
             {visibleShares.map((share) => (
-              <PublicTraceRow share={share} key={share.trace_id} />
+              <ListedTraceRow share={share} key={share.trace_id} />
             ))}
           </section>
           {loadError && (

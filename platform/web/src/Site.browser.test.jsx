@@ -1230,9 +1230,9 @@ describe('hosted site', () => {
     await expect.element(page.getByRole('heading', { name: 'Traces' })).toBeVisible();
     const row = page.getByRole('link', { name: /claude-sonnet-4-6/ });
     await expect.element(row).toBeVisible();
-    expect(row.element().textContent).toContain('Prompt for share-12');
+    expect(row.element().textContent.match(/Prompt for share-12/g)).toHaveLength(1);
     expect(row.element().textContent).toContain('Response for share-12');
-    expect(row.element().textContent).toContain('Open trace');
+    expect(row.element().textContent).toContain('Notarized');
     expect(document.body.textContent).not.toContain('Verified');
     expect(document.body.textContent).not.toContain('↗');
     expect(document.body.textContent).not.toContain('Listed shares');
@@ -1270,11 +1270,11 @@ describe('hosted site', () => {
 
     const preview = page.getByLabelText('Public traces');
     await expect.element(preview).toBeVisible();
-    const row = preview.element().querySelector('.preview-share-row');
+    const row = preview.element().querySelector('.listed-trace-row');
     expect(row.textContent.match(/Prompt for share-1/g)).toHaveLength(1);
     expect(row.textContent).not.toContain('No response preview.');
-    expect(row.querySelectorAll('.preview-share-exchange p')).toHaveLength(1);
-    expect(row.querySelector('.preview-share-state').textContent).toBe('Notarized');
+    expect(row.querySelectorAll('.listed-trace-exchange p')).toHaveLength(1);
+    expect(row.querySelector('.listed-trace-state').textContent).toBe('Notarized');
     expect(row.querySelector('time')).toBeTruthy();
   });
 
