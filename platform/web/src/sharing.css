@@ -1,29 +1,46 @@
 .preview-share-list {
   display: grid;
-  margin: 28px 0;
+  margin: 30px 0 26px;
   border-top: 1px solid var(--line);
 }
 
-.preview-share-list a {
+.preview-share-row {
   display: grid;
   gap: 10px;
-  min-height: 104px;
-  padding: 14px 2px 16px;
+  padding: 13px 2px 12px;
   border-bottom: 1px solid var(--line);
   color: var(--ink);
   text-decoration: none;
 }
 
-.preview-share-list a:hover { background: var(--soft); }
-.share-verification-mark > i { width: 7px; height: 7px; background: var(--action); box-shadow: 0 0 0 3px color-mix(in srgb, var(--action) 14%, transparent); }
-.preview-share-list header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-.preview-share-list b { font: 600 15px 'Instrument Sans Variable', sans-serif; }
-.preview-share-list header .provider-identity { color: var(--muted); font-size: 10px; }
-.preview-share-snippets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-.preview-share-snippets p { display: -webkit-box; min-width: 0; margin: 0; overflow: hidden; color: var(--body-copy); font-size: 12px; line-height: 1.48; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.preview-share-snippets p > span { margin-right: 8px; color: var(--action-ink); font: 500 9px 'IBM Plex Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+.preview-share-row:hover { background: var(--soft); }
+
+/* The prompt is the row's subject: one clamped line of the exchange, never a repeated title. */
+.preview-share-exchange { display: grid; gap: 5px; }
+.preview-share-exchange p { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: baseline; gap: 12px; margin: 0; font-size: 14px; line-height: 1.45; }
+/* Kept muted so the notarized mark stays the only signal blue in a row. */
+.preview-share-exchange p > span:first-child { color: var(--muted); font: 500 9px 'IBM Plex Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+.preview-share-exchange p > span + span { min-width: 0; overflow: hidden; color: var(--ink); text-overflow: ellipsis; white-space: nowrap; }
+.preview-share-exchange p + p > span + span { color: var(--body-copy); }
+/* A protected row keeps the same label column so the list scans as one ledger. */
+.preview-share-row > .preview-share-protected { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: baseline; gap: 12px; font-size: 14px; line-height: 1.45; }
+.preview-share-row > .preview-share-protected > span { margin-right: 0; color: var(--muted); }
+
+/* Facts read as one ledger line so provider, model, publisher, and date stop competing for a column. */
+.preview-share-facts { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; color: var(--muted); font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .03em; }
+.preview-share-facts .provider-identity { color: var(--muted); font-size: 10px; }
+.preview-share-publisher::before,
+.preview-share-facts > time::before { content: '·'; margin-right: 7px; }
+.preview-share-state { display: flex; align-items: center; gap: 6px; margin-left: auto; color: var(--action-ink); font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+.preview-share-state > i { width: 7px; height: 7px; flex: none; border: 1px solid var(--action); background: var(--action-soft); }
+
+.preview-share-list--loading > div { display: grid; gap: 12px; padding: 15px 2px 14px; border-bottom: 1px solid var(--line); }
+.preview-share-list--loading i { display: block; height: 12px; background: var(--line-soft); }
+.preview-share-list--loading i:first-child { width: min(620px, 88%); }
+.preview-share-list--loading i:last-child { width: min(300px, 52%); height: 9px; }
+
 .preview-share-protected,
-.share-index-protected { margin: 0; color: var(--muted); font-size: 12px; }
+.share-index-protected { margin: 0; color: var(--muted); font-size: 13px; }
 .preview-share-protected > span,
 .share-index-protected > span { margin-right: 9px; color: var(--action-ink); font: 500 9px 'IBM Plex Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
 
@@ -267,8 +284,10 @@
 }
 
 @media (max-width: 640px) {
-  .preview-share-list header { align-items: start; flex-direction: column; gap: 5px; }
-  .preview-share-snippets { grid-template-columns: 1fr; gap: 7px; }
+  .preview-share-exchange p,
+  .preview-share-row > .preview-share-protected { grid-template-columns: 1fr; gap: 2px; }
+  .preview-share-exchange p > span + span { display: -webkit-box; overflow: hidden; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .preview-share-state { margin-left: 0; }
   .share-library,
   .share-page { padding: 18px 14px 58px; }
   .share-library-controls { grid-template-columns: 1fr; }

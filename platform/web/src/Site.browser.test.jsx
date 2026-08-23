@@ -187,9 +187,6 @@ describe('hosted site', () => {
       .toHaveAttribute('href', '/');
     await expect.element(page.getByText('Notary by Exalto')).toBeVisible();
     expect(Array.from(productNav.querySelectorAll('a'), (link) => link.textContent)).toEqual([
-      'Traces',
-      'Verify',
-      'Registry',
       'Docs',
       'Pricing',
       'Sign in',
@@ -1252,11 +1249,51 @@ describe('hosted site', () => {
       />,
     );
 
-    const preview = page.getByLabelText('Featured public traces');
+    const preview = page.getByLabelText('Public traces');
     await expect.element(preview).toBeVisible();
     expect(request).toEqual({ limit: 5 });
     expect(preview.element().querySelectorAll('[data-provider-icon="openai"]')).toHaveLength(1);
     expect(preview.element().querySelectorAll('[data-provider-icon="anthropic"]')).toHaveLength(1);
+  });
+
+  test('states each landing preview row once, without a title that repeats the prompt', async () => {
+    render(
+      <ListedTracesPreview
+        loadShares={async () => ({
+          items: [
+            { ...libraryShares[0], title: libraryShares[0].input_preview, output_preview: null },
+          ],
+          next_cursor: null,
+        })}
+      />,
+    );
+
+    const preview = page.getByLabelText('Public traces');
+    await expect.element(preview).toBeVisible();
+    const row = preview.element().querySelector('.preview-share-row');
+    expect(row.textContent.match(/Prompt for share-1/g)).toHaveLength(1);
+    expect(row.textContent).not.toContain('No response preview.');
+    expect(row.querySelectorAll('.preview-share-exchange p')).toHaveLength(1);
+    expect(row.querySelector('.preview-share-state').textContent).toBe('Notarized');
+    expect(row.querySelector('time')).toBeTruthy();
+  });
+
+  test('offers a retry when the landing preview listing fails', async () => {
+    let attempts = 0;
+    render(
+      <ListedTracesPreview
+        loadShares={async () => {
+          attempts += 1;
+          if (attempts === 1) throw new Error('Listing unavailable.');
+          return { items: [libraryShares[0]], next_cursor: null };
+        }}
+      />,
+    );
+
+    await expect.element(page.getByText('Public traces couldn’t load.')).toBeVisible();
+    await page.getByRole('button', { name: 'Try again' }).click();
+    await expect.element(page.getByLabelText('Public traces')).toBeVisible();
+    expect(attempts).toBe(2);
   });
 
   test('filters public Traces by their safe summaries', async () => {

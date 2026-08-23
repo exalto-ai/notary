@@ -345,9 +345,6 @@ export function Header({
         <PenMark /> <span>Notary</span>
       </a>
       <nav className="product-nav">
-        <a href="/traces">Traces</a>
-        <a href="/verify">Verify</a>
-        <a href="/registry">Registry</a>
         <a href="/docs">Docs</a>
         <a href="/pricing">Pricing</a>
         {user ? (
