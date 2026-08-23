@@ -30,6 +30,8 @@ jobs:
     timeout-minutes: 90
     env:
       SOURCE_SHA: ${{ github.event.inputs.source_sha || github.event.workflow_run.head_sha }}
+      EXPORT_GIT_NAME: exalto-ai
+      EXPORT_GIT_EMAIL: k@exalto.ai
     steps:
       - uses: actions/checkout@v6
         with:
@@ -163,7 +165,6 @@ jobs:
           export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o UserKnownHostsFile=$known_hosts -o StrictHostKeyChecking=yes"
           public_checkout="$RUNNER_TEMP/notary-runtime-public"
           git clone git@github.com:exalto-ai/notary-runtime.git "$public_checkout"
-          git -C "$public_checkout" config user.name "Notary Runtime Export"
-          git -C "$public_checkout" config user.email "runtime-export@users.noreply.github.com"
           "$GITHUB_WORKSPACE/scripts/publish-public-runtime.sh" \
-            "$GITHUB_WORKSPACE/projection" "$public_checkout" "$SOURCE_SHA"
+            "$GITHUB_WORKSPACE/projection" "$public_checkout" "$SOURCE_SHA" \
+            "$EXPORT_GIT_NAME" "$EXPORT_GIT_EMAIL"

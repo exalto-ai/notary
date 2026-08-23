@@ -8,6 +8,12 @@ client binaries.
 
 Releases use one stable `latest` channel. They do not require a reviewer or an
 environment approval after the workflow is started.
+Automation-authored release commits, annotated private tags, and public Runtime
+exports use `exalto-ai <k@exalto.ai>` so GitHub attributes them to the project
+account instead of linking a synthetic noreply identity to an unrelated username
+or leaving the export unattributed.
+The workflows fail before pushing if a generated commit or tag carries a
+different author, committer, or tagger identity.
 
 ## Before releasing
 
