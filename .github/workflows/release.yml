@@ -113,6 +113,12 @@ jobs:
             runtime/Cargo.toml
           git commit -m "Release Runtime v$VERSION (#364)"
           release_sha="$(git rev-parse HEAD)"
+          expected_identity="$(printf 'exalto-ai <k@exalto.ai>\nexalto-ai <k@exalto.ai>')"
+          actual_identity="$(git show --no-patch --format='%an <%ae>%n%cn <%ce>' "$release_sha")"
+          if test "$actual_identity" != "$expected_identity"; then
+            echo "release commit author or committer identity is incorrect" >&2
+            exit 1
+          fi
           git push origin HEAD:main
           {
             echo "release_sha=$release_sha"
@@ -235,6 +241,12 @@ jobs:
               -c user.email="k@exalto.ai" \
               tag --annotate "$private_tag" "$RELEASE_SHA" \
               --message "Notary Runtime v$VERSION"
+            tagger_identity="$(git for-each-ref \
+              --format='%(taggername) %(taggeremail)' "refs/tags/$private_tag")"
+            if test "$tagger_identity" != "exalto-ai <k@exalto.ai>"; then
+              echo "$private_tag tagger identity is incorrect" >&2
+              exit 1
+            fi
             git push origin "refs/tags/$private_tag"
           fi
 

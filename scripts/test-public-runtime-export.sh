@@ -26,6 +26,8 @@ git clone --quiet "$bare" "$checkout"
 git -C "$checkout" config user.name "Notary Runtime Export Test"
 git -C "$checkout" config user.email "runtime-export-test@example.com"
 scripts/publish-public-runtime.sh "$first" "$checkout" "$source_sha" >/dev/null
+test "$(git --git-dir="$bare" show --no-patch --format='%an <%ae>%n%cn <%ce>' main)" = \
+  "$(printf 'Notary Runtime Export Test <runtime-export-test@example.com>\nNotary Runtime Export Test <runtime-export-test@example.com>')"
 diff \
   <(find "$first" -path "$first/.git" -prune -o \( -type f -o -type l \) -printf '%P\n' | sort) \
   <(git -C "$checkout" ls-files | sort)

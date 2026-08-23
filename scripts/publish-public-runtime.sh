@@ -28,4 +28,14 @@ if git -C "$public_checkout" diff --cached --quiet; then
   exit 0
 fi
 git -C "$public_checkout" commit -m "Export Runtime from $source_sha"
+configured_name="$(git -C "$public_checkout" config user.name)"
+configured_email="$(git -C "$public_checkout" config user.email)"
+expected_identity="$(printf '%s <%s>\n%s <%s>' \
+  "$configured_name" "$configured_email" "$configured_name" "$configured_email")"
+actual_identity="$(git -C "$public_checkout" show \
+  --no-patch --format='%an <%ae>%n%cn <%ce>' HEAD)"
+if test "$actual_identity" != "$expected_identity"; then
+  echo "public Runtime export author or committer identity is incorrect" >&2
+  exit 1
+fi
 git -C "$public_checkout" push origin HEAD:main
