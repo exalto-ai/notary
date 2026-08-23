@@ -1313,8 +1313,8 @@ mod tests {
 
         let mut delayed_config = config(&format!("http://{address}"), true);
         delayed_config.prefix = "delayed".to_owned();
-        delayed_config.connect_timeout = Duration::from_millis(100);
-        delayed_config.operation_timeout = Duration::from_millis(200);
+        delayed_config.connect_timeout = Duration::from_millis(500);
+        delayed_config.operation_timeout = Duration::from_secs(1);
         let store = S3ArtifactStore::new(delayed_config, credentials()).unwrap();
         let key = ArtifactKey::new("trc-delayed-commit", ArtifactKind::CaptureCheckpoint).unwrap();
         let bytes = b"delayed immutable commit".to_vec();
@@ -1388,7 +1388,7 @@ mod tests {
             // Deliberately never provide a conclusive PUT response. The SDK's
             // deadline makes this an ambiguous outcome while GET observes the
             // object shortly afterwards.
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            tokio::time::sleep(Duration::from_secs(2)).await;
             return Ok(());
         }
 

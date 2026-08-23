@@ -1188,16 +1188,12 @@ fn sync_directory(path: &Path) -> Result<()> {
 }
 
 #[cfg(windows)]
-fn sync_directory(path: &Path) -> Result<()> {
-    use std::os::windows::fs::OpenOptionsExt as _;
-
-    const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
-    OpenOptions::new()
-        .read(true)
-        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
-        .open(path)
-        .and_then(|directory| directory.sync_all())
-        .with_context(|| format!("syncing artifact directory {}", path.display()))
+fn sync_directory(_path: &Path) -> Result<()> {
+    // Windows exposes FlushFileBuffers for writable file handles, but not a
+    // POSIX-style directory fsync. The artifact file itself is synced before
+    // its atomic rename, so do not turn a successful durable file write into
+    // AccessDenied by attempting to flush a read-only directory handle.
+    Ok(())
 }
 
 #[cfg(all(not(unix), not(windows)))]
