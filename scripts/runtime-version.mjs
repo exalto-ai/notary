@@ -21,7 +21,7 @@ export function compareVersions(left, right) {
 }
 
 async function read(root, relative) {
-  return readFile(path.join(root, relative), 'utf8');
+  return (await readFile(path.join(root, relative), 'utf8')).replaceAll('\r\n', '\n');
 }
 
 async function write(root, relative, value) {

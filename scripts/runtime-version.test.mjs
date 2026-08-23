@@ -13,7 +13,7 @@ import {
 
 const repository = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
-async function fixture() {
+async function fixture({ crlf = false } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'notary-runtime-version-'));
   const files = [
     'Cargo.lock',
@@ -31,6 +31,11 @@ async function fixture() {
     await cp(path.join(repository, relative), path.join(root, relative), {
       recursive: false,
     });
+    if (crlf) {
+      const target = path.join(root, relative);
+      const contents = await readFile(target, 'utf8');
+      await writeFile(target, contents.replaceAll('\n', '\r\n'));
+    }
   }
   return root;
 }
@@ -62,4 +67,14 @@ test('verification rejects drifting desktop metadata', async () => {
   appPackage.version = '9.9.9';
   await writeFile(packageFile, `${JSON.stringify(appPackage, null, 2)}\n`);
   await assert.rejects(() => verifyRuntimeVersion(root), /does not match/);
+});
+
+test('version checks and synchronization accept Windows CRLF checkouts', async () => {
+  const root = await fixture({ crlf: true });
+  const current = await currentRuntimeVersion(root);
+  assert.equal(await verifyRuntimeVersion(root, current), current);
+  const [major, minor, patch] = current.split('.').map(Number);
+  const next = `${major}.${minor}.${patch + 1}`;
+  await setRuntimeVersion(root, next);
+  assert.equal(await verifyRuntimeVersion(root, next), next);
 });
