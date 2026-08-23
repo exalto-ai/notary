@@ -199,7 +199,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Install the CLI and local service',
-        body: 'The shell installer supports Apple silicon Macs and x86-64 or ARM64 Linux systems. It selects the complete `latest` website build and checks the archive against its published SHA-256 value. This is a moving pre-release pointer. The checksum detects corruption but is not an independent signature because it shares the archive publisher.',
+        body: 'The shell installer supports Apple silicon Macs and x86-64 or ARM64 Linux systems. It selects the complete `latest` stable Runtime release and checks the archive against its published SHA-256 value. The checksum detects corruption but is not an independent signature because it shares the archive publisher.',
         code: installCommand,
       },
       {

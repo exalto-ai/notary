@@ -3,7 +3,7 @@ import { readFile, stat, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 
-export const RELEASE_SCHEMA = 'notary/release/v1';
+export const RELEASE_SCHEMA = 'notary/release/v2';
 export const CHANNEL_SCHEMA = 'notary/release-channel/v1';
 export const CHANNEL_ENVELOPE_SCHEMA = 'notary/release-channel-envelope/v1';
 
@@ -55,12 +55,14 @@ export async function createReleaseManifest({
   releaseDir,
   buildId,
   commitSha,
+  publicSourceSha,
   version,
   publishedAt,
   publicOrigin,
 }) {
   requireSafeIdentifier('build ID', buildId);
   if (!/^[0-9a-f]{40}$/.test(commitSha)) throw new Error('commit SHA must contain 40 lowercase hexadecimal characters');
+  if (!/^[0-9a-f]{40}$/.test(publicSourceSha)) throw new Error('public source SHA must contain 40 lowercase hexadecimal characters');
   requireSafeIdentifier('version', version);
   if (!Number.isFinite(Date.parse(publishedAt))) throw new Error('publishedAt must be an RFC 3339 timestamp');
   const origin = new URL(publicOrigin);
@@ -103,6 +105,7 @@ export async function createReleaseManifest({
     schema_version: RELEASE_SCHEMA,
     build_id: buildId,
     commit_sha: commitSha,
+    public_source_sha: publicSourceSha,
     version,
     published_at: new Date(publishedAt).toISOString(),
     artifacts: platforms,
@@ -198,6 +201,7 @@ async function main() {
       releaseDir: args['release-dir'],
       buildId: args['build-id'],
       commitSha: args['commit-sha'],
+      publicSourceSha: args['public-source-sha'],
       version: args.version,
       publishedAt: args['published-at'],
       publicOrigin: args['public-origin'],

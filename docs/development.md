@@ -319,13 +319,39 @@ operational spans use bounded safe codes and metadata only.
 
 ## Release state
 
-There are no GitHub Releases or immutable semantic-version releases yet.
-After the normal production deployment succeeds, client-affecting changes on
-`main` build Apple silicon macOS, Linux, and Windows clients. Every published
-binary carries the same build ID: the commit SHA, GitHub Actions run ID, and run
-attempt joined with hyphens. The publisher uploads raw command-line binaries,
-archives, the DMG, and the signed macOS updater bundle to one immutable build
-directory, then verifies each public object before moving a channel pointer.
+Client publication is manual and independent of hosted deployment. Run the
+`Release Runtime` workflow from the current green `main` head with the next
+stable `X.Y.Z` version. It rejects malformed, existing, or non-increasing
+versions, creates one mechanical version commit, and waits for exact Main
+validation. The workflow then waits for the public Runtime export, creates the
+private `runtime/vX.Y.Z` and public `vX.Y.Z` tags, and publishes the public
+GitHub Release. The release environments hold signing and download credentials
+but require no reviewer approval.
+
+Before the first release, create a `NOTARY_RELEASE_TOKEN` Actions secret whose
+actor may push the protected `main` branch. The token needs Actions read and
+Contents read/write access in this repository, plus Contents read/write access
+in `exalto-ai/notary-runtime`. Configure the `macos-release` and `production`
+environments with the documented secrets and zero required reviewers so the
+manual workflow can run through without an approval pause.
+
+The version commit is a separate workflow job from validation, tagging,
+signing, and publication. If a later job fails, use **Re-run failed jobs** on
+the same workflow run; retries accept existing tags only when they still point
+to the exact private and public commits selected by that run.
+
+Do not merge or push another `main` change until **Validate and tag release
+sources** finishes. The workflow rejects a release if `main` advances during
+that window, preventing a queued public export from silently selecting a newer
+source. Start the next stable version from the new `main` head after such a
+failure.
+
+Every released Runtime and desktop package inherits one canonical workspace
+version. The signed manifest records the private source SHA, public source SHA,
+and an immutable build ID. The publisher uploads raw
+command-line binaries, archives, the DMG, and the signed macOS updater bundle
+to one immutable build directory, then verifies every public object before
+moving `latest`. Pushes to `main` never publish clients.
 
 `releases/channels/latest.json` is the canonical pointer. It is a signed envelope
 whose exact payload identifies an immutable `release.json` by URL, SHA-256,
@@ -351,11 +377,18 @@ signed build, including an older build, but it must use a new signed channel
 revision. A storage or CDN writer without the release signing key cannot
 authorize that rollback.
 
+The existing 0.1.0 client understands only release-manifest v1. The first
+release from this workflow moves directly to v2 so it can bind the public source
+SHA. Command-line users on macOS or Linux must rerun `install.sh` once; Windows
+users must replace the binaries from the new ZIP; and desktop users must install
+the new signed DMG. Dual-manifest transition machinery is intentionally out of
+scope for this prototype-to-stable cut.
+
 Keep the download bucket separate from private capture intake. Never expose
 its upload credential to a deployed application. SHA-256 files by themselves
 are corruption checks, not independent release authentication.
 
-The updater's long-lived private key and password live only in the protected
+The updater's long-lived private key and password live only in the
 `macos-release` GitHub environment as `TAURI_SIGNING_PRIVATE_KEY` and
 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. The matching public key is committed at
 `runtime/config/updater-public-key.txt`. Back up the private key outside GitHub: losing
