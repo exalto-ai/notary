@@ -47,9 +47,10 @@ internal reference, and external user journey agree.
 - [x] Clustered daemon: cluster, service, database, and dashboard guides cover
   PostgreSQL/S3, migrations, one shared vault key, replica identity, readiness,
   drain behavior, ingress, backup, restore, and reconciliation.
-- [x] Client releases and updates: getting-started, desktop, development, and
-  public copy distinguish the moving channel, signed manifest, checksums,
-  desktop signatures, build identity, rollback semantics, and manual restart.
+- [x] Client releases and updates: the release runbook, getting-started,
+  desktop, development, and public copy distinguish the moving channel, signed
+  manifest, checksums, desktop signatures, build identity, rollback semantics,
+  version ownership, publication recovery, and manual restart.
 
 ## Hosted product
 

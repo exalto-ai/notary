@@ -32,6 +32,7 @@ Use the generated contract when prose and an installed service disagree.
 | Operate PostgreSQL or Neon | [Database operations](database-operations.md) |
 | Run clustered daemon replicas | [Runtime cluster operations](../runtime/docs/cluster-operations.md) |
 | Deploy the production Fly.io stack | [Fly.io deployment](../deploy/fly/README.md) |
+| Publish Runtime and desktop releases | [Runtime releases](releases.md) |
 | Understand upload staging | [Share intake API v1](share-intake-v1.md) |
 | Understand plans and usage | [Plans and usage](hosted-credits.md) |
 | Understand admission and public storage | [Share admission v1](share-admission-v1.md) |
