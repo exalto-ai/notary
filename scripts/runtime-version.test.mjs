@@ -13,7 +13,7 @@ import {
 
 const repository = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
-async function fixture() {
+async function fixture({ crlf = false } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'notary-runtime-version-'));
   const files = [
     'Cargo.lock',
@@ -31,6 +31,9 @@ async function fixture() {
     await cp(path.join(repository, relative), path.join(root, relative), {
       recursive: false,
     });
+    const target = path.join(root, relative);
+    const contents = (await readFile(target, 'utf8')).replaceAll('\r\n', '\n');
+    await writeFile(target, crlf ? contents.replaceAll('\n', '\r\n') : contents);
   }
   return root;
 }
@@ -50,8 +53,9 @@ test('one operation synchronizes Runtime, desktop, and lockfile versions', async
   await setRuntimeVersion(root, next);
   assert.equal(await currentRuntimeVersion(root), next);
   assert.equal(await verifyRuntimeVersion(root, next), next);
-  assert.ok((await readFile(path.join(root, 'runtime/Cargo.lock'), 'utf8'))
-    .includes(`name = "notaryd"\nversion = "${next}"`));
+  const runtimeLock = await readFile(path.join(root, 'runtime/Cargo.lock'), 'utf8');
+  assert.ok(runtimeLock.includes(`name = "notaryd"\nversion = "${next}"`));
+  assert.equal(runtimeLock.includes('\r'), false);
   await assert.rejects(() => setRuntimeVersion(root, next), /must be greater/);
 });
 
@@ -62,4 +66,43 @@ test('verification rejects drifting desktop metadata', async () => {
   appPackage.version = '9.9.9';
   await writeFile(packageFile, `${JSON.stringify(appPackage, null, 2)}\n`);
   await assert.rejects(() => verifyRuntimeVersion(root), /does not match/);
+});
+
+test('version checks and synchronization accept Windows CRLF checkouts', async () => {
+  const root = await fixture({ crlf: true });
+  const current = await currentRuntimeVersion(root);
+  assert.equal(await verifyRuntimeVersion(root, current), current);
+  const [major, minor, patch] = current.split('.').map(Number);
+  const next = `${major}.${minor}.${patch + 1}`;
+  await setRuntimeVersion(root, next);
+  assert.equal(await verifyRuntimeVersion(root, next), next);
+  for (const relative of [
+    'Cargo.lock',
+    'runtime/Cargo.toml',
+    'runtime/Cargo.lock',
+    'apps/notary-app/package.json',
+    'apps/notary-app/package-lock.json',
+    'apps/notary-app/src-tauri/Cargo.toml',
+    'apps/notary-app/src-tauri/tauri.conf.json',
+  ]) {
+    const contents = await readFile(path.join(root, relative), 'utf8');
+    assert.ok(contents.includes('\r\n'));
+    assert.equal(contents.replaceAll('\r\n', '\n').includes('\r'), false);
+  }
+});
+
+test('version synchronization rejects mixed line endings', async () => {
+  const root = await fixture();
+  const canonical = path.join(root, 'runtime/Cargo.toml');
+  const originalCanonical = await readFile(canonical, 'utf8');
+  const target = path.join(root, 'apps/notary-app/package-lock.json');
+  const contents = await readFile(target, 'utf8');
+  await writeFile(target, contents.replace('\n', '\r\n'));
+  const current = await currentRuntimeVersion(root);
+  const [major, minor, patch] = current.split('.').map(Number);
+  await assert.rejects(
+    () => setRuntimeVersion(root, `${major}.${minor}.${patch + 1}`),
+    /mixed line endings/,
+  );
+  assert.equal(await readFile(canonical, 'utf8'), originalCanonical);
 });
