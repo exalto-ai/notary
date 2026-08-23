@@ -4,8 +4,13 @@ set -euo pipefail
 projection="${1:-}"
 public_checkout="${2:-}"
 source_sha="${3:-}"
-if test ! -d "$projection" || ! git -C "$public_checkout" rev-parse --git-dir >/dev/null 2>&1; then
-  echo "usage: $0 PROJECTION PUBLIC_GIT_CHECKOUT SOURCE_SHA" >&2
+expected_name="${4:-}"
+expected_email="${5:-}"
+if test ! -d "$projection" \
+  || ! git -C "$public_checkout" rev-parse --git-dir >/dev/null 2>&1 \
+  || test -z "$expected_name" \
+  || test -z "$expected_email"; then
+  echo "usage: $0 PROJECTION PUBLIC_GIT_CHECKOUT SOURCE_SHA AUTHOR_NAME AUTHOR_EMAIL" >&2
   exit 1
 fi
 if ! [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
@@ -27,11 +32,13 @@ if git -C "$public_checkout" diff --cached --quiet; then
   echo "Public Runtime projection is unchanged; export is a no-op."
   exit 0
 fi
-git -C "$public_checkout" commit -m "Export Runtime from $source_sha"
-configured_name="$(git -C "$public_checkout" config user.name)"
-configured_email="$(git -C "$public_checkout" config user.email)"
+GIT_AUTHOR_NAME="$expected_name" \
+  GIT_AUTHOR_EMAIL="$expected_email" \
+  GIT_COMMITTER_NAME="$expected_name" \
+  GIT_COMMITTER_EMAIL="$expected_email" \
+  git -C "$public_checkout" commit -m "Export Runtime from $source_sha"
 expected_identity="$(printf '%s <%s>\n%s <%s>' \
-  "$configured_name" "$configured_email" "$configured_name" "$configured_email")"
+  "$expected_name" "$expected_email" "$expected_name" "$expected_email")"
 actual_identity="$(git -C "$public_checkout" show \
   --no-patch --format='%an <%ae>%n%cn <%ce>' HEAD)"
 if test "$actual_identity" != "$expected_identity"; then

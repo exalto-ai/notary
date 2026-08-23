@@ -7,6 +7,8 @@ first="$(mktemp -d)"
 second="$(mktemp -d)"
 bare="$(mktemp -d)"
 checkout="$(mktemp -d)"
+export_name="Notary Runtime Export Test"
+export_email="runtime-export-test@example.com"
 trap 'rm -rf "$first" "$second" "$bare" "$checkout"' EXIT
 
 scripts/export-public-runtime.sh "$repository" "$first" "$source_sha" >/dev/null
@@ -23,11 +25,22 @@ diff --recursive --brief "$first" "$second" --exclude=.git >/dev/null
 
 git init --bare --quiet --initial-branch=main "$bare"
 git clone --quiet "$bare" "$checkout"
-git -C "$checkout" config user.name "Notary Runtime Export Test"
-git -C "$checkout" config user.email "runtime-export-test@example.com"
-scripts/publish-public-runtime.sh "$first" "$checkout" "$source_sha" >/dev/null
-test "$(git --git-dir="$bare" show --no-patch --format='%an <%ae>%n%cn <%ce>' main)" = \
-  "$(printf 'Notary Runtime Export Test <runtime-export-test@example.com>\nNotary Runtime Export Test <runtime-export-test@example.com>')"
+git -C "$checkout" config user.name "$export_name"
+git -C "$checkout" config user.email "$export_email"
+GIT_AUTHOR_NAME="Unexpected ambient author" \
+  GIT_AUTHOR_EMAIL="unexpected-author@example.com" \
+  GIT_COMMITTER_NAME="Unexpected ambient committer" \
+  GIT_COMMITTER_EMAIL="unexpected-committer@example.com" \
+  scripts/publish-public-runtime.sh \
+  "$first" "$checkout" "$source_sha" "$export_name" "$export_email" >/dev/null
+expected_identity="$(printf '%s <%s>\n%s <%s>' \
+  "$export_name" "$export_email" "$export_name" "$export_email")"
+actual_identity="$(git --git-dir="$bare" show \
+  --no-patch --format='%an <%ae>%n%cn <%ce>' main)"
+if test "$actual_identity" != "$expected_identity"; then
+  echo "published test export identity is incorrect" >&2
+  exit 1
+fi
 diff \
   <(find "$first" -path "$first/.git" -prune -o \( -type f -o -type l \) -printf '%P\n' | sort) \
   <(git -C "$checkout" ls-files | sort)
@@ -36,14 +49,16 @@ chmod -x "$checkout/runtime/tooling/check-boundary.sh"
 git -C "$checkout" add -- runtime/tooling/check-boundary.sh
 git -C "$checkout" commit --quiet -m "Simulate lost executable mode"
 git -C "$checkout" push --quiet origin HEAD:main
-scripts/publish-public-runtime.sh "$first" "$checkout" "$source_sha" >/dev/null
+scripts/publish-public-runtime.sh \
+  "$first" "$checkout" "$source_sha" "$export_name" "$export_email" >/dev/null
 test "$(git --git-dir="$bare" ls-tree main runtime/tooling/check-boundary.sh | cut -d' ' -f1)" = 100755
 
 second_sha=2222222222222222222222222222222222222222
 jq --arg sha "$second_sha" '.canonical_source_sha = $sha' \
   "$second/.notary-source.json" > "$second/.notary-source.json.next"
 mv "$second/.notary-source.json.next" "$second/.notary-source.json"
-scripts/publish-public-runtime.sh "$second" "$checkout" "$second_sha" >/dev/null
+scripts/publish-public-runtime.sh \
+  "$second" "$checkout" "$second_sha" "$export_name" "$export_email" >/dev/null
 test "$(git --git-dir="$bare" rev-list --count main)" -eq 3
 test "$(git --git-dir="$bare" show main:.notary-source.json | jq -r .canonical_source_sha)" = "$source_sha"
 echo "Public Runtime export tests passed."

@@ -12,6 +12,10 @@ permissions:
   actions: read
   contents: read
 
+env:
+  RELEASE_GIT_NAME: exalto-ai
+  RELEASE_GIT_EMAIL: k@exalto.ai
+
 concurrency:
   group: stable-runtime-release
   cancel-in-progress: false
@@ -101,8 +105,8 @@ jobs:
             diff -u <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") || true
             exit 1
           fi
-          git config user.name "exalto-ai"
-          git config user.email "k@exalto.ai"
+          git config user.name "$RELEASE_GIT_NAME"
+          git config user.email "$RELEASE_GIT_EMAIL"
           git add -- \
             Cargo.lock \
             apps/notary-app/package-lock.json \
@@ -113,7 +117,9 @@ jobs:
             runtime/Cargo.toml
           git commit -m "Release Runtime v$VERSION (#364)"
           release_sha="$(git rev-parse HEAD)"
-          expected_identity="$(printf 'exalto-ai <k@exalto.ai>\nexalto-ai <k@exalto.ai>')"
+          expected_identity="$(printf '%s <%s>\n%s <%s>' \
+            "$RELEASE_GIT_NAME" "$RELEASE_GIT_EMAIL" \
+            "$RELEASE_GIT_NAME" "$RELEASE_GIT_EMAIL")"
           actual_identity="$(git show --no-patch --format='%an <%ae>%n%cn <%ce>' "$release_sha")"
           if test "$actual_identity" != "$expected_identity"; then
             echo "release commit author or committer identity is incorrect" >&2
@@ -237,13 +243,14 @@ jobs:
               exit 1
             }
           else
-            git -c user.name="exalto-ai" \
-              -c user.email="k@exalto.ai" \
+            git -c user.name="$RELEASE_GIT_NAME" \
+              -c user.email="$RELEASE_GIT_EMAIL" \
               tag --annotate "$private_tag" "$RELEASE_SHA" \
               --message "Notary Runtime v$VERSION"
             tagger_identity="$(git for-each-ref \
               --format='%(taggername) %(taggeremail)' "refs/tags/$private_tag")"
-            if test "$tagger_identity" != "exalto-ai <k@exalto.ai>"; then
+            expected_tagger="$RELEASE_GIT_NAME <$RELEASE_GIT_EMAIL>"
+            if test "$tagger_identity" != "$expected_tagger"; then
               echo "$private_tag tagger identity is incorrect" >&2
               exit 1
             fi
