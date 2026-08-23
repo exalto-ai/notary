@@ -30,8 +30,6 @@ jobs:
     timeout-minutes: 90
     env:
       SOURCE_SHA: ${{ github.event.inputs.source_sha || github.event.workflow_run.head_sha }}
-      EXPORT_GIT_NAME: exalto-ai
-      EXPORT_GIT_EMAIL: k@exalto.ai
     steps:
       - uses: actions/checkout@v6
         with:
@@ -129,6 +127,8 @@ jobs:
     timeout-minutes: 20
     env:
       SOURCE_SHA: ${{ github.event.inputs.source_sha || github.event.workflow_run.head_sha }}
+      EXPORT_GIT_NAME: exalto-ai
+      EXPORT_GIT_EMAIL: k@exalto.ai
     steps:
       - uses: actions/checkout@v6
         with:
