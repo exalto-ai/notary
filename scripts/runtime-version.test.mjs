@@ -34,7 +34,7 @@ async function fixture({ crlf = false } = {}) {
     if (crlf) {
       const target = path.join(root, relative);
       const contents = await readFile(target, 'utf8');
-      await writeFile(target, contents.replaceAll('\n', '\r\n'));
+      await writeFile(target, contents.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n'));
     }
   }
   return root;
@@ -77,4 +77,17 @@ test('version checks and synchronization accept Windows CRLF checkouts', async (
   const next = `${major}.${minor}.${patch + 1}`;
   await setRuntimeVersion(root, next);
   assert.equal(await verifyRuntimeVersion(root, next), next);
+  for (const relative of [
+    'Cargo.lock',
+    'runtime/Cargo.toml',
+    'runtime/Cargo.lock',
+    'apps/notary-app/package.json',
+    'apps/notary-app/package-lock.json',
+    'apps/notary-app/src-tauri/Cargo.toml',
+    'apps/notary-app/src-tauri/tauri.conf.json',
+  ]) {
+    const contents = await readFile(path.join(root, relative), 'utf8');
+    assert.ok(contents.includes('\r\n'));
+    assert.equal(contents.replaceAll('\r\n', '').includes('\n'), false);
+  }
 });

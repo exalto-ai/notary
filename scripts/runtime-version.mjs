@@ -25,7 +25,10 @@ async function read(root, relative) {
 }
 
 async function write(root, relative, value) {
-  await writeFile(path.join(root, relative), value);
+  const file = path.join(root, relative);
+  const current = await readFile(file, 'utf8');
+  const serialized = current.includes('\r\n') ? value.replaceAll('\n', '\r\n') : value;
+  await writeFile(file, serialized);
 }
 
 function replaceExactlyOnce(value, pattern, replacement, name) {
