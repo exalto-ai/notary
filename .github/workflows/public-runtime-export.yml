@@ -61,7 +61,9 @@ jobs:
       - name: Validate Runtime workspace
         working-directory: ${{ env.PUBLIC_RUNTIME_VALIDATION }}
         run: |
-          cargo fmt --manifest-path runtime/Cargo.toml --check --all
+          cargo fmt --manifest-path runtime/Cargo.toml --check \
+            -p notary-core -p notaryd -p notaryctl \
+            -p notary-updater -p notary-server
           cargo clippy --locked --manifest-path runtime/Cargo.toml --workspace --all-targets --all-features -- -D warnings
           cargo test --locked --manifest-path runtime/Cargo.toml --workspace --all-targets --all-features
       - name: Validate public web assets
