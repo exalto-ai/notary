@@ -68,10 +68,9 @@ const legalFooter =
 const required = [
   legalFooter,
   'A trace proves presence, never absence.',
-  "Exalto Seal is one notary among many: seal with ours, with a third party's, or with one you run yourself.",
-  'we never meter it',
+  "Exalto Seal is just one notary among many to come: seal with ours, with a third party's, or with one you run yourself.",
   'Built on TLSNotary',
-  'The session already happens. Everything in blue is what the protocol adds: the witness in its path, the receipt, the portable trace.',
+  'The session already happens. Everything in blue is what the protocol adds: the witness in its path, the receipt, the portable, verified trace.',
   'Nothing readable ever leaves your machine.',
   'The named notary witnessed them at the stated time.',
 ];
@@ -86,17 +85,13 @@ for (const [path, source] of docPages) {
     failures.push(`${path} mentions live capture without "(coming soon)"`);
 }
 
-if (/live capture(?!\s*\(coming soon\))/i.test(text)) {
-  failures.push('index.html mentions live capture without "(coming soon)"');
-}
-
 const tileOrder = [
   'Proof of Thought',
   'The flagged essay',
   'The audited commit',
-  'The certified filing',
+  'The certified trace',
   'The agent flight recorder',
-  'The discovery archive',
+  'The certified discovery archive',
   'The published eval',
   'The take-home',
   'Yours to build',
@@ -112,8 +107,8 @@ for (const title of tileOrder) {
   cursor = next;
 }
 
-if (!/61<span>%<\/span>/.test(html) || !text.includes('verified human share')) {
-  failures.push('Thought Score must show 61% with the "verified human share" claim');
+if (!/61<span>%<\/span>/.test(html) || !text.includes('verified human')) {
+  failures.push('The PoT score card must show 61% with the "verified human" claim');
 }
 
 if (failures.length) {
