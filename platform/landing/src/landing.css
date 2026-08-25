@@ -2700,3 +2700,42 @@ a:hover {
     gap: 4px;
   }
 }
+
+/* ---------- Proof of Thought marks ---------- */
+
+.pot-band-mark {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 16px;
+}
+
+.editor-mark {
+  width: 14px;
+  height: 14px;
+  margin-left: 10px;
+  opacity: 0.85;
+}
+
+.editor-mark + .editor-title {
+  margin-left: 0;
+}
+
+.tile-app-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+}
+
+.eco-card-pot {
+  position: relative;
+}
+
+.eco-card-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
