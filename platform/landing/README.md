@@ -21,9 +21,10 @@ npm run preview
 ```
 
 `npm run check:copy` enforces the handoff QA checklist: banned vocabulary
-absent (notarize, finalize, checkpoint, fingerprint claims, any API), required
-doctrine strings present verbatim, live capture always badged "(coming soon)",
-tile order, and no em- or en-dashes in rendered copy.
+absent (notarize, finaliz*, checkpoint, fingerprint claims, any API), required
+doctrine strings present verbatim, tile order, and no em- or en-dashes in
+rendered copy. Documentation pages are scanned with code blocks exempted, so
+commands and API routes stay verbatim.
 
 ## Placeholders
 
