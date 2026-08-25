@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exalto · Trace packages</title>
+<meta name="description" content="Turn one encrypted capture into a portable evidence package, inspect its canonical OpenTelemetry trace, and verify the entire package offline.">
+<meta name="theme-color" content="#f5f3ec">
+<link rel="canonical" href="https://exalto.ai/docs/trace-packages/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://exalto.ai/docs/trace-packages/">
+<meta property="og:site_name" content="Exalto">
+<meta property="og:title" content="Exalto · Trace packages">
+<meta property="og:description" content="Seal one interaction into a portable package and verify it offline.">
+<script type="module" src="/src/main.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap nav-wrap">
+    <a class="brand" href="/" aria-label="Exalto home">
+      <span class="brand-wordmark">Exalto</span>
+      <span class="brand-tagline">VERIFICATION UNBOUND</span>
+    </a>
+    <nav class="nav-menu" aria-label="Primary">
+      <a href="/#applications">Applications</a>
+      <a href="/#protocol">Protocol</a>
+      <a href="/#trust">Trust</a>
+      <a href="/#pricing">Pricing</a>
+      <a class="nav-cta" href="/#pot">Try Proof of Thought</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap docs-shell">
+  <aside class="docs-side" aria-label="Documentation">
+    <p class="docs-side-group">START</p>
+    <a href="/docs/">Overview</a>
+    <a href="/docs/getting-started/">Install options</a>
+    <p class="docs-side-group">UNDERSTAND</p>
+    <a href="/docs/how-it-works/">Trust model</a>
+    <a href="/docs/hosted-credits/">Plans and usage</a>
+    <a href="/docs/trace-packages/" class="is-active" aria-current="page">Trace packages</a>
+    <p class="docs-side-group">SHARE</p>
+    <a href="/docs/share/">Share a trace</a>
+  </aside>
+
+  <main id="main" class="docs-main">
+    <p class="eyebrow">EXALTO NOTARY PROTOCOL · <span class="eyebrow-blue">DOCS</span></p>
+    <h1 class="docs-h1">Seal and verify.</h1>
+    <p class="lede">Turn one encrypted capture into a portable evidence package, inspect its canonical OpenTelemetry trace, and verify the entire package offline.</p>
+
+    <h2 class="docs-h2" id="seal-one">Seal one interaction</h2>
+    <p class="body-copy">Select a captured trace in the dashboard or admin API. The service atomically commits <code>trace-packages/&lt;trace-id&gt;.llmtrace</code>, records that exact package in trace metadata, and retains the encrypted source capture.</p>
+    <div class="docs-code"><pre><code>curl -X POST http://127.0.0.1:8788/v1/traces/trc-example/notarizations</code></pre></div>
+
+    <h3 class="docs-h3">Notary discovery is automatic</h3>
+    <p class="body-copy">For hosted use, the service refreshes the production Registry, selects a worker compatible with the capture, and verifies the resulting evidence against its locally pinned key history. For local or self-hosted use, set <code>notary.endpoint</code> and <code>notary.public_key</code> together in <code>config.toml</code>.</p>
+
+    <h3 class="docs-h3">Fresh notary connection</h3>
+    <p class="body-copy">The original provider stream and proxy no longer need to be running. A new notary session using the compatible signing identity can complete sealing from the encrypted local capture.</p>
+
+    <h3 class="docs-h3">Expect this step to take time</h3>
+    <p class="body-copy">Private proof generation is slower than capture. Deferring it keeps the interactive agent response fast and makes proof work an explicit background or batch operation.</p>
+
+    <h3 class="docs-h3">Interruption behavior</h3>
+    <p class="body-copy">The pending capture is not consumed. If sealing fails or the service stops, retry through the same route; proof work from the interrupted attempt is not resumed.</p>
+    <div class="docs-code"><pre><code>POST /v1/traces/{trace_id}/notarizations</code></pre></div>
+
+    <h2 class="docs-h2" id="package-layout">Package layout</h2>
+    <div class="docs-code"><pre><code>&lt;trace-id&gt;.llmtrace (ZIP)
+├── archive-manifest.json
+├── evidence.tlsn
+├── manifest.json
+├── request.disclosed.http
+├── response.disclosed.http
+└── trace.otlp.json</code></pre></div>
+
+    <h3 class="docs-h3">Artifact responsibilities</h3>
+    <dl class="docs-defs">
+      <div><dt>archive-manifest.json</dt><dd>The deterministic archive format, ordered entry sizes and hashes, and package digest.</dd></div>
+      <div><dt>evidence.tlsn</dt><dd>The cryptographic TLSNotary evidence and notary signature.</dd></div>
+      <div><dt>request.disclosed.http</dt><dd>Authenticated request bytes selected for disclosure. Every header value is hidden except the exact structural value <code>Transfer-Encoding: chunked</code>; the body remains disclosed.</dd></div>
+      <div><dt>response.disclosed.http</dt><dd>The authenticated provider response, including streamed events. Header values follow the same default-deny rule and the body remains disclosed.</dd></div>
+      <div><dt>trace.otlp.json</dt><dd>A deterministic OpenTelemetry GenAI mapping of the authenticated request and response, including text, model-emitted tool calls, correlated tool results, model, and usage.</dd></div>
+      <div><dt>manifest.json</dt><dd>The versioned source metadata and trace hash. The cryptographic signature lives in <code>evidence.tlsn</code>, not in this JSON file.</dd></div>
+    </dl>
+
+    <h3 class="docs-h3">Package versus shared view</h3>
+    <p class="body-copy">The sealed <code>.llmtrace</code> package carries all cryptographic evidence and is independently verifiable. A shared trace presents a readable view derived from that package and retains the exact admitted bytes for export and independent verification.</p>
+
+    <h2 class="docs-h2" id="verify">Verify a portable package</h2>
+    <p class="body-copy">Use the local CLI to verify locally, or upload the package on the public Verify page. The hosted page checks the package without saving it.</p>
+    <div class="docs-code"><pre><code>notaryctl traces verify ./capture.llmtrace
+POST /api/verify</code></pre></div>
+
+    <h3 class="docs-h3">Complete context is intentional</h3>
+    <p class="body-copy">A <code>.llmtrace</code> can include system context, tool definitions, session metadata, prompts, responses, and tool results. All HTTP header values are hidden by default, but request and response bodies remain disclosed. Inspect it before sharing; the encrypted <code>.llmcapture</code> is private retry state and must stay local.</p>
+
+    <h3 class="docs-h3">Export or verify locally</h3>
+    <div class="docs-code"><pre><code>GET /v1/traces/{trace_id}/package.llmtrace
+POST /v1/traces/{trace_id}/verify
+notaryctl traces verify ./trace.llmtrace</code></pre></div>
+
+    <h3 class="docs-h3">What verification checks</h3>
+    <ul class="docs-list">
+      <li>The notary signature and expected notary public key.</li>
+      <li>The authenticated provider identity and TLS evidence.</li>
+      <li>The disclosed HTTP bytes against the cryptographic evidence.</li>
+      <li>Every artifact hash named by the package manifest.</li>
+      <li>The deterministic, versioned OpenTelemetry mapping byte-for-byte.</li>
+    </ul>
+
+    <h3 class="docs-h3">Offline trust</h3>
+    <p class="body-copy">Verification does not contact the provider or a live notary. It uses the notary key history already cached by the service, or <code>notary.public_key</code> for a self-hosted endpoint. A hosted service must successfully refresh its Registry before it can trust previously unseen evidence.</p>
+
+    <p class="docs-note">Verification proves that the model emitted a tool call and, on a later request, that the client sent a particular tool result. It does not prove the local tool actually executed.</p>
+
+    <nav class="docs-prevnext" aria-label="Documentation pages">
+      <a href="/docs/hosted-credits/"><span class="docs-prevnext-label">PREVIOUS</span>← Plans and usage</a>
+      <a class="docs-next" href="/docs/share/"><span class="docs-prevnext-label">NEXT</span>Share a trace →</a>
+    </nav>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="wrap">
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/docs/">Spec</a>
+      <a href="https://github.com/exalto-ai/notary-runtime">GitHub</a>
+      <a href="%PRODUCT_ORIGIN%/registry">Notary registry</a>
+      <a href="%PRODUCT_ORIGIN%/traces">Trace catalogue</a>
+      <a href="%PRODUCT_ORIGIN%/privacy">Privacy</a>
+      <a href="%PRODUCT_ORIGIN%/terms">Terms</a>
+    </nav>
+    <p class="footer-legal">Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ENP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."</p>
+    <p class="footer-credit">Built on <a href="https://tlsnotary.org">TLSNotary</a>. © 2026 Exalto.</p>
+  </div>
+</footer>
+
+</body>
+</html>

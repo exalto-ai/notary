@@ -1,17 +1,34 @@
-// Copy audit for the exalto.ai landing page. Enforces the QA checklist from
+// Copy audit for the exalto.ai landing site. Enforces the QA checklist from
 // the design handoff: banned vocabulary absent, required doctrine strings
 // present verbatim, live capture always badged, and no em- or en-dashes in
 // rendered copy. Runs before every build.
+//
+// Documentation pages are scanned with <pre> and <code> content removed
+// first: commands, API routes, and configuration keys are literal technical
+// identifiers (for example the daemon's /notarizations route) and are not
+// copy. Prose on every page must still use the landing vocabulary.
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
-const html = readFileSync(resolve(root, 'index.html'), 'utf8');
-const docs = readFileSync(resolve(root, 'docs/index.html'), 'utf8');
-const llms = readFileSync(resolve(root, 'public/llms.txt'), 'utf8');
-const text = html.replace(/<[^>]+>/g, '');
-const docsText = docs.replace(/<[^>]+>/g, '');
+const read = (path) => readFileSync(resolve(root, path), 'utf8');
+const stripTags = (source) => source.replace(/<[^>]+>/g, '');
+const stripCode = (source) =>
+  source.replace(/<pre[\s\S]*?<\/pre>/g, '').replace(/<code[^>]*>[\s\S]*?<\/code>/g, '');
+
+const html = read('index.html');
+const llms = read('public/llms.txt');
+const text = stripTags(html);
+
+const docPages = [
+  'docs/index.html',
+  'docs/getting-started/index.html',
+  'docs/how-it-works/index.html',
+  'docs/hosted-credits/index.html',
+  'docs/trace-packages/index.html',
+  'docs/share/index.html',
+].map((path) => [path, read(path)]);
 
 const failures = [];
 
@@ -33,18 +50,23 @@ const banned = [
   [/Was this AI/i, 'Was this AI'],
   [/[—–]/, 'em- or en-dash in rendered copy'],
 ];
+
+const scanned = [
+  ['index.html', html],
+  ['llms.txt', llms],
+  ...docPages.map(([path, source]) => [path, stripCode(source)]),
+];
 for (const [pattern, label] of banned) {
-  for (const [name, source] of [
-    ['index.html', html],
-    ['docs/index.html', docs],
-    ['llms.txt', llms],
-  ]) {
+  for (const [name, source] of scanned) {
     if (pattern.test(source)) failures.push(`${name} contains banned copy: ${label}`);
   }
 }
 
+const legalFooter =
+  'Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ENP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."';
+
 const required = [
-  'Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ENP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."',
+  legalFooter,
   'A trace proves presence, never absence.',
   "Exalto Seal is one notary among many: seal with ours, with a third party's, or with one you run yourself.",
   'we never meter it',
@@ -57,17 +79,15 @@ for (const value of required) {
   if (!text.includes(value)) failures.push(`index.html is missing required copy: ${JSON.stringify(value)}`);
 }
 
+for (const [path, source] of docPages) {
+  const pageText = stripTags(source);
+  if (!pageText.includes(legalFooter)) failures.push(`${path} is missing the legal footer`);
+  if (/live capture(?!\s*\(coming soon\))/i.test(pageText))
+    failures.push(`${path} mentions live capture without "(coming soon)"`);
+}
+
 if (/live capture(?!\s*\(coming soon\))/i.test(text)) {
   failures.push('index.html mentions live capture without "(coming soon)"');
-}
-
-if (/live capture(?!\s*\(coming soon\))/i.test(docsText)) {
-  failures.push('docs/index.html mentions live capture without "(coming soon)"');
-}
-
-for (const value of [required[0], 'A trace proves presence, never absence.']) {
-  if (!docsText.includes(value))
-    failures.push(`docs/index.html is missing required copy: ${JSON.stringify(value)}`);
 }
 
 const tileOrder = [

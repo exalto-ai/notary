@@ -22,6 +22,11 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         docs: resolve(import.meta.dirname, 'docs/index.html'),
+        docsGettingStarted: resolve(import.meta.dirname, 'docs/getting-started/index.html'),
+        docsHowItWorks: resolve(import.meta.dirname, 'docs/how-it-works/index.html'),
+        docsHostedCredits: resolve(import.meta.dirname, 'docs/hosted-credits/index.html'),
+        docsTracePackages: resolve(import.meta.dirname, 'docs/trace-packages/index.html'),
+        docsShare: resolve(import.meta.dirname, 'docs/share/index.html'),
       },
     },
   },

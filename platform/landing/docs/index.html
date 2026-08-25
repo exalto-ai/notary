@@ -34,61 +34,71 @@
   </div>
 </header>
 
-<main id="main">
+<div class="wrap docs-shell">
+  <aside class="docs-side" aria-label="Documentation">
+    <p class="docs-side-group">START</p>
+    <a href="/docs/" class="is-active" aria-current="page">Overview</a>
+    <a href="/docs/getting-started/">Install options</a>
+    <p class="docs-side-group">UNDERSTAND</p>
+    <a href="/docs/how-it-works/">Trust model</a>
+    <a href="/docs/hosted-credits/">Plans and usage</a>
+    <a href="/docs/trace-packages/">Trace packages</a>
+    <p class="docs-side-group">SHARE</p>
+    <a href="/docs/share/">Share a trace</a>
+  </aside>
 
-  <section class="section docs-page" aria-labelledby="docs-title">
-    <div class="wrap">
-      <p class="eyebrow">EXALTO NOTARY PROTOCOL · <span class="eyebrow-blue">DOCS</span></p>
-      <h1 class="docs-h1" id="docs-title">How Exalto fits.</h1>
-      <p class="lede">Run your existing model client through a local proxy, keep encrypted evidence on your machine, and seal only the interactions you choose into independently verifiable OpenTelemetry trace packages.</p>
+  <main id="main" class="docs-main">
+    <p class="eyebrow">EXALTO NOTARY PROTOCOL · <span class="eyebrow-blue">DOCS</span></p>
+    <h1 class="docs-h1">How Exalto fits.</h1>
+    <p class="lede">Run your existing model client through a local proxy, keep encrypted evidence on your machine, and seal only the interactions you choose into independently verifiable OpenTelemetry trace packages.</p>
 
-      <h2 class="docs-h2">The workflow</h2>
-      <ol class="docs-flow">
-        <li>
-          <span class="docs-flow-number">01</span>
-          <div><b>Capture</b><p>Point an SDK or agent at the local proxy. Requests and streamed responses continue normally while each completed provider call becomes an encrypted local capture, witnessed as ciphertext by the notary you chose at setup.</p></div>
-        </li>
-        <li>
-          <span class="docs-flow-number">02</span>
-          <div><b>Choose</b><p>Captures wait on your disk. Nothing is shared automatically, and interactive model use does not wait for the expensive proof step.</p></div>
-        </li>
-        <li>
-          <span class="docs-flow-number">03</span>
-          <div><b>Seal</b><p>Turn a selected capture into authenticated TLS evidence and a deterministic OpenTelemetry trace: the portable <code>.llmtrace</code> receipt. This can happen long after the original model call.</p></div>
-        </li>
-        <li>
-          <span class="docs-flow-number">04</span>
-          <div><b>Verify or share</b><p>Check the package locally, keep it private, or deliberately share its disclosed conversation and portable proof through a stable link.</p></div>
-        </li>
-      </ol>
+    <h2 class="docs-h2" id="the-workflow">The workflow</h2>
+    <ol class="docs-flow">
+      <li>
+        <span class="docs-flow-number">01</span>
+        <div><b>Capture</b><p>Point an SDK or agent at the local proxy. Requests and streamed responses continue normally while each completed provider call becomes an encrypted local capture, witnessed as ciphertext by the notary you chose at setup.</p></div>
+      </li>
+      <li>
+        <span class="docs-flow-number">02</span>
+        <div><b>Choose</b><p>Captures wait on your disk. Nothing is shared automatically, and interactive model use does not wait for the expensive proof step.</p></div>
+      </li>
+      <li>
+        <span class="docs-flow-number">03</span>
+        <div><b>Seal</b><p>Turn a selected capture into authenticated TLS evidence and a deterministic OpenTelemetry trace: the portable <code>.llmtrace</code> receipt. This can happen long after the original model call.</p></div>
+      </li>
+      <li>
+        <span class="docs-flow-number">04</span>
+        <div><b>Verify or share</b><p>Check the package locally, keep it private, or deliberately share its disclosed conversation and portable proof through a stable link.</p></div>
+      </li>
+    </ol>
 
-      <h2 class="docs-h2">One trace, two evidence states</h2>
-      <div class="docs-states">
-        <article class="docs-state">
-          <p class="docs-state-meta">CAPTURED</p>
-          <h3>Private local evidence</h3>
-          <p>The trace retains a sensitive encrypted capture that can be sealed later. It is not yet evidence another person can verify.</p>
-        </article>
-        <article class="docs-state docs-state-sealed">
-          <p class="docs-state-meta docs-state-meta-blue">SEALED</p>
-          <h3>Portable trace package</h3>
-          <p>TLSNotary evidence, disclosed authenticated HTTP, the canonical OpenTelemetry trace, and a manifest binding the files together.</p>
-        </article>
-      </div>
+    <h2 class="docs-h2" id="evidence-states">One trace, two evidence states</h2>
+    <div class="docs-states">
+      <article class="docs-state">
+        <p class="docs-state-meta">CAPTURED</p>
+        <h3>Private local evidence</h3>
+        <p>The trace retains a sensitive encrypted capture that can be sealed later. It is not yet evidence another person can verify.</p>
+      </article>
+      <article class="docs-state docs-state-sealed">
+        <p class="docs-state-meta docs-state-meta-blue">SEALED</p>
+        <h3>Portable trace package</h3>
+        <p>TLSNotary evidence, disclosed authenticated HTTP, the canonical OpenTelemetry trace, and a manifest binding the files together.</p>
+      </article>
+    </div>
 
-      <h2 class="docs-h2">Sharing is a separate action</h2>
-      <p class="body-copy">A sealed trace can remain local or be shared deliberately. Sharing hosts the exact admitted <code>.llmtrace</code> package and its disclosed conversation; it does not create another evidence state.</p>
+    <h2 class="docs-h2" id="sharing">Sharing is a separate action</h2>
+    <p class="body-copy">A sealed trace can remain local or be shared deliberately. Sharing hosts the exact admitted <code>.llmtrace</code> package and its disclosed conversation; it does not create another evidence state.</p>
 
-      <h2 class="docs-h2">What is automatic</h2>
-      <ul class="docs-list">
-        <li>The first start creates or opens the local encrypted-capture vault. On a desktop OS, its random key is stored in the system credential service.</li>
-        <li>The service discovers the production notary endpoint and public key from the public Registry, then pins that trust information locally.</li>
-        <li>Sealing and verification use the pinned notary identity. Normal hosted use does not require copying a public key into an API request.</li>
-        <li>Provider credentials remain in your existing SDK or agent environment; nothing asks for or stores them.</li>
-      </ul>
+    <h2 class="docs-h2" id="automatic">What is automatic</h2>
+    <ul class="docs-list">
+      <li>The first start creates or opens the local encrypted-capture vault. On a desktop OS, its random key is stored in the system credential service.</li>
+      <li>The service discovers the production notary endpoint and public key from the public Registry, then pins that trust information locally.</li>
+      <li>Sealing and verification use the pinned notary identity. Normal hosted use does not require copying a public key into an API request.</li>
+      <li>Provider credentials remain in your existing SDK or agent environment; nothing asks for or stores them.</li>
+    </ul>
 
-      <h2 class="docs-h2">A first successful run</h2>
-      <div class="docs-code"><pre><code>curl -fsSL %PRODUCT_ORIGIN%/install.sh | sh
+    <h2 class="docs-h2" id="first-run">A first successful run</h2>
+    <div class="docs-code"><pre><code>curl -fsSL %PRODUCT_ORIGIN%/install.sh | sh
 
 notaryd
 # Open http://127.0.0.1:8788 for the local dashboard.
@@ -97,22 +107,15 @@ notaryd
 notaryctl status
 notaryctl traces list</code></pre></div>
 
-      <h2 class="docs-h2">The claim</h2>
-      <p class="docs-claim">A trusted notary attests that disclosed bytes came from an authenticated TLS interaction with the named provider, and the OpenTelemetry representation is deterministically bound to those bytes. <span class="caption-blue">A trace proves presence, never absence.</span></p>
+    <h2 class="docs-h2" id="the-claim">The claim</h2>
+    <p class="docs-claim">A trusted notary attests that disclosed bytes came from an authenticated TLS interaction with the named provider, and the OpenTelemetry representation is deterministically bound to those bytes. <span class="caption-blue">A trace proves presence, never absence.</span></p>
 
-      <h2 class="docs-h2">Go deeper</h2>
-      <p class="body-copy">The full product documentation lives with the hosted product:</p>
-      <ul class="docs-links">
-        <li><a href="%PRODUCT_ORIGIN%/docs/getting-started">Install options<span> · the guided macOS app, or the CLI and local service for SDKs, coding agents, and automation</span></a></li>
-        <li><a href="%PRODUCT_ORIGIN%/docs/how-it-works">Trust and guarantees<span> · who sees what, and what the proof does not establish</span></a></li>
-        <li><a href="%PRODUCT_ORIGIN%/docs/trace-packages">Trace packages<span> · package layout, disclosure, and offline verification</span></a></li>
-        <li><a href="%PRODUCT_ORIGIN%/docs/share">Share a trace<span> · unlisted or listed links, passwords, and expiry</span></a></li>
-        <li><a href="%PRODUCT_ORIGIN%/docs/hosted-credits">Plans and usage<span> · allowances, storage, and billing</span></a></li>
-      </ul>
-    </div>
-  </section>
-
-</main>
+    <nav class="docs-prevnext" aria-label="Documentation pages">
+      <span></span>
+      <a class="docs-next" href="/docs/getting-started/"><span class="docs-prevnext-label">NEXT</span>Install options →</a>
+    </nav>
+  </main>
+</div>
 
 <footer class="footer">
   <div class="wrap">
