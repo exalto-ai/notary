@@ -8,8 +8,10 @@ import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const html = readFileSync(resolve(root, 'index.html'), 'utf8');
+const docs = readFileSync(resolve(root, 'docs/index.html'), 'utf8');
 const llms = readFileSync(resolve(root, 'public/llms.txt'), 'utf8');
 const text = html.replace(/<[^>]+>/g, '');
+const docsText = docs.replace(/<[^>]+>/g, '');
 
 const failures = [];
 
@@ -34,6 +36,7 @@ const banned = [
 for (const [pattern, label] of banned) {
   for (const [name, source] of [
     ['index.html', html],
+    ['docs/index.html', docs],
     ['llms.txt', llms],
   ]) {
     if (pattern.test(source)) failures.push(`${name} contains banned copy: ${label}`);
@@ -56,6 +59,15 @@ for (const value of required) {
 
 if (/live capture(?!\s*\(coming soon\))/i.test(text)) {
   failures.push('index.html mentions live capture without "(coming soon)"');
+}
+
+if (/live capture(?!\s*\(coming soon\))/i.test(docsText)) {
+  failures.push('docs/index.html mentions live capture without "(coming soon)"');
+}
+
+for (const value of [required[0], 'A trace proves presence, never absence.']) {
+  if (!docsText.includes(value))
+    failures.push(`docs/index.html is missing required copy: ${JSON.stringify(value)}`);
 }
 
 const tileOrder = [

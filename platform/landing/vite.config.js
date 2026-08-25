@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 // The hosted product site. The landing links to it for docs, downloads,
@@ -16,6 +17,14 @@ if (
 }
 
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        docs: resolve(import.meta.dirname, 'docs/index.html'),
+      },
+    },
+  },
   plugins: [
     {
       name: 'product-origin',
