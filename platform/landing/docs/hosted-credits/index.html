@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exalto · Plans and usage</title>
+<meta name="description" content="Each subscription has separate monthly capture and sealing allowances, plus storage for uploaded trace packages.">
+<meta name="theme-color" content="#f5f3ec">
+<link rel="canonical" href="https://exalto.ai/docs/hosted-credits/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://exalto.ai/docs/hosted-credits/">
+<meta property="og:site_name" content="Exalto">
+<meta property="og:title" content="Exalto · Plans and usage">
+<meta property="og:description" content="Separate monthly capture and sealing allowances, plus storage for uploaded trace packages.">
+<script type="module" src="/src/main.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap nav-wrap">
+    <a class="brand" href="/" aria-label="Exalto home">
+      <span class="brand-wordmark">Exalto</span>
+      <span class="brand-tagline">VERIFICATION UNBOUND</span>
+    </a>
+    <nav class="nav-menu" aria-label="Primary">
+      <a href="/#applications">Applications</a>
+      <a href="/#protocol">Protocol</a>
+      <a href="/#trust">Trust</a>
+      <a href="/#pricing">Pricing</a>
+      <a class="nav-cta" href="/#pot">Try Proof of Thought</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap docs-shell">
+  <aside class="docs-side" aria-label="Documentation">
+    <p class="docs-side-group">START</p>
+    <a href="/docs/">Overview</a>
+    <a href="/docs/getting-started/">Install options</a>
+    <p class="docs-side-group">UNDERSTAND</p>
+    <a href="/docs/how-it-works/">Trust model</a>
+    <a href="/docs/hosted-credits/" class="is-active" aria-current="page">Plans and usage</a>
+    <a href="/docs/trace-packages/">Trace packages</a>
+    <p class="docs-side-group">SHARE</p>
+    <a href="/docs/share/">Share a trace</a>
+  </aside>
+
+  <main id="main" class="docs-main">
+    <p class="eyebrow">EXALTO NOTARY PROTOCOL · <span class="eyebrow-blue">DOCS</span></p>
+    <h1 class="docs-h1">Plans and usage.</h1>
+    <p class="lede">Each subscription has separate monthly capture and sealing allowances, plus storage for uploaded trace packages.</p>
+
+    <h2 class="docs-h2" id="three-plans">Three plans</h2>
+    <p class="body-copy">Free includes 50 MB of capture and 50 MB of sealing each month, with up to 1 GB of uploaded trace packages. The $9.99 monthly plan includes 1 GB for each monthly allowance and up to 10 GB of trace packages. The $49.99 monthly plan includes 10 GB for each monthly allowance and no fixed trace-storage ceiling, subject to fair-use and abuse controls.</p>
+
+    <h2 class="docs-h2" id="capture-and-sealing">Capture and sealing are separate</h2>
+    <p class="body-copy">A hosted capture reserves capture allowance for its authenticated HTTP byte limit. Turning a capture into a portable proof spends sealing allowance separately. Monthly allowances refresh on the account reset date; unused monthly allowance does not roll over.</p>
+
+    <h2 class="docs-h2" id="buy-more">Buy more sealing</h2>
+    <p class="body-copy">Every plan can buy additional sealing credits for $10 USD per GB through Stripe Checkout. Purchased credits do not expire. Monthly sealing allowance is consumed before non-expiring purchased credits. Refunds and disputes remove the corresponding credits; reinstated payments restore them.</p>
+
+    <h2 class="docs-h2" id="trace-storage">Trace storage</h2>
+    <p class="body-copy">The trace limit is the total declared size of trace-package uploads that are in progress, being checked, or admitted to your account. Rejected, failed, expired, and purged uploads do not count. A per-file safety limit still applies on every plan.</p>
+
+    <h2 class="docs-h2" id="anonymous-allowances">Anonymous allowances are scoped by network address</h2>
+    <p class="body-copy">Public hosted use derives a rotating, keyed subject from the connection address: one IPv4 address or one IPv6 /64 prefix. Only explicitly trusted reverse proxies may supply the client address. The raw address is not stored in admission records or sent to a notary worker.</p>
+    <p class="docs-note">Network-address scoping is only a coarse abuse control. People behind the same NAT, corporate gateway, or VPN can share an allowance, while one person may appear under different addresses. The derived subject does not identify a person and is not a privacy guarantee.</p>
+
+    <h2 class="docs-h2" id="your-usage">Your usage</h2>
+    <p class="body-copy">Hosted Account shows the current plan, capture and sealing balances, trace storage, monthly reset, purchases, offers, and activity. A connected local service can retrieve the same account summary with <code>notaryctl account show --json</code>.</p>
+
+    <h2 class="docs-h2" id="evidence-unchanged">Evidence is unchanged</h2>
+    <p class="body-copy">Admission and credit bookkeeping do not change TLSNotary evidence, trace-package verification, local capture retention, or the trust claim. Self-hosted notaries do not need the hosted credit ledger unless their operator deliberately adopts it.</p>
+
+    <nav class="docs-prevnext" aria-label="Documentation pages">
+      <a href="/docs/how-it-works/"><span class="docs-prevnext-label">PREVIOUS</span>← Trust model</a>
+      <a class="docs-next" href="/docs/trace-packages/"><span class="docs-prevnext-label">NEXT</span>Trace packages →</a>
+    </nav>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="wrap">
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/docs/">Spec</a>
+      <a href="https://github.com/exalto-ai/notary-runtime">GitHub</a>
+      <a href="%PRODUCT_ORIGIN%/registry">Notary registry</a>
+      <a href="%PRODUCT_ORIGIN%/traces">Trace catalogue</a>
+      <a href="%PRODUCT_ORIGIN%/privacy">Privacy</a>
+      <a href="%PRODUCT_ORIGIN%/terms">Terms</a>
+    </nav>
+    <p class="footer-legal">Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ENP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."</p>
+    <p class="footer-credit">Built on <a href="https://tlsnotary.org">TLSNotary</a>. © 2026 Exalto.</p>
+  </div>
+</footer>
+
+</body>
+</html>
