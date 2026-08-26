@@ -2739,3 +2739,19 @@ a:hover {
   height: 26px;
   border-radius: 6px;
 }
+
+/* ---------- application tile art (Ledger Grain set) ---------- */
+
+.tile-art {
+  margin: -18px -18px 4px;
+  height: 128px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(26, 34, 51, 0.1);
+}
+
+.tile-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
