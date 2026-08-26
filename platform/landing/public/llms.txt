@@ -10,8 +10,7 @@ The three verbs: capture, seal, verify. A capture is the local recording of a se
 
 - Exalto Notary Protocol (ENP): the open standard: the `.llmtrace` format (canonical OpenTelemetry trace inside), capture and disclosure rules, the offline open-source verifier, and the reference runtime. Built on TLSNotary.
 - Exalto Capture: the free desktop recorder. Works with Claude Code, Codex, and supported provider SDKs today.
-- Exalto Seal: Exalto's operated notary. Countersigns and timestamps; never sees plaintext. Just one notary among many to come: seal with ours, with a third party's, or with one you run yourself.
-- Exalto Verify: hosted verification and sharing.
+- Exalto Seal: Exalto's operated notary. Countersigns and timestamps; never sees plaintext. Just one notary among many to come: seal with ours, with a third party's, or with one you run yourself. Hosted verification and shared-trace pages live under Seal: a shared trace shows as Exalto Seal Verified.
 - Proof of Thought: a first-party writing app that keeps an authorship ledger: verified model output, tracked local contribution. Early access.
 
 ## Limits, stated plainly

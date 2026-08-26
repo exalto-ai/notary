@@ -33,8 +33,9 @@ commands and API routes stay verbatim.
   swap the `#pot` hrefs and the button when it does.
 - `favicon.svg` is a placeholder; no commissioned logo exists yet.
 - No `og:image` yet (open item; suggestion: a rendered receipt card).
-- The applications grid ships without art; the nine commissioned pieces land in
-  the collapsed image slots later.
+- The applications grid ships with the pointillist Ledger Grain art from
+  `public/art/`; product marks used on the page live in `public/icons/` (the
+  full kits are in the repository's `brand/` directory).
 
 ## Deploy (Fly, same pattern as platform/web)
 
