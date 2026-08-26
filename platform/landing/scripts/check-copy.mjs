@@ -107,7 +107,7 @@ for (const title of tileOrder) {
   cursor = next;
 }
 
-if (!/61<span>%<\/span>/.test(html) || !text.includes('verified human')) {
+if (!/61<span>%<\/span>/.test(html) || !/verified human/i.test(text)) {
   failures.push('The PoT score card must show 61% with the "verified human" claim');
 }
 

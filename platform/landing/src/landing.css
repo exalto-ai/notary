@@ -912,13 +912,13 @@ a:hover {
 /* Thought Score card */
 
 .thought-score {
-  width: 280px;
+  width: 340px;
   flex: none;
   background: var(--card);
   border: 1px solid rgba(26, 34, 51, 0.15);
   border-radius: 10px;
   box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.6);
-  padding: 18px 20px;
+  padding: 20px 24px;
 }
 
 .ts-head {
@@ -935,72 +935,100 @@ a:hover {
   color: var(--blue);
 }
 
-.ts-ring-row {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-top: 14px;
-}
-
-.ts-ring {
-  position: relative;
-  width: 76px;
-  height: 76px;
-  flex: none;
-}
-
-.ts-ring svg {
-  width: 76px;
-  height: 76px;
-  display: block;
-  transform: rotate(-90deg);
-}
-
-.ts-ring-track {
-  fill: none;
-  stroke: rgba(26, 34, 51, 0.1);
-  stroke-width: 6;
-}
-
-.ts-ring-value {
-  fill: none;
-  stroke: var(--phosphor);
-  stroke-width: 6;
-  stroke-linecap: round;
-  stroke-dasharray: 126.5 207.3;
-}
-
-.ts-ring-number {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--serif-display);
-  font-weight: 640;
-  font-size: 24px;
-  color: var(--ink);
-}
-
-.ts-ring-number span {
-  font-size: 12px;
-  margin-top: 3px;
+.ts-verdict {
+  margin-top: 16px;
 }
 
 .ts-claim {
-  font-family: var(--serif-body);
-  font-size: 14.5px;
-  line-height: 1.4;
+  font-family: var(--serif-display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.25;
   color: var(--ink);
   margin: 0;
 }
 
 .ts-claim-sub {
-  font-family: var(--serif-body);
-  font-size: 12px;
-  line-height: 1.5;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
   color: var(--muted);
-  margin: 4px 0 0;
+  margin: 5px 0 0;
+}
+
+.ts-gauge {
+  position: relative;
+  width: 230px;
+  margin: 14px auto 0;
+}
+
+.ts-gauge svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ts-gauge-track {
+  fill: none;
+  stroke: rgba(14, 143, 93, 0.14);
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.ts-gauge-value {
+  fill: none;
+  stroke: var(--phosphor);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 224.2 367.6;
+}
+
+.ts-gauge-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.ts-gauge-center img {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+}
+
+.ts-gauge-number {
+  font-family: var(--serif-display);
+  font-weight: 640;
+  font-size: 52px;
+  line-height: 1;
+  color: var(--ink);
+  margin: 0;
+}
+
+.ts-gauge-number span {
+  font-size: 21px;
+  margin-left: 2px;
+}
+
+.ts-gauge-caption {
+  font-family: var(--serif-body);
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.ts-anti {
+  font-family: var(--serif-body);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 10px 0 0;
 }
 
 .ts-rule {
