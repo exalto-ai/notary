@@ -661,6 +661,8 @@ function EmbeddedNotaries({ api }: { api: LocalApi }) {
   const records = orderNotaries(notaries.data?.notaries ?? [], notaries.data?.active_key_id);
   const active =
     records.find((record) => record.key_id === notaries.data?.active_key_id) ?? records[0];
+  const usesExaltoSeal = notaries.data?.source !== 'explicit_configuration';
+  const displayName = (record: Notary) => (usesExaltoSeal ? 'Exalto Seal' : record.name);
   return (
     <Paper className="settings-panel embedded-notaries">
       <Text className="eyebrow">Notaries</Text>
@@ -674,8 +676,7 @@ function EmbeddedNotaries({ api }: { api: LocalApi }) {
         <>
           <Group justify="space-between" align="flex-start">
             <div>
-              <Title order={2}>{active.name}</Title>
-              <Text>Operated by {active.operator}</Text>
+              <Title order={2}>{displayName(active)}</Title>
             </div>
             <StatusLabel state={active.lifecycle} />
           </Group>
@@ -700,8 +701,7 @@ function EmbeddedNotaries({ api }: { api: LocalApi }) {
               <article key={record.key_id} className="notary-detail-record">
                 <Group justify="space-between" align="flex-start">
                   <div>
-                    <Title order={3}>{record.name}</Title>
-                    <Text>Operated by {record.operator}</Text>
+                    <Title order={3}>{displayName(record)}</Title>
                   </div>
                   <StatusLabel state={record.lifecycle} />
                 </Group>

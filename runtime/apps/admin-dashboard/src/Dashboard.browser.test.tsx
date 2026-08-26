@@ -711,10 +711,11 @@ describe('Notary admin dashboard', () => {
     await expect
       .element(page.getByText(/not protected by the private-capture vault/))
       .toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'Alice' })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Exalto Seal' })).toBeVisible();
     await expect
       .element(page.getByText('Operated by Exalto', { exact: true }).first())
-      .toBeVisible();
+      .not.toBeInTheDocument();
+    await expect.element(page.getByText('Alice', { exact: true })).not.toBeInTheDocument();
     await expect.element(page.getByText('Active verification key', { exact: true })).toBeVisible();
     await page.getByText('View details', { exact: true }).click();
     await expect.element(page.getByText('Verification key', { exact: true }).first()).toBeVisible();
