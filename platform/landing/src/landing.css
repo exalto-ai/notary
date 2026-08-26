@@ -572,11 +572,32 @@ a:hover {
 }
 
 .pot-head {
+  position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 40px;
   flex-wrap: wrap;
+}
+
+.pot-head::before {
+  content: '';
+  position: absolute;
+  top: -36px;
+  bottom: -44px;
+  right: -48px;
+  width: min(780px, 72%);
+  background: url('/art/pot.webp') center / cover no-repeat;
+  filter: invert(1) hue-rotate(190deg) saturate(1.15);
+  opacity: 0.26;
+  -webkit-mask-image: radial-gradient(72% 82% at 55% 50%, #000 30%, transparent 76%);
+  mask-image: radial-gradient(72% 82% at 55% 50%, #000 30%, transparent 76%);
+  pointer-events: none;
+}
+
+.pot-head-copy {
+  position: relative;
+  z-index: 1;
 }
 
 .pot-head-copy {
@@ -913,8 +934,7 @@ a:hover {
 
 .thought-score {
   position: relative;
-  z-index: 0;
-  overflow: hidden;
+  z-index: 1;
   width: 340px;
   flex: none;
   background: var(--card);
@@ -922,19 +942,6 @@ a:hover {
   border-radius: 10px;
   box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.6);
   padding: 18px 22px;
-}
-
-.thought-score::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: 0 0 auto;
-  height: 150px;
-  background: url('/art/pot.webp') center 45% / cover no-repeat;
-  opacity: 0.2;
-  -webkit-mask-image: linear-gradient(180deg, #000 25%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 25%, transparent 100%);
-  pointer-events: none;
 }
 
 .ts-head {
