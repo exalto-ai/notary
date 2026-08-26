@@ -27,6 +27,7 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       containers: ${{ steps.filter.outputs.containers }}
       windows_update: ${{ steps.filter.outputs.windows_update }}
+      landing: ${{ steps.filter.outputs.landing }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -41,7 +42,13 @@ jobs:
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
-              - 'platform/**'
+              # The landing site is static HTML with no Rust or container
+              # coupling. A bare `!` entry would not exclude it: a filter fires
+              # when any pattern matches, so a negation just matches every
+              # other path and the filter always fires. Exclude it inside the
+              # positive pattern, and keep files at the platform root covered.
+              - 'platform/!(landing)/**'
+              - 'platform/*'
               - 'runtime/**'
               - 'scripts/*public-runtime*'
               - 'scripts/public-runtime/**'
@@ -87,11 +94,20 @@ jobs:
               - 'Dockerfile'
               - 'Cargo.toml'
               - 'Cargo.lock'
-              - 'platform/**'
+              - 'platform/!(landing)/**'
+              - 'platform/*'
               - 'runtime/**'
               - 'compose.yml'
+              # deploy/** stays broad: the containers job validates the Fly
+              # configs and preflight scripts, and an exclusion here would go
+              # stale the moment deploy/fly gains a subdirectory.
               - 'deploy/**'
               - 'platform/web/**'
+            landing:
+              - '.github/workflows/**'
+              - 'platform/landing/**'
+              - 'deploy/fly/landing.Dockerfile'
+              - 'deploy/fly/landing.fly.toml'
             windows_update:
               - '.github/workflows/**'
               - 'Cargo.lock'
@@ -232,6 +248,54 @@ jobs:
       - run: npm --prefix ../../runtime/apps/admin-dashboard run test
       - run: npm run test:site
       - run: npm run test:install
+
+  landing:
+    name: Landing site
+    needs: changes
+    if: needs.changes.outputs.landing == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: platform/landing
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: platform/landing/package-lock.json
+      - run: npm ci
+      # `build` runs check:copy first, so the handoff QA checklist — banned
+      # vocabulary, verbatim doctrine strings, tile order — gates the merge
+      # rather than only the deploying machine.
+      - run: npm run build
+      # Caddy resolves /docs/ through a directory index. A build that stopped
+      # emitting the nested entry points would still serve, silently falling
+      # back to the homepage for every documentation link.
+      - name: Verify the documentation entry points were emitted
+        run: |
+          set -euo pipefail
+          for page in index getting-started how-it-works hosted-credits \
+            trace-packages share; do
+            path="dist/docs/index.html"
+            if test "$page" != index; then
+              path="dist/docs/$page/index.html"
+            fi
+            test -s "$path" || { echo "missing $path" >&2; exit 1; }
+          done
+      # The deploy workflow names the app independently of the Fly config, so a
+      # rename in one place must not silently deploy nothing in the other.
+      - name: Verify the deploy target agrees with the Fly config
+        working-directory: .
+        run: |
+          set -euo pipefail
+          configured="$(sed -n 's/^app = "\(.*\)"$/\1/p' deploy/fly/landing.fly.toml)"
+          declared="$(sed -n 's/^      FLY_APP: \(.*\)$/\1/p' .github/workflows/landing-deploy.yml)"
+          test -n "$configured"
+          test "$configured" = "$declared" || {
+            echo "landing.fly.toml app ($configured) and workflow FLY_APP ($declared) disagree" >&2
+            exit 1
+          }
 
   desktop:
     name: macOS desktop bundle
@@ -454,7 +518,7 @@ jobs:
   validation:
     name: ${{ github.event_name == 'pull_request' && 'Required checks' || 'Main validation' }}
     if: always()
-    needs: [changes, rust, postgres-integration, windows-update, app, desktop, docs, containers, terminology, gitleaks]
+    needs: [changes, rust, postgres-integration, windows-update, app, landing, desktop, docs, containers, terminology, gitleaks]
     runs-on: ubuntu-24.04
     env:
       CHANGES_RESULT: ${{ needs.changes.result }}
@@ -466,6 +530,8 @@ jobs:
       WINDOWS_UPDATE_RESULT: ${{ needs.windows-update.result }}
       APP_CHANGED: ${{ needs.changes.outputs.app }}
       APP_RESULT: ${{ needs.app.result }}
+      LANDING_CHANGED: ${{ needs.changes.outputs.landing }}
+      LANDING_RESULT: ${{ needs.landing.result }}
       DESKTOP_REQUIRED: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.desktop == 'true' }}
       DESKTOP_RESULT: ${{ needs.desktop.result }}
       DOCS_CHANGED: ${{ needs.changes.outputs.docs }}
@@ -502,6 +568,7 @@ jobs:
           require_selected PostgreSQL "$POSTGRES_REQUIRED" "$POSTGRES_RESULT"
           require_selected "Windows client update" "$WINDOWS_UPDATE_REQUIRED" "$WINDOWS_UPDATE_RESULT"
           require_selected SPA "$APP_CHANGED" "$APP_RESULT"
+          require_selected Landing "$LANDING_CHANGED" "$LANDING_RESULT"
           require_selected Desktop "$DESKTOP_REQUIRED" "$DESKTOP_RESULT"
           require_selected Documentation "$DOCS_CHANGED" "$DOCS_RESULT"
           require_selected Deployment "$CONTAINERS_CHANGED" "$CONTAINERS_RESULT"

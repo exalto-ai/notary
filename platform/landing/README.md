@@ -38,16 +38,32 @@ commands and API routes stay verbatim.
 
 ## Deploy (Fly, same pattern as platform/web)
 
+Deployment is automatic. Every push to `main` that touches `platform/landing/**`
+or the landing Fly files runs the `Deploy landing` workflow, which builds the
+image on Fly, pins it to a `sha256` digest, deploys it, verifies the site
+serves, and restores the previous digest if anything fails. `Deploy landing`
+can also be dispatched by hand. The copy audit runs inside the image build, so
+a banned term fails the build before production changes; the same audit runs on
+pull requests through the `Landing site` CI job.
+
+The landing site is deliberately not part of the gated three-service promotion
+in `deploy.yml`; see the landing rollout section of `deploy/fly/README.md`.
+
+To deploy from a workstation instead:
+
 ```bash
 fly deploy platform/landing \
   --config deploy/fly/landing.fly.toml \
   --app exalto-prod-landing
-fly certs add exalto.ai --app exalto-prod-landing
 ```
 
 Cutover checklist (founder-owned, in order):
 
-1. Create the Fly app and deploy; point exalto.ai DNS at it and issue certs.
+1. Create the Fly app, allocate a dedicated IPv4 and an IPv6, store the
+   `FLY_LANDING_DEPLOY_TOKEN` repository secret, then add the DNS records and
+   issue certs. `deploy/fly/README.md` has the exact commands. The first
+   rollout happens on the next push to `main`; `exalto.ai` is an apex name, so
+   it takes `A`/`AAAA` records rather than a CNAME.
 2. Add `seal.exalto.ai` as a cert/hostname on the existing web app and switch
    its `NOTARY_PUBLIC_ORIGIN`/`VITE_PUBLIC_ORIGIN` build arg when ready.
 3. 301 `notary.exalto.ai` to `seal.exalto.ai` on the old hostname.

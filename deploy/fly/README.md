@@ -292,6 +292,50 @@ the manifest's recorded source SHA. It never runs the recorded API's release
 command and never claims to reverse database migrations. The rollback itself
 produces a new successful rollout manifest.
 
+## Landing rollout
+
+`exalto.ai` is served by a fourth Fly app, `exalto-prod-landing`, built from
+`platform/landing` by `deploy/fly/landing.{Dockerfile,fly.toml}`. It is a
+static Vite build served by Caddy with no runtime dependency on the API, so it
+is deliberately kept outside the promotion above: a marketing copy change must
+not wait on a validated API promotion, and an API rollback must not revert the
+public site. The `production-rollout.json` contract therefore still records
+exactly the notary, API, and web digests.
+
+The `Deploy landing` workflow runs on every push to `main` that touches
+`platform/landing/**` or the landing Fly files, and can also be dispatched
+manually. It follows the same build discipline as the promotion: build with
+`fly deploy --build-only --push`, resolve the tag to an immutable `sha256`
+digest, deploy only that digest, and record the previous digest so a failed
+rollout is restored. The copy audit runs inside the image build, so a banned
+term fails the build before any Machine changes. On a pull request the same
+audit runs in the `Landing site` CI job.
+
+Serve checks run against `https://exalto-prod-landing.fly.dev` rather than the
+public hostname so a rollout is verified before `exalto.ai` DNS exists and
+keeps being verified afterwards.
+
+The app is created once, by hand:
+
+```bash
+flyctl apps create exalto-prod-landing
+flyctl ips allocate-v4 --app exalto-prod-landing
+flyctl ips allocate-v6 --app exalto-prod-landing
+flyctl certs add exalto.ai --app exalto-prod-landing
+flyctl certs add www.exalto.ai --app exalto-prod-landing
+```
+
+`exalto.ai` is an apex name, so unlike every hostname above it cannot be a
+CNAME. It needs `A` and `AAAA` records pointing at the addresses reported by
+`flyctl ips list --app exalto-prod-landing`, and the dedicated IPv4 is
+required because a shared address cannot carry an apex certificate. Create a
+deploy token scoped to the app and store it as the `FLY_LANDING_DEPLOY_TOKEN`
+repository secret:
+
+```bash
+flyctl tokens create deploy --app exalto-prod-landing --name github-landing-deploy
+```
+
 ### Rolling compatibility contract
 
 Every production change must support the mixed versions that can exist during
