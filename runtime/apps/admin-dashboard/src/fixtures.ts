@@ -306,7 +306,7 @@ export const fixtureEvents: Event[] = [
     trace_id: 'trc-20260728-safety-review',
     operation_id: 'op-notarize-safety-review',
     severity: 'info',
-    message: 'Notarization started',
+    message: 'Sealing started',
   },
   {
     event_id: 13,
@@ -315,7 +315,7 @@ export const fixtureEvents: Event[] = [
     trace_id: 'trc-20260727-benchmark',
     operation_id: 'op-notarize-benchmark',
     severity: 'error',
-    message: 'Notarization failed',
+    message: 'Sealing failed',
     safe_code: 'notary_capacity',
   },
   {
@@ -325,7 +325,7 @@ export const fixtureEvents: Event[] = [
     trace_id: 'trc-20260727-research-brief',
     operation_id: 'op-notarize-research-brief',
     severity: 'success',
-    message: 'Notarization completed',
+    message: 'Sealing completed',
   },
   {
     event_id: 11,
@@ -334,7 +334,7 @@ export const fixtureEvents: Event[] = [
     trace_id: 'trc-20260726-direct-link',
     operation_id: 'op-notarize-direct-link',
     severity: 'success',
-    message: 'Notarization completed',
+    message: 'Sealing completed',
   },
 ];
 
@@ -845,7 +845,7 @@ export function createFixtureApi({
       setCaptureNotarization(operation.trace_id, 'running');
       recordEvent(
         'notarization_started',
-        'Notarization started',
+        'Sealing started',
         'info',
         operation.trace_id,
         operationId,
@@ -886,7 +886,7 @@ export function createFixtureApi({
     if (capture) traces.set(capture.trace_id, traceForCapture(capture));
     recordEvent(
       'notarization_completed',
-      'Notarization completed',
+      'Sealing completed',
       'success',
       operation.trace_id,
       operationId,
@@ -1068,7 +1068,7 @@ export function createFixtureApi({
         throw new LocalApiError(
           409,
           capture.notarization_ineligibility_code ?? 'capture_not_eligible',
-          'Trace is not eligible for notarization',
+          'Trace is not eligible for sealing',
         );
       }
       const existing = operations.find((operation) => operation.trace_id === captureId);
@@ -1092,7 +1092,7 @@ export function createFixtureApi({
           progressingOperations.add(existing.operation_id);
           recordEvent(
             'notarization_queued',
-            'Notarization retry queued',
+            'Sealing retry queued',
             'info',
             captureId,
             existing.operation_id,
@@ -1121,7 +1121,7 @@ export function createFixtureApi({
       progressingOperations.add(operation.operation_id);
       recordEvent(
         'notarization_queued',
-        'Notarization queued',
+        'Sealing queued',
         'info',
         captureId,
         operation.operation_id,
@@ -1157,7 +1157,7 @@ export function createFixtureApi({
     traceContent: async (captureId) => {
       const trace = traces.get(captureId);
       if (!trace)
-        throw new LocalApiError(404, 'notarized_trace_not_found', 'Notarized trace not found');
+        throw new LocalApiError(404, 'notarized_trace_not_found', 'Sealed trace not found');
       return structuredClone(trace);
     },
     downloadPackage: async (captureId) =>
@@ -1200,7 +1200,7 @@ export function createFixtureApi({
     },
     share: async (captureId, settings) => {
       if (!traces.has(captureId))
-        throw new LocalApiError(404, 'notarized_trace_not_found', 'Notarized trace not found');
+        throw new LocalApiError(404, 'notarized_trace_not_found', 'Sealed trace not found');
       const existing = [...shares.entries()].find(([, share]) => share.captureId === captureId);
       const shareId = existing?.[0] ?? 'share-fixture';
       const previous = existing?.[1];

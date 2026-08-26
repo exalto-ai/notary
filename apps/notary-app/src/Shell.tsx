@@ -1,26 +1,30 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Activity, FileCheck2, Gauge, Settings, SlidersHorizontal, Square } from 'lucide-react';
+import { ExternalLink, FileCheck2, Radio, Settings, Square } from 'lucide-react';
 import type { DesktopState } from './bridge';
 import notaryMark from './notary-mark.svg';
 import {
-  StatusDot,
+  DISPLAY_NAME,
   viewMeta,
   type TraceConstraint,
   type View,
   type WorkspaceView,
 } from './product';
 
-export function Sidebar({ state, view, onNavigate }: { state: DesktopState; view: View; onNavigate: (view: View) => void }) {
-  const items: Array<{ view: View; label: string; icon: typeof Gauge; count?: number }> = [
-    { view: 'home', label: 'Home', icon: Gauge },
+export function Sidebar({ state, view, onNavigate, onOpenCatalogue }: {
+  state: DesktopState;
+  view: View;
+  onNavigate: (view: View) => void;
+  onOpenCatalogue: () => void;
+}) {
+  const traceCount = state.counts.captured + state.counts.notarized + state.counts.capturing + state.counts.capture_failed;
+  const items: Array<{ view: View; label: string; icon: typeof Radio; count?: number }> = [
+    { view: 'home', label: 'Capture', icon: Radio },
     {
       view: 'traces',
       label: 'Traces',
       icon: FileCheck2,
-      count: state.counts.captured,
+      count: traceCount,
     },
-    { view: 'activity', label: 'Activity', icon: Activity },
-    { view: 'providers', label: 'Providers', icon: SlidersHorizontal },
     { view: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -28,14 +32,14 @@ export function Sidebar({ state, view, onNavigate }: { state: DesktopState; view
     <div className="sidebar-drag-region" data-tauri-drag-region />
     <div className="sidebar-brand">
       <img src={notaryMark} alt="" />
-      <span>Notary</span>
+      <span><strong>Exalto</strong><small>Capture</small></span>
     </div>
-    <nav aria-label="Notary">
+    <nav aria-label={DISPLAY_NAME}>
       <div className="sidebar-group">
         {items.map(({ view: itemView, label, icon: Icon, count }) => <button
           key={itemView}
           type="button"
-          className={view === itemView ? 'is-selected' : ''}
+          className={view === itemView || (itemView === 'settings' && (view === 'providers' || view === 'activity')) ? 'is-selected' : ''}
           onClick={() => onNavigate(itemView)}
         >
           <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
@@ -43,10 +47,14 @@ export function Sidebar({ state, view, onNavigate }: { state: DesktopState; view
           {count ? <b>{count}</b> : null}
         </button>)}
       </div>
+      <button type="button" className="catalogue-link" onClick={onOpenCatalogue}>
+        <ExternalLink size={15} strokeWidth={1.7} aria-hidden="true" />
+        <span>Trace Catalogue</span>
+      </button>
     </nav>
     <div className="sidebar-footer">
-      <StatusDot running={state.running} warning={!state.running} />
-      <span>{state.running ? state.capture_enabled ? `Ready on ${state.proxy_listener}` : `Capture off · ${state.proxy_listener}` : 'Service stopped'}</span>
+      <span className={`rec-indicator ${state.running && state.capture_enabled ? 'is-recording' : ''}`} aria-hidden="true" />
+      <span>{state.running && state.capture_enabled ? 'REC · Capturing' : 'Capture off'}</span>
     </div>
   </aside>;
 }
@@ -57,12 +65,16 @@ export function WorkspaceFrame({
   running,
   desktopSettings,
   onDesktopSettingsAction,
+  onStartService,
+  serviceStarting = false,
 }: {
   route: WorkspaceView;
   constraint?: TraceConstraint | null;
   running: boolean;
   desktopSettings?: DesktopSettingsPayload;
   onDesktopSettingsAction?: (action: DesktopSettingsAction) => void;
+  onStartService?: () => void;
+  serviceStarting?: boolean;
 }) {
   const [loaded, setLoaded] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
@@ -102,8 +114,11 @@ export function WorkspaceFrame({
   if (!running) {
     return <EmptyPanel
       icon={<Square size={26} />}
-      title="The capture service is stopped"
-      copy="Open Home to start Notary. Nothing is sent anywhere while the service is stopped."
+      title="Local service is off"
+      copy="Start the local service to inspect private traces and connections. Capture remains off."
+      action={onStartService && <button className="mac-button is-primary" type="button" onClick={onStartService} disabled={serviceStarting}>
+        {serviceStarting ? 'Starting local service…' : 'Start local service'}
+      </button>}
     />;
   }
 

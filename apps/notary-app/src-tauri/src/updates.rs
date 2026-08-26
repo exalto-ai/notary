@@ -80,7 +80,7 @@ pub(super) fn restart_block_reason(
     if counts.capturing > 0 {
         Some("Wait for the active capture to finish before restarting to update.")
     } else if counts.notarizing > 0 {
-        Some("Wait for the active notarization to finish before restarting to update.")
+        Some("Wait for the active seal to finish before restarting to update.")
     } else if running && !managed_by_desktop {
         Some(
             "The running local service was started outside this app. Stop or update it from the process that launched it before restarting the app.",
@@ -365,7 +365,7 @@ async fn install_update_and_restart_inner(app: &tauri::AppHandle) -> Result<(), 
     }
     set_update_view(&updates, |view| {
         view.phase = "installing".into();
-        view.message = Some("Installing the update and reopening Notary…".into());
+        view.message = Some("Installing the update and reopening Exalto Capture…".into());
     })?;
     let pending = updates
         .pending

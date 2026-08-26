@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { TRACE_CATALOGUE_URL } from './product';
 
 export type TraceCounts = {
   captured: number;
@@ -7,6 +8,16 @@ export type TraceCounts = {
   needs_attention: number;
   capturing: number;
   capture_failed: number;
+};
+
+export type TraceProbe = {
+  trace_id: string;
+  state: string | null;
+  status: string | null;
+  created_at_unix_ms: number;
+  provider: string;
+  http_status: number | null;
+  prompt_preview: string;
 };
 
 export type DesktopState = {
@@ -73,6 +84,18 @@ export type AccountConnectionStarted = {
   state: string;
 };
 
+export type ProviderCredentialProvider = 'openai' | 'anthropic' | 'openrouter';
+
+export type ProviderCredentialValidation = 'not_checked' | 'valid' | 'invalid' | 'unavailable';
+
+export type ProviderCredentialStatus = {
+  provider: ProviderCredentialProvider;
+  label: string;
+  configured: boolean;
+  masked_suffix: string | null;
+  validation: ProviderCredentialValidation;
+};
+
 const emptyCounts: TraceCounts = {
   captured: 0,
   notarizing: 0,
@@ -96,7 +119,7 @@ function fallbackState(overrides: Partial<DesktopState> = {}): DesktopState {
     vault_mode: 'keychain',
     vault_locked: false,
     version: null,
-    app_version: '0.1.0',
+    app_version: '0.1.4',
     app_build_id: 'dev',
     daemon_build_id: null,
     proxy_listener: '127.0.0.1:8787',
@@ -164,7 +187,7 @@ export async function getDesktopState(): Promise<DesktopState> {
       vault_mode: status.vault === 'OS vault' ? 'keychain' : 'passphrase',
       vault_locked: false,
       version: status.version,
-      app_version: '0.1.0',
+      app_version: '0.1.4',
       app_build_id: 'dev',
       daemon_build_id: status.build_id ?? null,
       proxy_listener: status.proxy_listener,
@@ -207,6 +230,29 @@ export async function stopDaemon(): Promise<void> {
 export async function restartDaemon(): Promise<void> {
   if (!isTauri()) return;
   await invoke('restart_daemon');
+}
+
+export async function setCaptureEnabled(enabled: boolean): Promise<boolean> {
+  if (!isTauri()) return enabled;
+  return invoke<boolean>('set_capture_enabled', { enabled });
+}
+
+export async function getRecentTraceProbes(): Promise<TraceProbe[]> {
+  if (!isTauri()) return [];
+  return invoke<TraceProbe[]>('get_recent_trace_probes');
+}
+
+export async function confirmDisposableTrace(
+  baselineTraceIds: string[],
+  expectedProvider: string,
+  confirmationMarker: string,
+): Promise<string | null> {
+  if (!isTauri()) return null;
+  return invoke<string | null>('confirm_disposable_trace', {
+    baselineTraceIds,
+    expectedProvider,
+    confirmationMarker,
+  });
 }
 
 export async function getUpdateState(): Promise<DesktopUpdateState> {
@@ -309,4 +355,91 @@ export async function openAccountLink(url: string): Promise<void> {
     return;
   }
   await invoke('open_account_link', { url });
+}
+
+export type ProductLinkDestination =
+  | 'catalogue'
+  | 'guide'
+  | 'report'
+  | 'openai_key'
+  | 'anthropic_key'
+  | 'openrouter_key'
+  | 'xai_key';
+
+export async function openProductLink(destination: ProductLinkDestination): Promise<void> {
+  if (!isTauri()) {
+    const routes = {
+      catalogue: TRACE_CATALOGUE_URL,
+      guide: 'https://exalto.ai/docs/',
+      report: 'https://github.com/exalto-ai/notary/issues/new',
+      openai_key: 'https://platform.openai.com/api-keys',
+      anthropic_key: 'https://console.anthropic.com/settings/keys',
+      openrouter_key: 'https://openrouter.ai/settings/keys',
+      xai_key: 'https://docs.x.ai/developers/quickstart',
+    } as const;
+    window.open(routes[destination], '_blank', 'noopener,noreferrer');
+    return;
+  }
+  await invoke('open_product_link', { destination });
+}
+
+const browserCredentialStatuses: ProviderCredentialStatus[] = [
+  { provider: 'openai', label: 'OpenAI', configured: false, masked_suffix: null, validation: 'not_checked' },
+  { provider: 'anthropic', label: 'Anthropic', configured: false, masked_suffix: null, validation: 'not_checked' },
+  { provider: 'openrouter', label: 'OpenRouter', configured: false, masked_suffix: null, validation: 'not_checked' },
+];
+
+export async function getProviderCredentialStatuses(): Promise<ProviderCredentialStatus[]> {
+  if (!isTauri()) return browserCredentialStatuses.map((status) => ({ ...status }));
+  return invoke<ProviderCredentialStatus[]>('get_provider_credential_statuses');
+}
+
+export async function importProviderApiKey(
+  provider: ProviderCredentialProvider,
+  apiKey: string,
+): Promise<ProviderCredentialStatus> {
+  if (!isTauri()) {
+    const status: ProviderCredentialStatus = {
+      provider,
+      label: browserCredentialStatuses.find((status) => status.provider === provider)?.label ?? provider,
+      configured: true,
+      masked_suffix: apiKey.trim().slice(-4) || null,
+      validation: 'valid',
+    };
+    browserCredentialStatuses.splice(
+      browserCredentialStatuses.findIndex((current) => current.provider === provider),
+      1,
+      status,
+    );
+    return { ...status };
+  }
+  return invoke<ProviderCredentialStatus>('import_provider_api_key', { provider, apiKey });
+}
+
+export async function removeProviderApiKey(
+  provider: ProviderCredentialProvider,
+): Promise<ProviderCredentialStatus> {
+  if (!isTauri()) {
+    const status: ProviderCredentialStatus = {
+      provider,
+      label: browserCredentialStatuses.find((status) => status.provider === provider)?.label ?? provider,
+      configured: false,
+      masked_suffix: null,
+      validation: 'not_checked',
+    };
+    browserCredentialStatuses.splice(
+      browserCredentialStatuses.findIndex((current) => current.provider === provider),
+      1,
+      status,
+    );
+    return { ...status };
+  }
+  return invoke<ProviderCredentialStatus>('remove_provider_api_key', { provider });
+}
+
+export async function copyProviderLocalAccessToken(
+  provider: ProviderCredentialProvider,
+): Promise<void> {
+  if (!isTauri()) return;
+  await invoke('copy_provider_local_access_token', { provider });
 }

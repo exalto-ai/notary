@@ -1,6 +1,8 @@
 use std::process::Command;
 
-use notaryctl::client::{AccountConnection, AccountConnectionStarted, NotarydClient, Status};
+use notaryctl::client::{
+    AccountConnection, AccountConnectionStarted, NotarydClient, Status, TraceProbe,
+};
 use url::{Host, Url};
 
 const ADMIN_ADDRESS: &str = "127.0.0.1:8788";
@@ -123,22 +125,75 @@ pub(super) fn validate_account_link(value: &str) -> Result<Url, String> {
 #[tauri::command]
 pub(super) fn open_account_link(url: String) -> Result<(), String> {
     let url = validate_account_link(&url)?;
-    #[cfg(target_os = "macos")]
-    let result = Command::new("open").arg(url.as_str()).spawn();
-    #[cfg(target_os = "windows")]
-    let result = Command::new("explorer.exe").arg(url.as_str()).spawn();
-    #[cfg(all(unix, not(target_os = "macos")))]
-    let result = Command::new("xdg-open").arg(url.as_str()).spawn();
-    result
-        .map(|_| ())
-        .map_err(|error| format!("Could not open the account page: {error}"))
+    open_external_url(url.as_str(), "account page")
 }
 
-pub(super) async fn write_capture_setting(enabled: bool) -> Result<bool, String> {
+pub(super) fn product_link(destination: &str) -> Option<&'static str> {
+    match destination {
+        "catalogue" => Some("https://llm-notary.exalto.ai/traces"),
+        "guide" => Some("https://exalto.ai/docs/"),
+        "report" => Some("https://github.com/exalto-ai/notary/issues/new"),
+        "openai_key" => Some("https://platform.openai.com/api-keys"),
+        "anthropic_key" => Some("https://console.anthropic.com/settings/keys"),
+        "openrouter_key" => Some("https://openrouter.ai/settings/keys"),
+        "xai_key" => Some("https://docs.x.ai/developers/quickstart"),
+        _ => None,
+    }
+}
+
+#[tauri::command]
+pub(super) fn open_product_link(destination: String) -> Result<(), String> {
+    let url = product_link(&destination)
+        .ok_or_else(|| "The requested Exalto destination is not allowed.".to_string())?;
+    open_external_url(url, "Exalto page")
+}
+
+fn open_external_url(url: &str, label: &str) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let result = Command::new("open").arg(url).spawn();
+    #[cfg(target_os = "windows")]
+    let result = Command::new("explorer.exe").arg(url).spawn();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let result = Command::new("xdg-open").arg(url).spawn();
+    result
+        .map(|_| ())
+        .map_err(|error| format!("Could not open the {label}: {error}"))
+}
+
+#[tauri::command]
+pub(super) async fn set_capture_enabled(enabled: bool) -> Result<bool, String> {
     client()?
         .set_capture_enabled(enabled)
         .await
         .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub(super) async fn get_recent_trace_probes() -> Result<Vec<TraceProbe>, String> {
+    client()?
+        .recent_trace_probes()
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub(super) async fn confirm_disposable_trace(
+    baseline_trace_ids: Vec<String>,
+    expected_provider: String,
+    confirmation_marker: String,
+) -> Result<Option<String>, String> {
+    client()?
+        .confirm_disposable_trace(
+            &baseline_trace_ids,
+            &expected_provider,
+            &confirmation_marker,
+        )
+        .await
+        .map_err(|error| error.to_string())
+}
+
+pub(super) async fn write_capture_setting(enabled: bool) -> Result<bool, String> {
+    set_capture_enabled(enabled).await
 }
 
 pub(super) async fn daemon_is_healthy() -> bool {

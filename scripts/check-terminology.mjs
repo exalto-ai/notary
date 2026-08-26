@@ -3,9 +3,10 @@
 // The check is semantic, not a blind ban. "Capture" stays valid wherever it
 // names a real capture operation, checkpoint, capture-specific storage, or
 // usage meter, so it is not scanned at all. What is scanned is the vocabulary
-// the product deliberately retired: the old brand, the old public origin, the
-// old release namespace, retired executable names, and Finalize/Finalization
-// as product terminology.
+// the product deliberately retired: the old brand, old release namespace,
+// retired executable names, and Finalize/Finalization as product terminology.
+// The temporary llm-notary.exalto.ai hostname remains valid while hosted
+// Exalto Seal routes move to their permanent origin.
 //
 // Text that must keep naming a retired identifier — negative tests that assert
 // old formats fail, anti-regression rules, and historical material — is
@@ -36,10 +37,10 @@ const rules = [
   {
     label: 'retired brand or first-party identifier',
     // Separator-optional and case-insensitive: LLMNotary, LLM NOTARY, and
-    // llm-notary are all the retired brand.
-    pattern: /llm[\s_-]*notary/gi,
+    // llm-notary are all the retired brand. The exact temporary public host is
+    // a routing identifier, not product copy.
+    pattern: /llm[\s_-]*notary(?!\.exalto\.ai)/gi,
   },
-  { label: 'retired public origin', pattern: /llm-notary\.exalto\.ai/gi },
   {
     label: 'retired release namespace',
     // Matches the release prefix with or without the /downloads/ mount point,

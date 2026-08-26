@@ -202,7 +202,7 @@ export function useAccountConnection(api: LocalApi) {
 }
 
 export function accountDisplayName(account: AccountConnection) {
-  return account.display_name || account.provider_display_name || 'Notary Account';
+  return account.display_name || account.provider_display_name || 'Exalto account';
 }
 
 function authProviderLabel(provider?: string | null) {
@@ -294,7 +294,7 @@ export function AccountConnectionCard({
               )}
               {api.credits && (
                 <Fact
-                  label="Notarization"
+                  label="Sealing"
                   value={`${formatBytes(api.credits.notarization.total_used_bytes)} used · ${formatBytes(api.credits.notarization.total_remaining_bytes)} remaining`}
                 />
               )}
@@ -379,7 +379,7 @@ export function AccountConnectionCard({
             {api?.connection_state === 'reauthorization_required'
               ? 'The local authorization expired or was revoked. Reconnect to restore hosted credits and account-owned sharing.'
               : unavailable
-                ? 'The account service could not be reached. Local Traces and verification remain available.'
+                ? 'The account service could not be reached. Local traces and verification remain available.'
                 : 'Connect an account to see hosted credits and use account-owned sharing.'}
           </Text>
           <Group>
@@ -443,7 +443,7 @@ export function AccountConnectionCard({
         </div>
       )}
       <Text className="account-local-boundary">
-        Connecting an account does not upload or share local Traces.
+        Connecting an account does not upload or share local traces.
       </Text>
       <AlertDialog open={disconnectOpen} onOpenChange={setDisconnectOpen}>
         <AlertDialogContent className="axis-local-dialog">
@@ -535,10 +535,7 @@ function LocalNotaryRecord({
           })}
         />
         <Fact label="Capture cutoff" value={formatNotaryBoundary(record.valid_until_unix_ms)} />
-        <Fact
-          label="Notarization cutoff"
-          value={formatNotaryBoundary(record.notarize_until_unix_ms)}
-        />
+        <Fact label="Sealing cutoff" value={formatNotaryBoundary(record.notarize_until_unix_ms)} />
       </dl>
       <div className="local-notary-key">
         <span>Key ID / fingerprint</span>
@@ -722,7 +719,7 @@ function EmbeddedNotaries({ api }: { api: LocalApi }) {
                     value={formatNotaryBoundary(record.valid_until_unix_ms)}
                   />
                   <Fact
-                    label="Notarization cutoff"
+                    label="Sealing cutoff"
                     value={formatNotaryBoundary(record.notarize_until_unix_ms)}
                   />
                 </dl>
@@ -731,45 +728,6 @@ function EmbeddedNotaries({ api }: { api: LocalApi }) {
           </details>
         </>
       )}
-    </Paper>
-  );
-}
-
-function EmbeddedCaptureSetting({ status, api }: { status: Status; api: LocalApi }) {
-  const queryClient = useQueryClient();
-  const [captureEnabled, setCaptureEnabled] = useState(status.capture_enabled);
-  const captureMode = useMutation({
-    mutationFn: (enabled: boolean) => api.updateCaptureSetting(enabled),
-    onSuccess: (setting) => {
-      setCaptureEnabled(setting.enabled);
-      queryClient.invalidateQueries({ queryKey: ['status'] });
-      queryClient.invalidateQueries({ queryKey: ['events'] });
-      notifications.show({
-        title: setting.enabled ? 'Capture new requests on' : 'Capture new requests off',
-        message: setting.enabled
-          ? 'Supported requests create private local Traces.'
-          : 'Requests pass through locally and create no Trace.',
-      });
-    },
-    onError: (error) => mutationError('Capture mode did not change', error),
-  });
-  useEffect(() => setCaptureEnabled(status.capture_enabled), [status.capture_enabled]);
-  return (
-    <Paper className="capture-mode-setting">
-      <div>
-        <Text fw={700}>Capture new requests</Text>
-        <Text>
-          {captureEnabled
-            ? 'On — supported requests use notarized capture and create private local Traces.'
-            : 'Off — requests pass through locally and create no Trace.'}
-        </Text>
-      </div>
-      <Switch
-        aria-label="Capture new requests"
-        checked={captureEnabled}
-        disabled={captureMode.isPending}
-        onChange={(event) => captureMode.mutate(event.currentTarget.checked)}
-      />
     </Paper>
   );
 }
@@ -801,57 +759,68 @@ export function EmbeddedSettingsView({
     ['checking', 'downloading', 'installing'].includes(update?.phase ?? '');
   return (
     <div className="view-page settings-page settings-page--embedded">
-      <SettingsGroup id="settings-general" title="General">
-        <div className="settings-flat-group">
-          <EmbeddedCaptureSetting status={status} api={api} />
-          <Paper className="capture-mode-setting">
-            <div>
-              <Text fw={700}>Open Notary at sign-in</Text>
-              <Text>
-                Closing the window leaves Notary available from the menu bar.
-                {desktopSettings?.vault_label === 'Passphrase vault'
-                  ? ' The app opens locked until you enter the vault passphrase.'
-                  : ''}
-              </Text>
-            </div>
-            <Switch
-              aria-label="Open Notary at sign-in"
-              checked={desktopSettings?.launch_at_login ?? false}
-              disabled={!desktopSettings?.launch_ready}
-              onChange={(event) =>
-                onDesktopAction({
-                  action: 'set_launch_at_login',
-                  enabled: event.currentTarget.checked,
-                })
-              }
-            />
-          </Paper>
-        </div>
-      </SettingsGroup>
-      <SettingsGroup id="settings-account" title="Account">
-        <AccountConnectionCard controller={accountConnection} />
-      </SettingsGroup>
-      <SettingsGroup id="settings-security" title="Security">
+      <SettingsGroup id="settings-connections" title="Connections">
         <div className="settings-subgroup-grid">
           <Paper className="settings-panel">
-            <Text className="eyebrow">Local data</Text>
-            <Title order={2}>{desktopSettings?.vault_label ?? status.vault}</Title>
-            <Text>{desktopSettings?.vault_detail ?? 'Private evidence is protected locally.'}</Text>
+            <Text className="eyebrow">AI tools</Text>
+            <Title order={2}>AI connections</Title>
             <Text>
-              {desktopSettings?.vault_label === 'Passphrase vault'
-                ? 'The passphrase is required after each app start. Changing protection requires a guided migration of existing private Traces.'
-                : 'Changing protection requires a guided migration so existing private Traces retain one authoritative key.'}
+              Connect Codex CLI, Claude Code, or an API client from the AI connections tab above.
+              Saved product sign-ins and model selection stay in the originating tool. API clients
+              either send their provider key or use the scoped local token created by the Exalto
+              Capture setup assistant.
             </Text>
-            <dl className="receipt-list">
-              <Fact label="Metadata" value={status.metadata_backend} />
-              <Fact label="Artifacts" value={status.artifact_backend} />
-              <Fact label="Retained preview limit" value={`${status.preview_chars} characters`} />
-            </dl>
           </Paper>
           <EmbeddedNotaries api={api} />
         </div>
+        <AccountConnectionCard controller={accountConnection} />
       </SettingsGroup>
-      <SettingsGroup id="settings-updates" title="Updates">
+      <SettingsGroup id="settings-privacy" title="Privacy & storage">
+        <Paper className="settings-panel">
+          <Text className="eyebrow">Local data</Text>
+          <Title order={2}>{desktopSettings?.vault_label ?? status.vault}</Title>
+          <Text>{desktopSettings?.vault_detail ?? 'Private evidence is protected locally.'}</Text>
+          <Text>
+            {desktopSettings?.vault_label === 'Passphrase vault'
+              ? 'The passphrase is required after each app start. Changing protection requires a guided migration of existing private traces.'
+              : 'Changing protection requires a guided migration so existing private traces retain one authoritative key.'}
+          </Text>
+          <dl className="receipt-list">
+            <Fact label="Metadata" value={status.metadata_backend} />
+            <Fact label="Artifacts" value={status.artifact_backend} />
+            <Fact label="Retained preview limit" value={`${status.preview_chars} characters`} />
+          </dl>
+          {status.preview_chars > 0 && (
+            <Text className="safe-note preview-storage-note">
+              Bounded prompt and response previews are kept in local metadata for browsing. They
+              stay on this machine but are not protected by the private-capture vault.
+            </Text>
+          )}
+        </Paper>
+      </SettingsGroup>
+      <SettingsGroup id="settings-app" title="App">
+        <Paper className="capture-mode-setting">
+          <div>
+            <Text fw={700}>Open Exalto Capture at sign-in</Text>
+            <Text>
+              Closing the window leaves Exalto Capture available from the menu bar.
+              {desktopSettings?.vault_label === 'Passphrase vault'
+                ? ' The app opens locked until you enter the vault passphrase.'
+                : ''}
+            </Text>
+          </div>
+          <Switch
+            aria-label="Open Exalto Capture at sign-in"
+            checked={desktopSettings?.launch_at_login ?? false}
+            disabled={!desktopSettings?.launch_ready}
+            onChange={(event) =>
+              onDesktopAction({
+                action: 'set_launch_at_login',
+                enabled: event.currentTarget.checked,
+              })
+            }
+          />
+        </Paper>
         <Paper className="settings-panel embedded-update-settings">
           <dl className="receipt-list">
             <Fact label="Current version" value={desktopSettings?.app_version ?? status.version} />
@@ -900,7 +869,7 @@ export function EmbeddedSettingsView({
             )}
           </Group>
           <Text className="safe-note">
-            Release signatures are verified for the ai.exalto.notary application identity before
+            Release signatures are checked against this app's installed macOS identity before
             installation.
           </Text>
         </Paper>
@@ -1008,8 +977,8 @@ export function StandaloneSettingsView({ status, api }: { status: Status; api: L
               <Text fw={700}>Capture requests</Text>
               <Text>
                 {captureEnabled
-                  ? 'On — requests use the remote notary and create private captures.'
-                  : 'Off — requests still pass through the local daemon, go directly to the provider, and create no evidence.'}
+                  ? 'On, requests use the remote notary and create private captures.'
+                  : 'Off, requests still pass through the local daemon, go directly to the provider, and create no evidence.'}
               </Text>
             </div>
             <Switch
@@ -1028,7 +997,7 @@ export function StandaloneSettingsView({ status, api }: { status: Status; api: L
       <SettingsGroup id="settings-account" title="Account">
         <AccountConnectionCard controller={accountConnection} />
       </SettingsGroup>
-      <SettingsGroup id="settings-notarization" title="Notarization">
+      <SettingsGroup id="settings-notarization" title="Sealing">
         <SettingsNotaries api={api} />
       </SettingsGroup>
       <SettingsGroup id="settings-security" title="Security & storage">

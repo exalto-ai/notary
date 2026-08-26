@@ -96,8 +96,8 @@ describe('Notary admin dashboard', () => {
           node.textContent?.replace(/\s+/g, ' ').trim(),
         ),
       )
-      .toEqual(['4Captured', '1Notarizing', '2Notarized', '1Needs attention']);
-    await page.getByRole('button', { name: /Notarizing/ }).click();
+      .toEqual(['4Captured', '1Sealing', '2Sealed', '1Needs attention']);
+    await page.getByRole('button', { name: /Sealing/ }).click();
     await expect.element(page.getByLabelText('Search traces')).toBeVisible();
   });
 
@@ -118,15 +118,13 @@ describe('Notary admin dashboard', () => {
     renderDashboard('/traces?status=notarizing');
     await expect.element(page.getByRole('button', { name: 'All', exact: true })).toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Captured', exact: true })).toBeVisible();
-    await expect
-      .element(page.getByRole('button', { name: 'Notarized', exact: true }))
-      .toBeVisible();
+    await expect.element(page.getByRole('button', { name: 'Sealed', exact: true })).toBeVisible();
     await expect.element(page.getByRole('combobox', { name: 'Provider filter' })).toBeVisible();
     await expect.element(page.getByRole('combobox', { name: 'Trace time filter' })).toBeVisible();
     await expect
       .element(page.getByRole('combobox', { name: 'Operational status filter' }))
       .toBeVisible();
-    await expect.element(page.getByText('notarizing', { exact: true }).first()).toBeVisible();
+    await expect.element(page.getByText('Sealing', { exact: true }).first()).toBeVisible();
 
     cleanup();
     renderDashboard('/traces');
@@ -155,7 +153,7 @@ describe('Notary admin dashboard', () => {
     renderDashboard('/traces', api);
     await expect.element(page.getByText('OpenAI request', { exact: true }).first()).toBeVisible();
     await expect
-      .element(page.getByText('Captured · Notarizing', { exact: true }).first())
+      .element(page.getByText('Captured · Sealing', { exact: true }).first())
       .toBeVisible();
   });
 
@@ -179,7 +177,7 @@ describe('Notary admin dashboard', () => {
     await expect.element(page.getByText(samples[1].requested_model ?? '')).toBeVisible();
   });
 
-  test('opens notarized evidence from the same trace route', async () => {
+  test('opens sealed evidence from the same trace route', async () => {
     const fixture = createFixtureApi();
     let requestedSettings: Parameters<LocalApi['share']>[1] | null = null;
     const api: LocalApi = {
@@ -196,10 +194,17 @@ describe('Notary admin dashboard', () => {
     await expect.element(page.getByRole('button', { name: 'Verify locally' })).toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Export .llmtrace' })).toBeVisible();
     await expect.element(page.getByRole('tab', { name: 'Summary' })).toBeVisible();
-    await expect.element(page.getByRole('tab', { name: 'Notarization' })).toBeVisible();
+    await expect.element(page.getByRole('tab', { name: 'Sealing' })).toBeVisible();
     await expect.element(page.getByRole('tab', { name: 'Evidence' })).toBeVisible();
     await expect.element(page.getByRole('tab', { name: 'Technical' })).toBeVisible();
     await expect.element(page.getByText('Private on this device', { exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: 'Evidence' }).click();
+    await expect
+      .poll(() => document.querySelectorAll('.trace-message--human').length)
+      .toBeGreaterThan(0);
+    await expect
+      .poll(() => document.querySelectorAll('.trace-message--model').length)
+      .toBeGreaterThan(0);
     await page.getByRole('button', { name: 'Share' }).click();
     await expect
       .element(page.getByRole('heading', { name: 'Review and share this Trace' }))
@@ -269,7 +274,7 @@ describe('Notary admin dashboard', () => {
     await expect
       .element(page.getByRole('button', { name: 'Share', exact: true }))
       .not.toBeInTheDocument();
-    await page.getByRole('tab', { name: 'Notarization' }).click();
+    await page.getByRole('tab', { name: 'Sealing' }).click();
     await expect
       .element(page.getByRole('progressbar', { name: 'Private transcript bytes authenticated' }))
       .toHaveAttribute('aria-valuenow', '612352');
@@ -281,22 +286,22 @@ describe('Notary admin dashboard', () => {
 
     cleanup();
     renderDashboard('/traces/trc-20260727-benchmark');
-    await expect.element(page.getByRole('button', { name: 'Retry notarization' })).toBeVisible();
-    await page.getByRole('tab', { name: 'Notarization' }).click();
+    await expect.element(page.getByRole('button', { name: 'Retry sealing' })).toBeVisible();
+    await page.getByRole('tab', { name: 'Sealing' }).click();
     await expect.element(page.getByText('Attempt 2', { exact: true })).toBeVisible();
     await expect.element(page.getByText('notary_capacity', { exact: true }).first()).toBeVisible();
 
     cleanup();
     renderDashboard('/traces/trc-20260728-auth-error');
     await expect
-      .element(page.getByText('Provider response cannot be notarized', { exact: true }))
+      .element(page.getByText('Provider response cannot be sealed', { exact: true }))
       .toBeVisible();
     await expect
-      .element(page.getByRole('button', { name: 'Notarize', exact: true }))
+      .element(page.getByRole('button', { name: 'Seal trace', exact: true }))
       .not.toBeInTheDocument();
   });
 
-  test('moves a Trace atomically from Captured to Notarized on the same route', async () => {
+  test('moves a Trace atomically from Captured to Sealed on the same route', async () => {
     const fixture = createFixtureApi();
     const captured = structuredClone(fixtureCaptures[0]);
     const packageTemplate = await fixture.traceContent('trc-20260727-research-brief');
@@ -317,9 +322,11 @@ describe('Notary admin dashboard', () => {
       },
     };
     renderDashboard(`/traces/${captured.trace_id}`, api);
-    await expect.element(page.getByRole('button', { name: 'Notarize', exact: true })).toBeVisible();
+    await expect
+      .element(page.getByRole('button', { name: 'Seal trace', exact: true }))
+      .toBeVisible();
     expect(packageReads).toBe(0);
-    await page.getByRole('button', { name: 'Notarize', exact: true }).click();
+    await page.getByRole('button', { name: 'Seal trace', exact: true }).click();
     await expect.element(page.getByRole('button', { name: 'Export .llmtrace' })).toBeVisible();
     expect(window.location.hash).toBe(`#/traces/${captured.trace_id}`);
     expect(packageReads).toBeGreaterThan(0);
@@ -361,9 +368,9 @@ describe('Notary admin dashboard', () => {
         page.getByRole('heading', { name: 'No traces are currently in the Captured state.' }),
       )
       .toBeVisible();
-    await page.getByRole('button', { name: 'Notarized', exact: true }).click();
+    await page.getByRole('button', { name: 'Sealed', exact: true }).click();
     await expect
-      .element(page.getByRole('heading', { name: 'No traces have been notarized yet.' }))
+      .element(page.getByRole('heading', { name: 'No traces have been sealed yet.' }))
       .toBeVisible();
     await page.getByLabelText('Search traces').fill('missing');
     await expect
@@ -405,44 +412,103 @@ describe('Notary admin dashboard', () => {
     await expect.poll(() => filters.at(-1)?.created_from_unix_ms).toBeTypeOf('number');
   });
 
-  test('lists provider allowlist entries, readiness, and SDK base URLs', async () => {
+  test('puts signed-in AI tools before provider API and SDK routes', async () => {
     renderDashboard('/providers');
-    await expect.element(page.getByRole('heading', { name: 'Providers' })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'AI connections' })).toBeVisible();
     await expect.element(page.getByText('Local admin').first()).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'OpenAI', exact: true })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Connect your AI tool' })).toBeVisible();
     await expect
       .poll(() =>
-        Array.from(document.querySelectorAll('.provider-route h2')).map((heading) =>
+        Array.from(document.querySelectorAll('.provider-client-list h2')).map((heading) =>
           heading.textContent?.trim(),
         ),
       )
-      .toEqual(['OpenAI', 'OpenAI Codex', 'Anthropic', 'DeepSeek', 'OpenRouter']);
+      .toEqual(['Codex CLI', 'Claude Code']);
+    await expect
+      .poll(() =>
+        Array.from(document.querySelectorAll('.provider-api-list h2')).map((heading) =>
+          heading.textContent?.trim(),
+        ),
+      )
+      .toEqual(['OpenAI', 'Anthropic', 'DeepSeek', 'OpenRouter']);
+    await expect
+      .element(page.getByRole('heading', { name: 'OpenAI Codex' }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(page.getByText('http://127.0.0.1:8787/openai/v1', { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(page.getByText('http://127.0.0.1:8787/codex', { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(page.getByText('http://127.0.0.1:8787/anthropic', { exact: true }).first())
+      .toBeVisible();
+    await expect.element(page.getByText('ready', { exact: true }).first()).toBeVisible();
+    await expect.element(page.getByText(/Saved product logins stay there/)).toBeVisible();
+    await page.getByText('Setup Codex CLI', { exact: true }).click();
+    await expect
+      .element(page.getByText(/base_url = "http:\/\/127\.0\.0\.1:8787\/codex"/))
+      .toBeVisible();
+    await expect.element(page.getByText(/model_provider = "capture-chatgpt"/)).toBeVisible();
+    await page.getByText('Setup Claude Code', { exact: true }).click();
+    await expect
+      .element(page.getByText(/ANTHROPIC_BASE_URL=http:\/\/127\.0\.0\.1:8787\/anthropic/))
+      .toBeVisible();
+    await page.getByText('OpenAI route details', { exact: true }).click();
     await expect.element(page.getByText('api.openai.com', { exact: true }).first()).toBeVisible();
-    await expect.element(page.getByText('http://127.0.0.1:8787/openai/v1')).toBeVisible();
-    await expect.element(page.getByText('http://127.0.0.1:8787/codex')).toBeVisible();
-    await expect.element(page.getByText('Ready', { exact: true }).first()).toBeVisible();
-    await expect.element(page.getByText(/client still selects its provider model/)).toBeVisible();
     await expect
-      .element(page.getByText('On — supported requests create Traces', { exact: true }).first())
-      .toBeVisible();
-    await expect
-      .element(page.getByText('Use the OpenAI Responses client with this base URL.'))
-      .toBeVisible();
-    await expect
-      .element(page.getByText('Use Codex CLI with its saved ChatGPT login and this base URL.'))
+      .element(page.getByText('On, supported requests create traces', { exact: true }).first())
       .toBeVisible();
     await expect.element(page.getByText('Ollama', { exact: true })).not.toBeInTheDocument();
     await expect.element(page.getByPlaceholder('Provider host')).not.toBeInTheDocument();
   });
 
-  test('copies provider setup without moving credentials or model selection into Notary', async () => {
+  test('copies tool setup and explains optional Keychain import for API keys', async () => {
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
     renderDashboard('/providers');
+    for (const name of [
+      'Copy OpenAI Codex base URL',
+      'Copy Claude Code base URL',
+      'Copy OpenAI base URL',
+      'Copy Anthropic base URL',
+      'Copy DeepSeek base URL',
+      'Copy OpenRouter base URL',
+    ]) {
+      await expect.element(page.getByRole('button', { name })).toBeVisible();
+    }
     await page.getByRole('button', { name: 'Copy OpenAI base URL' }).click();
     expect(writeText).toHaveBeenCalledWith('http://127.0.0.1:8787/openai/v1');
+    await page.getByText('Setup Codex CLI', { exact: true }).click();
+    await page.getByRole('button', { name: 'Copy config' }).click();
+    expect(writeText).toHaveBeenLastCalledWith(
+      expect.stringContaining('requires_openai_auth = true'),
+    );
+    await page.getByText('Setup Claude Code', { exact: true }).click();
+    await page.getByRole('button', { name: 'Copy command' }).click();
+    expect(writeText).toHaveBeenLastCalledWith(
+      expect.stringContaining('ANTHROPIC_BASE_URL=http://127.0.0.1:8787/anthropic'),
+    );
     await expect
-      .element(page.getByText(/key environment variable and model selection unchanged/).first())
+      .element(
+        page.getByText(/validated directly with the provider and stored in macOS Keychain/).first(),
+      )
       .toBeVisible();
+    await expect
+      .poll(
+        () =>
+          Array.from(document.querySelectorAll('.provider-route')).find(
+            (card) => card.querySelector('h2')?.textContent === 'OpenAI',
+          )?.textContent,
+      )
+      .toContain('the client receives a scoped local token');
+    await expect
+      .poll(
+        () =>
+          Array.from(document.querySelectorAll('.provider-route')).find(
+            (card) => card.querySelector('h2')?.textContent === 'DeepSeek',
+          )?.textContent,
+      )
+      .toContain('Keychain import is not available for this route');
   });
 
   test('keeps provider routes out of Settings and preserves the required group order', async () => {
@@ -453,14 +519,7 @@ describe('Notary admin dashboard', () => {
           (heading) => heading.textContent,
         ),
       )
-      .toEqual([
-        'General',
-        'Account',
-        'Notarization',
-        'Security & storage',
-        'Service',
-        'Developer',
-      ]);
+      .toEqual(['General', 'Account', 'Sealing', 'Security & storage', 'Service', 'Developer']);
     await expect.element(page.getByText('Proxy base URLs')).not.toBeInTheDocument();
   });
 
@@ -471,7 +530,7 @@ describe('Notary admin dashboard', () => {
     await toggle.click();
     await expect.element(toggle).not.toBeChecked();
     await expect
-      .element(page.getByText('Off — requests still pass through', { exact: false }))
+      .element(page.getByText('Off, requests still pass through', { exact: false }))
       .toBeVisible();
     await expect.poll(async () => (await api.captureSetting()).enabled).toBe(false);
     await page.getByRole('button', { name: 'Dark color scheme' }).click();
@@ -522,8 +581,8 @@ describe('Notary admin dashboard', () => {
         ),
       )
       .toEqual([
-        'Accepts new captures and notarizations',
-        'Notarization-only',
+        'Accepts new captures and sealing',
+        'Sealing-only',
         'Historical verification only',
         'Untrusted',
       ]);
@@ -605,13 +664,15 @@ describe('Notary admin dashboard', () => {
   test('uses the same route content in embedded mode without standalone navigation', async () => {
     renderDashboard('/providers', createFixtureApi(), true);
     await expect.element(page.getByRole('heading', { name: 'OpenAI', exact: true })).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'Providers' })).not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('heading', { name: 'AI connections' }))
+      .not.toBeInTheDocument();
     await expect
       .element(page.getByRole('navigation', { name: 'Admin dashboard' }))
       .not.toBeInTheDocument();
   });
 
-  test('uses exactly five Settings groups in embedded desktop mode', async () => {
+  test('uses exactly four Settings groups in embedded desktop mode', async () => {
     const actions: DesktopSettingsAction[] = [];
     renderDashboard('/settings', createFixtureApi(), true, desktopSettings, (action) =>
       actions.push(action),
@@ -622,22 +683,17 @@ describe('Notary admin dashboard', () => {
           (heading) => heading.textContent,
         ),
       )
-      .toEqual(['General', 'Account', 'Security', 'Updates', 'Advanced']);
-    await expect.element(page.getByRole('switch', { name: 'Capture new requests' })).toBeChecked();
+      .toEqual(['Connections', 'Privacy & storage', 'App', 'Advanced']);
     await expect
-      .element(page.getByRole('switch', { name: 'Open Notary at sign-in' }))
+      .element(page.getByRole('switch', { name: 'Open Exalto Capture at sign-in' }))
       .toBeChecked();
     await expect
-      .element(page.getByText(/Closing the window leaves Notary available/))
+      .element(page.getByText(/Closing the window leaves Exalto Capture available/))
       .toBeVisible();
     await expect
       .element(page.getByText('Menu-bar controller', { exact: true }))
       .not.toBeInTheDocument();
-    await page.getByRole('switch', { name: 'Capture new requests' }).click();
-    await expect
-      .element(page.getByText('Off — requests pass through locally and create no Trace.'))
-      .toBeVisible();
-    await page.getByRole('switch', { name: 'Open Notary at sign-in' }).click();
+    await page.getByRole('switch', { name: 'Open Exalto Capture at sign-in' }).click();
     await page.getByRole('button', { name: 'Check now' }).click();
     await page.getByRole('button', { name: 'Restart to update' }).click();
     expect(actions).toEqual([
@@ -650,8 +706,11 @@ describe('Notary admin dashboard', () => {
   test('shows embedded account, local-data, Notaries, update, and Advanced consequences', async () => {
     renderDashboard('/settings', createFixtureApi(), true, desktopSettings);
     await expect.element(page.getByText('Sample User', { exact: true })).toBeVisible();
-    await expect.element(page.getByText(/does not upload or share local Traces/)).toBeVisible();
+    await expect.element(page.getByText(/does not upload or share local traces/)).toBeVisible();
     await expect.element(page.getByText('Local data', { exact: true })).toBeVisible();
+    await expect
+      .element(page.getByText(/not protected by the private-capture vault/))
+      .toBeVisible();
     await expect.element(page.getByRole('heading', { name: 'Alice' })).toBeVisible();
     await expect
       .element(page.getByText('Operated by Exalto', { exact: true }).first())
@@ -659,7 +718,10 @@ describe('Notary admin dashboard', () => {
     await expect.element(page.getByText('Active verification key', { exact: true })).toBeVisible();
     await page.getByText('View details', { exact: true }).click();
     await expect.element(page.getByText('Verification key', { exact: true }).first()).toBeVisible();
-    await expect.element(page.getByText('ai.exalto.notary', { exact: false })).toBeVisible();
+    await expect.element(page.getByText(/installed macOS identity/)).toBeVisible();
+    await expect
+      .element(page.getByText('ai.exalto.notary', { exact: false }))
+      .not.toBeInTheDocument();
     await expect.element(page.getByText('Service', { exact: true })).toBeVisible();
     await expect.element(page.getByText('Developer', { exact: true })).toBeVisible();
     await expect.element(page.getByText('Provider routes')).not.toBeInTheDocument();
@@ -680,11 +742,11 @@ describe('Notary admin dashboard', () => {
     renderDashboard('/settings', api, true, {
       ...desktopSettings,
       update: { ...readyUpdate, phase: 'ready' },
-      restart_block_reason: 'Finish the active notarization before restarting.',
+      restart_block_reason: 'Wait for the active seal to finish before restarting to update.',
     });
     await expect.element(page.getByRole('button', { name: 'Reconnect' })).toBeVisible();
     await expect
-      .element(page.getByText('Finish the active notarization before restarting.'))
+      .element(page.getByText('Wait for the active seal to finish before restarting to update.'))
       .toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Restart to update' })).toBeDisabled();
   });
@@ -719,16 +781,16 @@ describe('Notary admin dashboard', () => {
     await page.getByRole('button', { name: 'More filters' }).click();
     await page.getByLabelText('Activity raw event name').fill('notarization_completed');
     await expect.poll(() => receivedFilters.event_type).toBe('notarization_completed');
-    await expect.element(page.getByText('Notarization completed').first()).toBeVisible();
-    await expect.element(page.getByText('Notarization failed')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Sealing completed').first()).toBeVisible();
+    await expect.element(page.getByText('Sealing failed')).not.toBeInTheDocument();
   });
 
   test('opens Trace-linked activity and keeps safe technical details inspectable', async () => {
     renderDashboard('/activity');
-    const failed = page.getByText('Notarization failed', { exact: true }).first();
+    const failed = page.getByText('Sealing failed', { exact: true }).first();
     await expect.element(failed).toBeVisible();
     const failedRow = Array.from(document.querySelectorAll<HTMLElement>('.event-row')).find((row) =>
-      row.textContent?.includes('Notarization failed'),
+      row.textContent?.includes('Sealing failed'),
     );
     const technicalDetails = failedRow?.querySelector<HTMLElement>('summary');
     if (!technicalDetails) throw new Error('failed Activity details are missing');
@@ -781,11 +843,11 @@ describe('Notary admin dashboard', () => {
     await page.viewport(1280, 800);
     renderDashboard('/traces');
     const divider = page.getByRole('separator', { name: 'Resize list and detail panels' });
-    await expect.element(divider).toHaveAttribute('aria-valuenow', '320');
+    await expect.element(divider).toHaveAttribute('aria-valuenow', '380');
     document.querySelector<HTMLElement>('[role="separator"]')?.focus();
     await userEvent.keyboard('{ArrowRight}');
-    await expect.element(divider).toHaveAttribute('aria-valuenow', '336');
-    expect(localStorage.getItem('notary-admin-dashboard-split-width')).toBe('336');
+    await expect.element(divider).toHaveAttribute('aria-valuenow', '396');
+    expect(localStorage.getItem('notary-admin-dashboard-split-width')).toBe('396');
   });
 
   test('preserves a persisted Listed share without changing its visibility', async () => {

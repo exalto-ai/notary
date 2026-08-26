@@ -1,5 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource-variable/fraunces/opsz.css';
+import '@fontsource-variable/newsreader/opsz.css';
+import '@fontsource-variable/newsreader/opsz-italic.css';
 import '@fontsource-variable/instrument-sans';
 import '@fontsource/ibm-plex-mono/latin-400.css';
 import '@fontsource/ibm-plex-mono/latin-ext-400.css';
@@ -23,7 +26,7 @@ const colorSchemeManager = localStorageColorSchemeManager({
 const theme = createTheme({
   fontFamily: 'Instrument Sans Variable, system-ui, sans-serif',
   fontFamilyMonospace: '"IBM Plex Mono", ui-monospace, monospace',
-  headings: { fontFamily: 'Instrument Sans Variable, system-ui, sans-serif', fontWeight: '600' },
+  headings: { fontFamily: 'Fraunces Variable, Fraunces, Georgia, serif', fontWeight: '600' },
   primaryColor: 'axis',
   defaultRadius: 0,
   colors: {

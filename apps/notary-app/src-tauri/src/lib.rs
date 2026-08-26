@@ -5,6 +5,7 @@ use serde::Serialize;
 use tauri::Manager;
 
 mod daemon;
+mod provider_credentials;
 mod service_client;
 mod tray;
 mod updates;
@@ -13,11 +14,19 @@ mod vault;
 use daemon::{
     DaemonProcess, request_managed_daemon_shutdown, restart_daemon, start_daemon, stop_daemon,
 };
-use service_client::{
-    daemon_is_healthy, disconnect_account, get_account_connection, open_account_link,
-    poll_account_connection, read_admin_status, start_account_connection,
+use provider_credentials::{
+    copy_provider_local_access_token, get_provider_credential_statuses, import_provider_api_key,
+    remove_provider_api_key,
 };
-use tray::{create_tray, schedule_capture_menu_updates, show_main_window};
+use service_client::{
+    confirm_disposable_trace, daemon_is_healthy, disconnect_account, get_account_connection,
+    get_recent_trace_probes, open_account_link, open_product_link, poll_account_connection,
+    read_admin_status, set_capture_enabled, start_account_connection,
+};
+use tray::{
+    create_app_menu, create_tray, schedule_capture_menu_updates, show_main_window,
+    show_settings_window,
+};
 use updates::{
     DesktopUpdaterState, check_for_updates, get_update_state, install_update_and_restart,
     schedule_update_checks,
@@ -28,7 +37,7 @@ use vault::{
 };
 
 #[cfg(test)]
-use service_client::validate_account_link;
+use service_client::{product_link, validate_account_link};
 #[cfg(test)]
 use updates::{
     build_ids_require_update, desktop_updates_enabled, pending_build_is_latest,
@@ -156,6 +165,14 @@ pub fn run() {
             poll_account_connection,
             disconnect_account,
             open_account_link,
+            open_product_link,
+            get_provider_credential_statuses,
+            import_provider_api_key,
+            remove_provider_api_key,
+            copy_provider_local_access_token,
+            get_recent_trace_probes,
+            confirm_disposable_trace,
+            set_capture_enabled,
             configure_vault,
             unlock_vault,
             complete_onboarding,
@@ -166,7 +183,21 @@ pub fn run() {
             check_for_updates,
             install_update_and_restart,
         ])
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "app_settings" => show_settings_window(app),
+            "help_guide" => {
+                let _ = open_product_link("guide".into());
+            }
+            "help_catalogue" => {
+                let _ = open_product_link("catalogue".into());
+            }
+            "help_report" => {
+                let _ = open_product_link("report".into());
+            }
+            _ => {}
+        })
         .setup(|app| {
+            create_app_menu(app)?;
             let capture_requests = create_tray(app)?;
             schedule_capture_menu_updates(capture_requests);
             schedule_update_checks(app.handle().clone());
@@ -192,7 +223,7 @@ pub fn run() {
             }
         })
         .build(tauri::generate_context!())
-        .expect("error while building Notary desktop");
+        .expect("error while building Exalto Capture desktop");
 
     app.run(|app, event| {
         if let tauri::RunEvent::ExitRequested { code, api, .. } = event {
@@ -328,5 +359,35 @@ mod tests {
                 .is_err()
         );
         assert!(validate_account_link("http://example.com/#/account").is_err());
+    }
+
+    #[test]
+    fn product_links_are_an_explicit_allowlist() {
+        assert_eq!(
+            product_link("catalogue"),
+            Some("https://llm-notary.exalto.ai/traces")
+        );
+        assert_eq!(product_link("guide"), Some("https://exalto.ai/docs/"));
+        assert_eq!(
+            product_link("report"),
+            Some("https://github.com/exalto-ai/notary/issues/new")
+        );
+        assert_eq!(
+            product_link("openai_key"),
+            Some("https://platform.openai.com/api-keys")
+        );
+        assert_eq!(
+            product_link("anthropic_key"),
+            Some("https://console.anthropic.com/settings/keys")
+        );
+        assert_eq!(
+            product_link("openrouter_key"),
+            Some("https://openrouter.ai/settings/keys")
+        );
+        assert_eq!(
+            product_link("xai_key"),
+            Some("https://docs.x.ai/developers/quickstart")
+        );
+        assert_eq!(product_link("https://example.com"), None);
     }
 }

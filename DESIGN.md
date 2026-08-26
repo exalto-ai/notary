@@ -67,6 +67,14 @@ layout:
 
 # Notary design language
 
+> **Exalto Capture desktop scope:** For `apps/notary-app`, use the current
+> [exalto.ai](https://exalto.ai/) product language and
+> [Exalto Capture desktop redesign](docs/exalto-capture-desktop-redesign.md).
+> The desktop product is now Exalto Capture, uses Capture, Choose, Seal, Verify
+> or share terminology, and adopts the site's warm evidence-receipt visual
+> language. The guidance below remains the baseline for the standalone local
+> administration dashboard and public web surfaces until those are migrated.
+
 ## Product posture
 
 Notary is evidence infrastructure. Its audience already understands model providers, local tooling, and the difference between a claim and a record. The interface’s job is to make the next accountable action obvious: capture, inspect, notarize, verify, or share.

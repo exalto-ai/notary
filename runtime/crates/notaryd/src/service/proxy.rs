@@ -3,7 +3,7 @@ use std::{
     future::Future,
     path::PathBuf,
     sync::{
-        Arc,
+        Arc, RwLock as StdRwLock,
         atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     time::{Instant, SystemTime, UNIX_EPOCH},
@@ -46,7 +46,10 @@ use crate::{
     notary_admission_error,
     persistence::Persistence,
     registry::{NotaryEndpoint, Registry, RegistryRecord},
-    vault::Vault,
+    vault::{
+        CHILD_INITIALIZATION_STDIN_ENV, DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX,
+        DesktopCredentialProvider, DesktopProviderCredentials, Vault,
+    },
 };
 
 #[cfg(test)]
@@ -133,6 +136,7 @@ pub struct ProxyArgs {
 pub(crate) struct AppState {
     capture_mode: Arc<CaptureMode>,
     direct_upstream: Arc<dyn DirectUpstreamConnector>,
+    provider_credentials: Arc<StdRwLock<DesktopProviderCredentials>>,
     max_frame_bytes: usize,
     max_attestable_http_bytes: usize,
     pub(crate) vault: Arc<Vault>,
@@ -360,7 +364,10 @@ pub async fn run(args: ProxyArgs) -> Result<()> {
             "hosted notary discovery requires NOTARYD_PLATFORM_API_KEY or NOTARYD_PLATFORM_API_KEY_FILE"
         );
     }
-    if cluster_runtime.is_some() && std::env::var_os("NOTARYD_DESKTOP_CONTROL_STDIN").is_some() {
+    if cluster_runtime.is_some()
+        && (std::env::var_os("NOTARYD_DESKTOP_CONTROL_STDIN").is_some()
+            || std::env::var_os(CHILD_INITIALIZATION_STDIN_ENV).is_some())
+    {
         bail!("desktop child-process control is unavailable in cluster mode");
     }
     let persistence = Persistence::open(&config).await?;
@@ -370,6 +377,12 @@ pub async fn run(args: ProxyArgs) -> Result<()> {
         Vault::open_or_init_interactive().context(
             "opening the local checkpoint vault (set NOTARYD_VAULT_PASSPHRASE_FILE before first start when an OS vault is unavailable)",
         )?
+    };
+    let provider_credentials = if std::env::var_os(CHILD_INITIALIZATION_STDIN_ENV).is_some() {
+        DesktopProviderCredentials::read_initialization_from_stdin()
+            .context("reading private desktop initialization")?
+    } else {
+        DesktopProviderCredentials::default()
     };
     if let Some(cluster_runtime) = &cluster_runtime {
         let vault_identity = vault.cluster_identity_sha256()?;
@@ -413,6 +426,7 @@ pub async fn run(args: ProxyArgs) -> Result<()> {
     let state = AppState {
         capture_mode: capture_mode.clone(),
         direct_upstream: Arc::new(ReqwestDirectUpstreamConnector::new()?),
+        provider_credentials: Arc::new(StdRwLock::new(provider_credentials)),
         max_frame_bytes,
         max_attestable_http_bytes,
         vault: Arc::new(vault),
@@ -505,7 +519,7 @@ pub async fn run(args: ProxyArgs) -> Result<()> {
         result = &mut admin_server => Exit::Admin(joined(result, "admin server")),
         result = &mut worker => Exit::Worker(joined(result, "notarization worker")),
         result = &mut heartbeat => Exit::Heartbeat(joined(result, "cluster replica heartbeat")),
-        () = shutdown_signal() => Exit::Requested,
+        () = shutdown_signal(state.provider_credentials.clone()) => Exit::Requested,
     };
     if let Some(cluster_runtime) = &cluster_runtime {
         cluster_runtime.mark_draining();
@@ -711,11 +725,11 @@ pub(crate) fn router(state: AppState) -> Router {
     Router::new().fallback(any(proxy)).with_state(state)
 }
 
-async fn shutdown_signal() {
+async fn shutdown_signal(provider_credentials: Arc<StdRwLock<DesktopProviderCredentials>>) {
     if std::env::var_os("NOTARYD_DESKTOP_CONTROL_STDIN").is_some() {
         tokio::select! {
             () = system_shutdown_signal() => unblock_desktop_control_stdin(),
-            () = desktop_shutdown_signal() => {},
+            () = desktop_shutdown_signal(provider_credentials) => {},
         }
     } else {
         system_shutdown_signal().await;
@@ -743,26 +757,46 @@ async fn system_shutdown_signal() {
     }
 }
 
-async fn desktop_shutdown_signal() {
-    let command = tokio::task::spawn_blocking(|| {
-        use std::io::BufRead as _;
-        let mut line = String::new();
-        let read = std::io::stdin().lock().read_line(&mut line)?;
-        Ok::<_, std::io::Error>((read, line))
+async fn desktop_shutdown_signal(provider_credentials: Arc<StdRwLock<DesktopProviderCredentials>>) {
+    let command = tokio::task::spawn_blocking(move || {
+        use std::io::{BufRead as _, Read as _};
+        use zeroize::Zeroizing;
+
+        let stdin = std::io::stdin();
+        let mut reader = stdin.lock();
+        loop {
+            let mut line = Zeroizing::new(Vec::with_capacity(1024));
+            let read = (&mut reader)
+                .take((8 * 1024 + 1) as u64)
+                .read_until(b'\n', &mut line)?;
+            if read == 0 {
+                return Ok::<_, std::io::Error>(());
+            }
+            if line.as_slice() == b"shutdown\n" || line.as_slice() == b"shutdown\r\n" {
+                tracing::info!("desktop requested graceful shutdown");
+                return Ok(());
+            }
+            let mut payload = std::io::Cursor::new(line.as_slice());
+            match DesktopProviderCredentials::read_initialization_line(&mut payload) {
+                Ok(replacement) => match provider_credentials.write() {
+                    Ok(mut credentials) => {
+                        *credentials = replacement;
+                        tracing::info!("desktop refreshed in-memory provider credentials");
+                    }
+                    Err(_) => {
+                        tracing::warn!("in-memory provider credential state is unavailable");
+                        return Ok(());
+                    }
+                },
+                Err(_) => tracing::warn!("ignoring an invalid desktop control command"),
+            }
+        }
     })
     .await;
     match command {
-        Ok(Ok((0, _))) => tracing::info!("desktop control pipe closed"),
-        Ok(Ok((_, line))) if line.trim_end_matches(['\r', '\n']) == "shutdown" => {
-            tracing::info!("desktop requested graceful shutdown");
-        }
-        Ok(Ok(_)) => {
-            tracing::warn!("ignoring an invalid desktop control command");
-            std::future::pending::<()>().await;
-        }
+        Ok(Ok(())) => tracing::info!("desktop control pipe closed"),
         Ok(Err(_)) | Err(_) => {
             tracing::warn!("desktop control pipe failed");
-            std::future::pending::<()>().await;
         }
     }
 }
@@ -1041,6 +1075,115 @@ fn provider_route_not_found_response() -> Response {
         .into_response()
 }
 
+fn apply_desktop_provider_credential(
+    provider: Provider,
+    credentials: &StdRwLock<DesktopProviderCredentials>,
+    headers: &mut HeaderMap,
+) -> Result<DesktopCredentialAction> {
+    let header_contains_local_token = |header: &HeaderValue| {
+        header
+            .as_bytes()
+            .windows(DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX.len())
+            .any(|window| window == DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX.as_bytes())
+    };
+    let looks_like_local_token = headers.values().any(header_contains_local_token);
+    let desktop_provider = match provider {
+        Provider::Openai => Some(DesktopCredentialProvider::Openai),
+        Provider::Anthropic => Some(DesktopCredentialProvider::Anthropic),
+        Provider::Openrouter => Some(DesktopCredentialProvider::Openrouter),
+        Provider::OpenaiCodex | Provider::Deepseek => None,
+    };
+    let Some(desktop_provider) = desktop_provider else {
+        return Ok(if looks_like_local_token {
+            DesktopCredentialAction::Rejected
+        } else {
+            DesktopCredentialAction::Unchanged
+        });
+    };
+    let authoritative_header = match provider {
+        Provider::Openai | Provider::Openrouter => http::header::AUTHORIZATION,
+        Provider::Anthropic => HeaderName::from_static("x-api-key"),
+        Provider::OpenaiCodex | Provider::Deepseek => unreachable!(),
+    };
+    let presents_exact_local_token = |expected: &[u8]| {
+        let mut matched = false;
+        for (name, value) in headers.iter() {
+            if !header_contains_local_token(value) {
+                continue;
+            }
+            if matched
+                || name != authoritative_header
+                || !constant_time_eq(value.as_bytes(), expected)
+            {
+                return false;
+            }
+            matched = true;
+        }
+        matched
+    };
+    let credentials = credentials
+        .read()
+        .map_err(|_| anyhow::anyhow!("in-memory provider credential state is unavailable"))?;
+    let Some((api_key, local_access_token)) = credentials.get(desktop_provider) else {
+        return Ok(if looks_like_local_token {
+            DesktopCredentialAction::Rejected
+        } else {
+            DesktopCredentialAction::Unchanged
+        });
+    };
+    match provider {
+        Provider::Openai | Provider::Openrouter => {
+            let presented_token = zeroize::Zeroizing::new(format!("Bearer {local_access_token}"));
+            if !presents_exact_local_token(presented_token.as_bytes()) {
+                return Ok(if looks_like_local_token {
+                    DesktopCredentialAction::Rejected
+                } else {
+                    DesktopCredentialAction::Unchanged
+                });
+            }
+            let authorization = zeroize::Zeroizing::new(format!("Bearer {api_key}"));
+            let mut value = HeaderValue::from_bytes(authorization.as_bytes())
+                .map_err(|_| anyhow::anyhow!("stored provider credential is invalid"))?;
+            value.set_sensitive(true);
+            headers.insert(http::header::AUTHORIZATION, value);
+        }
+        Provider::Anthropic => {
+            if !presents_exact_local_token(local_access_token.as_bytes()) {
+                return Ok(if looks_like_local_token {
+                    DesktopCredentialAction::Rejected
+                } else {
+                    DesktopCredentialAction::Unchanged
+                });
+            }
+            let mut value = HeaderValue::from_bytes(api_key.as_bytes())
+                .map_err(|_| anyhow::anyhow!("stored provider credential is invalid"))?;
+            value.set_sensitive(true);
+            headers.insert(HeaderName::from_static("x-api-key"), value);
+        }
+        Provider::OpenaiCodex | Provider::Deepseek => unreachable!(),
+    }
+    Ok(DesktopCredentialAction::Injected)
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum DesktopCredentialAction {
+    Unchanged,
+    Injected,
+    Rejected,
+}
+
+fn constant_time_eq(left: &[u8], right: &[u8]) -> bool {
+    if left.len() != right.len() {
+        return false;
+    }
+    left.iter()
+        .zip(right)
+        .fold(0_u8, |difference, (left, right)| {
+            difference | (left ^ right)
+        })
+        == 0
+}
+
 async fn proxy_inner(state: AppState, request: Request) -> Result<Response> {
     let (mut parts, body) = request.into_parts();
     for name in [
@@ -1099,6 +1242,14 @@ async fn proxy_inner(state: AppState, request: Request) -> Result<Response> {
     // caller. `Host` is connection-specific here because we create a new
     // upstream connection rather than forwarding the caller's one.
     outbound_headers.remove(http::header::HOST);
+    let credential_action = apply_desktop_provider_credential(
+        provider,
+        &state.provider_credentials,
+        &mut outbound_headers,
+    )?;
+    if credential_action == DesktopCredentialAction::Rejected {
+        return Ok(local_access_token_rejected_response());
+    }
     let capture_enabled = state.capture_mode.snapshot().await?;
     if !capture_enabled {
         tracing::info!(
@@ -1553,6 +1704,15 @@ async fn proxy_inner(state: AppState, request: Request) -> Result<Response> {
         .headers_mut()
         .insert("x-notary-trace-id", HeaderValue::from_str(&trace_id)?);
     Ok(response)
+}
+
+fn local_access_token_rejected_response() -> Response {
+    (
+        StatusCode::UNAUTHORIZED,
+        [(http::header::CONTENT_TYPE, "application/json")],
+        r#"{"error":{"message":"The Exalto Capture local access token was not recognized. Copy the current token from the app and try again."}}"#,
+    )
+        .into_response()
 }
 
 async fn direct_provider_request(
@@ -2244,6 +2404,7 @@ mod tests {
         AppState {
             capture_mode,
             direct_upstream: Arc::new(ReqwestDirectUpstreamConnector::new().unwrap()),
+            provider_credentials: Arc::new(StdRwLock::new(DesktopProviderCredentials::default())),
             max_frame_bytes: DEFAULT_NOTARY_MAX_FRAME_BYTES,
             max_attestable_http_bytes: DEFAULT_MAX_ATTESTABLE_HTTP_BYTES,
             vault: Arc::new(Vault::test_only()),
@@ -2421,6 +2582,31 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn mismatched_reserved_local_tokens_are_rejected_before_upstream() {
+        let mut state = state();
+        state.capture_mode.set_enabled(false).await.unwrap();
+        let observations = Arc::new(StdMutex::new(Vec::new()));
+        state.direct_upstream = Arc::new(StubDirectUpstream {
+            observations: observations.clone(),
+            response: StdMutex::new(None),
+        });
+        let request = Request::post("/openai/v1/responses")
+            .header(
+                http::header::AUTHORIZATION,
+                format!(
+                    "Bearer {DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}",
+                    "f".repeat(64)
+                ),
+            )
+            .body(Body::from("{}"))
+            .unwrap();
+
+        let response = proxy_inner(state, request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+        assert!(observations.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
     async fn failed_enable_is_atomic_and_leaves_capture_off() {
         let config = Arc::new(NotarydConfig::default());
         let artifacts = RoutedArtifactStore::new(
@@ -2462,6 +2648,307 @@ mod tests {
             Provider::OpenaiCodex.upstream_path_prefix(),
             "/backend-api/codex"
         );
+    }
+
+    #[test]
+    fn desktop_credentials_replace_only_the_provider_auth_header() {
+        let openai_token = format!("{DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}", "a".repeat(64));
+        let anthropic_token = format!("{DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}", "b".repeat(64));
+        let openrouter_token = format!("{DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}", "c".repeat(64));
+        let mut credentials = DesktopProviderCredentials::default();
+        credentials.insert(
+            DesktopCredentialProvider::Openai,
+            zeroize::Zeroizing::new("sk-openai-stored-1234".to_owned()),
+            zeroize::Zeroizing::new(openai_token.clone()),
+        );
+        credentials.insert(
+            DesktopCredentialProvider::Anthropic,
+            zeroize::Zeroizing::new("sk-anthropic-stored-5678".to_owned()),
+            zeroize::Zeroizing::new(anthropic_token.clone()),
+        );
+        credentials.insert(
+            DesktopCredentialProvider::Openrouter,
+            zeroize::Zeroizing::new("sk-openrouter-stored-9012".to_owned()),
+            zeroize::Zeroizing::new(openrouter_token.clone()),
+        );
+        let credentials = StdRwLock::new(credentials);
+
+        let mut openai = HeaderMap::new();
+        openai.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {openai_token}")).unwrap(),
+        );
+        openai.insert("x-api-key", HeaderValue::from_static("caller-other"));
+        assert_eq!(
+            apply_desktop_provider_credential(Provider::Openai, &credentials, &mut openai).unwrap(),
+            DesktopCredentialAction::Injected
+        );
+        assert_eq!(
+            openai[http::header::AUTHORIZATION],
+            "Bearer sk-openai-stored-1234"
+        );
+        assert!(openai[http::header::AUTHORIZATION].is_sensitive());
+        assert_eq!(openai["x-api-key"], "caller-other");
+
+        let mut anthropic = HeaderMap::new();
+        anthropic.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_static("Bearer caller-other"),
+        );
+        anthropic.insert(
+            "x-api-key",
+            HeaderValue::from_str(&anthropic_token).unwrap(),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(Provider::Anthropic, &credentials, &mut anthropic)
+                .unwrap(),
+            DesktopCredentialAction::Injected
+        );
+        assert_eq!(anthropic["x-api-key"], "sk-anthropic-stored-5678");
+        assert!(anthropic["x-api-key"].is_sensitive());
+        assert_eq!(
+            anthropic[http::header::AUTHORIZATION],
+            "Bearer caller-other"
+        );
+
+        let mut openrouter = HeaderMap::new();
+        openrouter.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {openrouter_token}")).unwrap(),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(Provider::Openrouter, &credentials, &mut openrouter)
+                .unwrap(),
+            DesktopCredentialAction::Injected
+        );
+        assert_eq!(
+            openrouter[http::header::AUTHORIZATION],
+            "Bearer sk-openrouter-stored-9012"
+        );
+
+        let mut wrong_local_token = HeaderMap::new();
+        wrong_local_token.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!(
+                "Bearer {DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}",
+                "f".repeat(64)
+            ))
+            .unwrap(),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(
+                Provider::Openai,
+                &credentials,
+                &mut wrong_local_token,
+            )
+            .unwrap(),
+            DesktopCredentialAction::Rejected
+        );
+
+        let mut openai_with_reserved_alternate_header = HeaderMap::new();
+        openai_with_reserved_alternate_header.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {openai_token}")).unwrap(),
+        );
+        openai_with_reserved_alternate_header.insert(
+            "x-api-key",
+            HeaderValue::from_str(&anthropic_token).unwrap(),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(
+                Provider::Openai,
+                &credentials,
+                &mut openai_with_reserved_alternate_header,
+            )
+            .unwrap(),
+            DesktopCredentialAction::Rejected
+        );
+
+        let mut openrouter_with_reserved_alternate_header = HeaderMap::new();
+        openrouter_with_reserved_alternate_header.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {openrouter_token}")).unwrap(),
+        );
+        openrouter_with_reserved_alternate_header
+            .insert("x-api-key", HeaderValue::from_str(&openai_token).unwrap());
+        assert_eq!(
+            apply_desktop_provider_credential(
+                Provider::Openrouter,
+                &credentials,
+                &mut openrouter_with_reserved_alternate_header,
+            )
+            .unwrap(),
+            DesktopCredentialAction::Rejected
+        );
+
+        let mut anthropic_with_reserved_alternate_header = HeaderMap::new();
+        anthropic_with_reserved_alternate_header.insert(
+            "x-api-key",
+            HeaderValue::from_str(&anthropic_token).unwrap(),
+        );
+        anthropic_with_reserved_alternate_header.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {openai_token}")).unwrap(),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(
+                Provider::Anthropic,
+                &credentials,
+                &mut anthropic_with_reserved_alternate_header,
+            )
+            .unwrap(),
+            DesktopCredentialAction::Rejected
+        );
+
+        let mut openai_with_reserved_custom_header = HeaderMap::new();
+        openai_with_reserved_custom_header.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {openai_token}")).unwrap(),
+        );
+        openai_with_reserved_custom_header.insert(
+            "x-debug-token",
+            HeaderValue::from_str(&anthropic_token).unwrap(),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(
+                Provider::Openai,
+                &credentials,
+                &mut openai_with_reserved_custom_header,
+            )
+            .unwrap(),
+            DesktopCredentialAction::Rejected
+        );
+
+        let mut real_openai_key = HeaderMap::new();
+        real_openai_key.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_static("Bearer sk-real-caller-openai"),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(
+                Provider::Openai,
+                &credentials,
+                &mut real_openai_key,
+            )
+            .unwrap(),
+            DesktopCredentialAction::Unchanged
+        );
+        assert_eq!(
+            real_openai_key[http::header::AUTHORIZATION],
+            "Bearer sk-real-caller-openai"
+        );
+
+        let mut real_anthropic_key = HeaderMap::new();
+        real_anthropic_key.insert(
+            "x-api-key",
+            HeaderValue::from_static("sk-ant-real-caller-anthropic"),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(
+                Provider::Anthropic,
+                &credentials,
+                &mut real_anthropic_key,
+            )
+            .unwrap(),
+            DesktopCredentialAction::Unchanged
+        );
+        assert_eq!(
+            real_anthropic_key["x-api-key"],
+            "sk-ant-real-caller-anthropic"
+        );
+
+        let mut codex = HeaderMap::new();
+        codex.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_static("Bearer codex-login-token"),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(Provider::OpenaiCodex, &credentials, &mut codex)
+                .unwrap(),
+            DesktopCredentialAction::Unchanged
+        );
+        assert_eq!(
+            codex[http::header::AUTHORIZATION],
+            "Bearer codex-login-token"
+        );
+
+        let mut codex_with_reserved_token = HeaderMap::new();
+        codex_with_reserved_token.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {openai_token}")).unwrap(),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(
+                Provider::OpenaiCodex,
+                &credentials,
+                &mut codex_with_reserved_token,
+            )
+            .unwrap(),
+            DesktopCredentialAction::Rejected
+        );
+
+        let mut deepseek = HeaderMap::new();
+        deepseek.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_static("Bearer deepseek-provider-key"),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(Provider::Deepseek, &credentials, &mut deepseek)
+                .unwrap(),
+            DesktopCredentialAction::Unchanged
+        );
+        assert_eq!(
+            deepseek[http::header::AUTHORIZATION],
+            "Bearer deepseek-provider-key"
+        );
+
+        let mut deepseek_with_reserved_token = HeaderMap::new();
+        deepseek_with_reserved_token.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_static("Bearer deepseek-provider-key"),
+        );
+        deepseek_with_reserved_token.insert(
+            "x-debug-token",
+            HeaderValue::from_str(&openrouter_token).unwrap(),
+        );
+        assert_eq!(
+            apply_desktop_provider_credential(
+                Provider::Deepseek,
+                &credentials,
+                &mut deepseek_with_reserved_token,
+            )
+            .unwrap(),
+            DesktopCredentialAction::Rejected
+        );
+    }
+
+    #[test]
+    fn desktop_credential_debug_and_errors_never_include_secret_values() {
+        let secret = "sk-secret-with-a-line\nbreak";
+        let mut credentials = DesktopProviderCredentials::default();
+        credentials.insert(
+            DesktopCredentialProvider::Openai,
+            zeroize::Zeroizing::new(secret.to_owned()),
+            zeroize::Zeroizing::new(format!(
+                "{DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}",
+                "d".repeat(64)
+            )),
+        );
+        assert!(!format!("{credentials:?}").contains(secret));
+
+        let credentials = StdRwLock::new(credentials);
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            http::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!(
+                "Bearer {DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}",
+                "d".repeat(64)
+            ))
+            .unwrap(),
+        );
+        let error = apply_desktop_provider_credential(Provider::Openai, &credentials, &mut headers)
+            .unwrap_err();
+        assert!(!error.to_string().contains(secret));
     }
 
     #[test]

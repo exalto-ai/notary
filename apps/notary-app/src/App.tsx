@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { Download, RefreshCw } from 'lucide-react';
 import {
   checkForUpdates,
@@ -6,9 +7,10 @@ import {
   getDesktopState,
   getUpdateState,
   installUpdateAndRestart,
-  restartDaemon,
+  isTauri,
+  openProductLink,
+  setCaptureEnabled,
   startDaemon,
-  stopDaemon,
   type DesktopState,
   type DesktopUpdateState,
 } from './bridge';
@@ -48,6 +50,7 @@ function App() {
   const [updateState, setUpdateState] = useState<DesktopUpdateState | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [setupOpen, setSetupOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -62,6 +65,25 @@ function App() {
     const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, [refresh]);
+
+  useEffect(() => {
+    if (!isTauri()) return;
+    let disposed = false;
+    let unlisten: UnlistenFn | null = null;
+    void listen<string>('exalto:navigate', (event) => {
+      if (event.payload !== 'settings') return;
+      if (!state?.onboarding_complete || setupOpen) return;
+      setTraceConstraint(null);
+      setView('settings');
+    }).then((stopListening) => {
+      if (disposed) stopListening();
+      else unlisten = stopListening;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [setupOpen, state?.onboarding_complete]);
 
   useEffect(() => {
     const refreshUpdate = async () => {
@@ -116,12 +138,51 @@ function App() {
     }
   };
 
+  const startCapturing = async () => {
+    if (!state?.running) await startDaemon();
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      try {
+        await setCaptureEnabled(true);
+        return;
+      } catch (error) {
+        lastError = error;
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+      }
+    }
+    throw lastError ?? new Error('The local capture service did not become ready.');
+  };
+
+  const startLocalService = async () => {
+    if (!state?.running) await startDaemon();
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      try {
+        await setCaptureEnabled(false);
+        return;
+      } catch (error) {
+        lastError = error;
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+      }
+    }
+    throw lastError ?? new Error('The local service did not become ready.');
+  };
+
   if (!state) return <LoadingWindow />;
   if (state.vault_locked) {
     return <VaultUnlock refresh={refresh} />;
   }
-  if (!state.onboarding_complete) {
-    return <Onboarding state={state} refresh={refresh} onFinish={(next) => setView(next)} />;
+  if (!state.onboarding_complete || setupOpen) {
+    return <Onboarding
+      state={state}
+      refresh={refresh}
+      initialStep={setupOpen ? 'client' : 'welcome'}
+      onCancel={setupOpen ? () => setSetupOpen(false) : undefined}
+      onFinish={(next) => {
+        setSetupOpen(false);
+        setView(next);
+      }}
+    />;
   }
 
   const route = workspaceRoutes[view];
@@ -137,7 +198,12 @@ function App() {
 
   return (
     <div className="native-window">
-      <Sidebar state={state} view={view} onNavigate={navigate} />
+      <Sidebar
+        state={state}
+        view={view}
+        onNavigate={navigate}
+        onOpenCatalogue={() => void openProductLink('catalogue')}
+      />
       <section className="window-content">
         <header className="native-toolbar" data-tauri-drag-region="deep">
           <div className="toolbar-title" data-tauri-drag-region="deep">
@@ -153,13 +219,39 @@ function App() {
             {updateState.phase === 'downloading' ? <RefreshCw size={11} className="is-spinning" /> : <Download size={11} />}
             {updateChipLabel(updateState)}
           </button>}
-          <div className={`service-chip ${state.running ? 'is-running' : ''} ${state.running && !state.capture_enabled ? 'is-direct' : ''}`}>
-            <StatusDot running={state.running} warning={!state.running} />
-            {state.running ? state.capture_enabled ? 'Ready to capture' : 'Running · Capture off' : 'Service stopped'}
+          {view === 'providers' && <button className="mac-button is-small toolbar-setup-button" type="button" onClick={() => setSetupOpen(true)}>Connection setup</button>}
+          <div className={`service-chip ${state.running && state.capture_enabled ? 'is-recording' : ''}`}>
+            <StatusDot running={state.running && state.capture_enabled} />
+            {state.running && state.capture_enabled ? 'REC · Capturing' : 'Capture off'}
           </div>
         </header>
 
-        <main className={`native-content ${route ? 'has-workspace' : ''}`}>
+        <main className={`native-content ${route ? 'has-workspace' : ''} ${(view === 'settings' || view === 'providers' || view === 'activity') ? 'has-settings-subnav' : ''}`}>
+          {(view === 'settings' || view === 'providers' || view === 'activity') && (
+            <nav className="settings-subnav" aria-label="Settings sections">
+              <button
+                type="button"
+                className={view === 'settings' ? 'is-selected' : ''}
+                onClick={() => navigate('settings')}
+              >
+                Preferences
+              </button>
+              <button
+                type="button"
+                className={view === 'providers' ? 'is-selected' : ''}
+                onClick={() => navigate('providers')}
+              >
+                AI connections
+              </button>
+              <button
+                type="button"
+                className={view === 'activity' ? 'is-selected' : ''}
+                onClick={() => navigate('activity')}
+              >
+                Activity log
+              </button>
+            </nav>
+          )}
           {view === 'home' && (
             <HomeView
               state={state}
@@ -167,9 +259,9 @@ function App() {
               notice={notice}
               onNavigate={navigate}
               onOpenTraces={openTraces}
-              onStart={() => void runAction('start', startDaemon, 'Notary started.')}
-              onStop={() => void runAction('stop', stopDaemon, 'Notary stopped.')}
-              onRestart={() => void runAction('restart', restartDaemon, 'Notary restarted.')}
+              onStartCapture={() => void runAction('capture-start', startCapturing, 'Capture is on.')}
+              onStopCapture={() => void runAction('capture-stop', async () => { await setCaptureEnabled(false); }, 'Capture is off.')}
+              onRetryConnections={() => void refresh()}
             />
           )}
           {view === 'settings' && <SettingsView
@@ -179,12 +271,15 @@ function App() {
             notice={notice}
             onCheckUpdate={() => void checkForDesktopUpdate()}
             onRestartToUpdate={() => void restartToUpdate()}
+            onStartService={() => void runAction('service-start', startLocalService, 'Local service is running. Capture remains off.')}
           />}
           {route && (
             <WorkspaceFrame
               route={route}
               constraint={route === 'traces' ? traceConstraint : null}
               running={state.running}
+              onStartService={() => void runAction('service-start', startLocalService, 'Local service is running. Capture remains off.')}
+              serviceStarting={busy === 'service-start'}
             />
           )}
         </main>

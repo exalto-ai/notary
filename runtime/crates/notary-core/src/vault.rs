@@ -1,7 +1,7 @@
 //! Local encryption-key management for private Notary capture checkpoints.
 
 use std::{
-    env, fs,
+    env, fmt, fs,
     io::{BufRead as _, Read as _, Write as _},
     path::{Path, PathBuf},
 };
@@ -29,6 +29,257 @@ pub const CLUSTER_KEY_FILE_ENV: &str = "NOTARYD_CLUSTER_VAULT_KEY_FILE";
 /// Requests that a supervised child read its already-unlocked vault key from
 /// stdin instead of contacting the OS credential store itself.
 pub const CHILD_KEY_STDIN_ENV: &str = "NOTARYD_VAULT_KEY_STDIN";
+/// Requests that a supervised child read its versioned desktop initialization
+/// payload from stdin immediately after the vault unlock key.
+pub const CHILD_INITIALIZATION_STDIN_ENV: &str = "NOTARYD_DESKTOP_INITIALIZATION_STDIN";
+/// Reserved prefix for a non-provider token that authorizes local Keychain
+/// credential substitution by the supervised desktop daemon.
+pub const DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX: &str = "exalto_local_";
+
+const DESKTOP_INITIALIZATION_FORMAT: &str = "exalto-capture/desktop-initialization/v2";
+const MAX_DESKTOP_INITIALIZATION_BYTES: usize = 8 * 1024;
+
+/// Provider API-key slots accepted by the private desktop-to-daemon channel.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DesktopCredentialProvider {
+    /// OpenAI API and SDK requests routed through `/openai`.
+    Openai,
+    /// Anthropic API and SDK requests routed through `/anthropic`.
+    Anthropic,
+    /// OpenRouter API and SDK requests routed through `/openrouter`.
+    Openrouter,
+}
+
+impl DesktopCredentialProvider {
+    /// Stable provider identifier used by the desktop bridge and credential
+    /// vault account name.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Openai => "openai",
+            Self::Anthropic => "anthropic",
+            Self::Openrouter => "openrouter",
+        }
+    }
+}
+
+/// In-memory provider credentials supplied by the supervising desktop app.
+///
+/// This type deliberately has a redacted `Debug` implementation. Credential
+/// strings are zeroized when replaced or dropped and are never serialized
+/// outside the private, anonymous stdin pipe.
+#[derive(Default)]
+pub struct DesktopProviderCredentials {
+    openai: Option<DesktopProviderCredential>,
+    anthropic: Option<DesktopProviderCredential>,
+    openrouter: Option<DesktopProviderCredential>,
+}
+
+struct DesktopProviderCredential {
+    api_key: Zeroizing<String>,
+    local_access_token: Zeroizing<String>,
+}
+
+impl fmt::Debug for DesktopProviderCredentials {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("DesktopProviderCredentials")
+            .field("openai", &self.openai.is_some())
+            .field("anthropic", &self.anthropic.is_some())
+            .field("openrouter", &self.openrouter.is_some())
+            .finish()
+    }
+}
+
+impl DesktopProviderCredentials {
+    /// Replaces one provider credential. The previous value is zeroized.
+    pub fn insert(
+        &mut self,
+        provider: DesktopCredentialProvider,
+        api_key: Zeroizing<String>,
+        local_access_token: Zeroizing<String>,
+    ) {
+        *self.slot_mut(provider) = Some(DesktopProviderCredential {
+            api_key,
+            local_access_token,
+        });
+    }
+
+    /// Returns one provider key and its local access token for immediate,
+    /// gated request-header construction.
+    pub fn get(&self, provider: DesktopCredentialProvider) -> Option<(&str, &str)> {
+        self.slot(provider).as_ref().map(|credential| {
+            (
+                credential.api_key.as_str(),
+                credential.local_access_token.as_str(),
+            )
+        })
+    }
+
+    /// Encodes a bounded, versioned replacement payload for the private child
+    /// stdin pipe. The returned bytes zeroize themselves when dropped.
+    pub fn encode_initialization_line(&self) -> Result<Zeroizing<Vec<u8>>> {
+        let wire = DesktopInitializationRef {
+            format: DESKTOP_INITIALIZATION_FORMAT,
+            provider_credentials: DesktopProviderCredentialsRef {
+                openai: self.openai.as_ref().map(DesktopProviderCredentialRef::from),
+                anthropic: self
+                    .anthropic
+                    .as_ref()
+                    .map(DesktopProviderCredentialRef::from),
+                openrouter: self
+                    .openrouter
+                    .as_ref()
+                    .map(DesktopProviderCredentialRef::from),
+            },
+        };
+        let mut encoded = Zeroizing::new(
+            serde_json::to_vec(&wire)
+                .map_err(|_| anyhow::anyhow!("could not encode desktop initialization"))?,
+        );
+        if encoded.len() >= MAX_DESKTOP_INITIALIZATION_BYTES {
+            bail!("desktop initialization exceeds its private-pipe limit");
+        }
+        encoded.push(b'\n');
+        Ok(encoded)
+    }
+
+    /// Reads one bounded initialization or replacement payload from a buffered
+    /// private pipe.
+    pub fn read_initialization_line(reader: &mut impl std::io::BufRead) -> Result<Self> {
+        let mut encoded = Zeroizing::new(Vec::with_capacity(1024));
+        reader
+            .take((MAX_DESKTOP_INITIALIZATION_BYTES + 1) as u64)
+            .read_until(b'\n', &mut encoded)
+            .context("reading desktop initialization from the private pipe")?;
+        if encoded.is_empty()
+            || encoded.len() > MAX_DESKTOP_INITIALIZATION_BYTES
+            || !encoded.ends_with(b"\n")
+        {
+            bail!("desktop initialization is missing or exceeds its private-pipe limit");
+        }
+        let wire: DesktopInitializationOwned = serde_json::from_slice(&encoded)
+            .map_err(|_| anyhow::anyhow!("desktop initialization is invalid"))?;
+        if wire.format != DESKTOP_INITIALIZATION_FORMAT {
+            bail!("desktop initialization format is unsupported");
+        }
+        let mut credentials = Self::default();
+        for (provider, credential) in [
+            (
+                DesktopCredentialProvider::Openai,
+                wire.provider_credentials.openai,
+            ),
+            (
+                DesktopCredentialProvider::Anthropic,
+                wire.provider_credentials.anthropic,
+            ),
+            (
+                DesktopCredentialProvider::Openrouter,
+                wire.provider_credentials.openrouter,
+            ),
+        ] {
+            if let Some(credential) = credential {
+                validate_desktop_credential(&credential.api_key)?;
+                validate_desktop_local_access_token(&credential.local_access_token)?;
+                credentials.insert(provider, credential.api_key, credential.local_access_token);
+            }
+        }
+        Ok(credentials)
+    }
+
+    /// Reads the initialization payload from the process-private stdin pipe.
+    pub fn read_initialization_from_stdin() -> Result<Self> {
+        Self::read_initialization_line(&mut std::io::stdin().lock())
+    }
+
+    fn slot(&self, provider: DesktopCredentialProvider) -> &Option<DesktopProviderCredential> {
+        match provider {
+            DesktopCredentialProvider::Openai => &self.openai,
+            DesktopCredentialProvider::Anthropic => &self.anthropic,
+            DesktopCredentialProvider::Openrouter => &self.openrouter,
+        }
+    }
+
+    fn slot_mut(
+        &mut self,
+        provider: DesktopCredentialProvider,
+    ) -> &mut Option<DesktopProviderCredential> {
+        match provider {
+            DesktopCredentialProvider::Openai => &mut self.openai,
+            DesktopCredentialProvider::Anthropic => &mut self.anthropic,
+            DesktopCredentialProvider::Openrouter => &mut self.openrouter,
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct DesktopInitializationRef<'a> {
+    format: &'static str,
+    provider_credentials: DesktopProviderCredentialsRef<'a>,
+}
+
+#[derive(Serialize)]
+struct DesktopProviderCredentialsRef<'a> {
+    openai: Option<DesktopProviderCredentialRef<'a>>,
+    anthropic: Option<DesktopProviderCredentialRef<'a>>,
+    openrouter: Option<DesktopProviderCredentialRef<'a>>,
+}
+
+#[derive(Serialize)]
+struct DesktopProviderCredentialRef<'a> {
+    api_key: &'a str,
+    local_access_token: &'a str,
+}
+
+impl<'a> From<&'a DesktopProviderCredential> for DesktopProviderCredentialRef<'a> {
+    fn from(credential: &'a DesktopProviderCredential) -> Self {
+        Self {
+            api_key: credential.api_key.as_str(),
+            local_access_token: credential.local_access_token.as_str(),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DesktopInitializationOwned {
+    format: String,
+    provider_credentials: DesktopProviderCredentialsOwned,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DesktopProviderCredentialsOwned {
+    openai: Option<DesktopProviderCredentialOwned>,
+    anthropic: Option<DesktopProviderCredentialOwned>,
+    openrouter: Option<DesktopProviderCredentialOwned>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DesktopProviderCredentialOwned {
+    api_key: Zeroizing<String>,
+    local_access_token: Zeroizing<String>,
+}
+
+fn validate_desktop_credential(credential: &str) -> Result<()> {
+    if credential.len() < 8
+        || credential.len() > 512
+        || !credential.bytes().all(|byte| byte.is_ascii_graphic())
+    {
+        bail!("desktop provider credential is invalid");
+    }
+    Ok(())
+}
+
+fn validate_desktop_local_access_token(token: &str) -> Result<()> {
+    let Some(entropy) = token.strip_prefix(DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX) else {
+        bail!("desktop provider local access token is invalid");
+    };
+    if entropy.len() != 64 || !entropy.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        bail!("desktop provider local access token is invalid");
+    }
+    Ok(())
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -653,6 +904,93 @@ mod tests {
             [7; 32]
         );
         assert!(decode_child_key_line("07").is_err());
+    }
+
+    #[test]
+    fn desktop_provider_initialization_is_versioned_bounded_and_redacted() {
+        let secret = "sk-provider-secret-1234";
+        let openai_token = format!("{DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}", "a".repeat(64));
+        let anthropic_token = format!("{DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}", "b".repeat(64));
+        let mut credentials = DesktopProviderCredentials::default();
+        credentials.insert(
+            DesktopCredentialProvider::Openai,
+            Zeroizing::new(secret.to_owned()),
+            Zeroizing::new(openai_token.clone()),
+        );
+        credentials.insert(
+            DesktopCredentialProvider::Anthropic,
+            Zeroizing::new("sk-anthropic-secret-5678".to_owned()),
+            Zeroizing::new(anthropic_token.clone()),
+        );
+        assert!(!format!("{credentials:?}").contains(secret));
+        assert!(!format!("{credentials:?}").contains(&openai_token));
+
+        let encoded = credentials.encode_initialization_line().unwrap();
+        let decoded = DesktopProviderCredentials::read_initialization_line(
+            &mut std::io::Cursor::new(encoded.as_slice()),
+        )
+        .unwrap();
+        assert_eq!(
+            decoded.get(DesktopCredentialProvider::Openai),
+            Some((secret, openai_token.as_str()))
+        );
+        assert_eq!(
+            decoded.get(DesktopCredentialProvider::Anthropic),
+            Some(("sk-anthropic-secret-5678", anthropic_token.as_str()))
+        );
+        assert_eq!(decoded.get(DesktopCredentialProvider::Openrouter), None);
+    }
+
+    #[test]
+    fn invalid_desktop_initialization_never_echoes_secret_input() {
+        let secret = "sk-secret-with embedded-space";
+        let mut line = serde_json::to_vec(&serde_json::json!({
+            "format": DESKTOP_INITIALIZATION_FORMAT,
+            "provider_credentials": {
+                "openai": {
+                    "api_key": secret,
+                    "local_access_token": format!(
+                        "{DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}",
+                        "c".repeat(64)
+                    ),
+                },
+                "anthropic": null,
+                "openrouter": null,
+            }
+        }))
+        .unwrap();
+        line.push(b'\n');
+        let error =
+            DesktopProviderCredentials::read_initialization_line(&mut std::io::Cursor::new(line))
+                .unwrap_err();
+        assert!(!error.to_string().contains(secret));
+
+        let invalid_token = "exalto_local_secret-token-value";
+        let mut line = serde_json::to_vec(&serde_json::json!({
+            "format": DESKTOP_INITIALIZATION_FORMAT,
+            "provider_credentials": {
+                "openai": {
+                    "api_key": "sk-valid-provider-key-1234",
+                    "local_access_token": invalid_token,
+                },
+                "anthropic": null,
+                "openrouter": null,
+            }
+        }))
+        .unwrap();
+        line.push(b'\n');
+        let error =
+            DesktopProviderCredentials::read_initialization_line(&mut std::io::Cursor::new(line))
+                .unwrap_err();
+        assert!(!error.to_string().contains(invalid_token));
+
+        let oversized = vec![b'x'; MAX_DESKTOP_INITIALIZATION_BYTES + 1];
+        assert!(
+            DesktopProviderCredentials::read_initialization_line(&mut std::io::Cursor::new(
+                oversized
+            ))
+            .is_err()
+        );
     }
 
     #[test]
