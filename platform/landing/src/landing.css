@@ -1698,6 +1698,14 @@ a:hover {
   margin-top: 8px;
 }
 
+.eco-link + .eco-link {
+  margin-left: 14px;
+}
+
+.eco-cards-two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .eco-connector {
   display: grid;
   grid-template-columns: 150px 1fr;
