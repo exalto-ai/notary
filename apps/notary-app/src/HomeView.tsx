@@ -115,7 +115,7 @@ export function HomeView({
           <p>{vault.detail}</p>
           <dl>
             <div><dt>Notary</dt><dd>{state.notary === 'registry' ? 'Exalto Seal' : state.notary === 'configured' ? 'Configured notary' : 'Unavailable'}</dd></div>
-            <div><dt>Local route</dt><dd>{state.proxy_listener}</dd></div>
+            <div><dt>Local route</dt><dd><code>{state.proxy_listener}</code></dd></div>
           </dl>
         </section>
       </div>

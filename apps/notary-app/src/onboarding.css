@@ -12,9 +12,9 @@
   --capture-rule: rgba(26, 34, 51, .14);
   --capture-muted: #6d7482;
   --capture-ink-soft: #465166;
-  --capture-display-font: "Fraunces Variable", "Fraunces", Georgia, serif;
-  --capture-body-font: "Newsreader Variable", "Newsreader", Georgia, serif;
-  --capture-mono-font: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --capture-display-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  --capture-body-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --capture-mono-font: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Monaco, Consolas, monospace;
   --window: var(--capture-paper);
   --sidebar: var(--capture-night);
   --surface: #fffdf7;
@@ -33,7 +33,7 @@
   color: var(--capture-ink);
   color-scheme: light;
   background: var(--capture-paper);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--capture-body-font);
 }
 
 .exalto-onboarding.onboarding-window {
@@ -73,13 +73,13 @@
 .exalto-onboarding .choice-status,
 .exalto-onboarding .notary-boundary span,
 .exalto-onboarding .test-prompt-receipt > span {
-  font-family: var(--capture-mono-font);
-  letter-spacing: .075em;
+  font-family: var(--capture-body-font);
+  letter-spacing: .055em;
 }
 
 .exalto-onboarding .onboarding-window-context {
   color: var(--capture-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -91,7 +91,7 @@
   border-radius: 2px;
   background: transparent;
   color: var(--capture-ink);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -151,7 +151,7 @@
 
 .exalto-onboarding .wizard-kicker {
   color: var(--capture-blue);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -160,17 +160,17 @@
   margin-top: 10px;
   color: var(--capture-ink);
   font-family: var(--capture-display-font);
-  font-size: clamp(34px, 3.3vw, 44px);
-  font-weight: 600;
-  letter-spacing: -.025em;
-  line-height: 1.05;
+  font-size: clamp(31px, 3vw, 38px);
+  font-weight: 650;
+  letter-spacing: -.02em;
+  line-height: 1.08;
 }
 
 .exalto-onboarding .wizard-step > p {
   max-width: 700px;
   margin-top: 12px;
   color: var(--capture-ink-soft);
-  font: 400 16px/1.52 var(--capture-body-font);
+  font: 400 16px/1.55 var(--capture-body-font);
 }
 
 .exalto-onboarding p {
@@ -190,7 +190,7 @@
   background: #fffdf7;
   box-shadow: none;
   color: var(--capture-ink);
-  font: 600 12px/1.2 var(--capture-mono-font);
+  font: 600 13px/1.2 var(--capture-body-font);
 }
 
 .exalto-onboarding .mac-button:hover:not(:disabled) {
@@ -232,7 +232,7 @@
 
 .exalto-onboarding .capture-workflow span {
   color: var(--capture-blue);
-  font: 600 10px var(--capture-mono-font);
+  font: 600 11px var(--capture-body-font);
 }
 
 .exalto-onboarding .capture-workflow strong {
@@ -253,8 +253,8 @@
   justify-content: space-between;
   padding: 11px 14px;
   border-bottom: 1px solid var(--capture-ink);
-  font: 600 10px var(--capture-mono-font);
-  letter-spacing: .06em;
+  font: 600 11px var(--capture-body-font);
+  letter-spacing: .04em;
 }
 
 .exalto-onboarding .trace-receipt figcaption span {
@@ -283,7 +283,7 @@
 
 .exalto-onboarding .trace-receipt dt {
   color: var(--capture-muted);
-  font: 500 10px var(--capture-mono-font);
+  font: 600 11px var(--capture-body-font);
   text-transform: uppercase;
 }
 
@@ -376,14 +376,14 @@
 
 .exalto-onboarding .client-picker > button > small {
   color: var(--capture-blue);
-  font: 600 10px/1.3 var(--capture-mono-font);
+  font: 600 11px/1.3 var(--capture-body-font);
   text-transform: uppercase;
 }
 
 .exalto-onboarding .advanced-options-toggle {
   margin-top: 13px;
   color: var(--capture-blue);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .exalto-onboarding .passphrase-fields {
@@ -447,7 +447,7 @@
 
 .exalto-onboarding .choice-status {
   color: var(--capture-blue);
-  font-size: 10px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 700;
   text-transform: uppercase;
@@ -484,12 +484,12 @@
 .exalto-onboarding .advanced-notaries small {
   margin-top: 3px;
   color: var(--capture-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .exalto-onboarding .advanced-notaries em {
   color: var(--capture-muted);
-  font: 600 10px var(--capture-mono-font);
+  font: 600 11px var(--capture-body-font);
   font-style: normal;
   text-transform: uppercase;
 }
@@ -499,7 +499,7 @@
   padding: 10px 14px;
   border-top: 1px solid var(--capture-rule);
   color: var(--capture-muted);
-  font-size: 10.5px;
+  font-size: 11.5px;
   line-height: 1.5;
 }
 
@@ -523,7 +523,7 @@
 
 .exalto-onboarding .notary-boundary span {
   color: var(--capture-blue);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -553,13 +553,13 @@
 
 .exalto-onboarding .instruction-heading > span {
   color: var(--capture-blue);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .exalto-onboarding .instruction-heading > strong {
   color: var(--capture-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-align: right;
 }
@@ -579,7 +579,7 @@
 
 .exalto-onboarding .connection-instructions pre code {
   color: inherit;
-  font: 500 10.5px/1.55 var(--capture-mono-font);
+  font: 500 11px/1.55 var(--capture-mono-font);
 }
 
 .exalto-onboarding .connection-instructions > p {
@@ -598,7 +598,7 @@
 .exalto-onboarding .connection-instructions p code,
 .exalto-onboarding .api-key-instructions dd code {
   color: var(--capture-ink);
-  font: 600 10.5px var(--capture-mono-font);
+  font: 600 11px var(--capture-mono-font);
 }
 
 .exalto-onboarding .api-provider-picker {
@@ -617,7 +617,7 @@
   border-radius: 0;
   background: #fffdf7;
   color: var(--capture-ink);
-  font-size: 10.5px;
+  font-size: 11.5px;
 }
 
 .exalto-onboarding .api-provider-picker button + button {
@@ -638,7 +638,7 @@
 }
 
 .exalto-onboarding .api-provider-picker button.is-unsupported small {
-  font: 600 9.5px var(--capture-mono-font);
+  font: 600 11px var(--capture-body-font);
   text-transform: uppercase;
 }
 
@@ -667,7 +667,7 @@
 .exalto-onboarding .unsupported-provider-guide small {
   margin-top: 2px;
   color: var(--capture-muted);
-  font-size: 10.5px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -677,7 +677,7 @@
   align-items: center;
   gap: 5px;
   color: var(--capture-blue);
-  font: 600 10px/1.35 var(--capture-mono-font);
+  font: 600 11px/1.35 var(--capture-body-font);
   text-decoration: none;
 }
 
@@ -737,7 +737,7 @@
 .exalto-onboarding .api-credential-mode small {
   margin-top: 2px;
   color: var(--capture-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .exalto-onboarding .api-key-instructions dl {
@@ -759,7 +759,7 @@
 
 .exalto-onboarding .api-key-instructions dt {
   color: var(--capture-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .exalto-onboarding .api-key-instructions dd {
@@ -774,7 +774,7 @@
   padding: 10px 12px;
   border-bottom: 1px solid var(--capture-rule);
   color: var(--capture-blue);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 650;
   text-decoration: none;
 }
@@ -813,7 +813,7 @@
 .exalto-onboarding .credential-status small {
   margin-top: 2px;
   color: var(--capture-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .exalto-onboarding .credential-status.is-invalid,
@@ -846,7 +846,7 @@
 .exalto-onboarding .local-access-token small {
   margin-top: 3px;
   color: var(--capture-muted);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -860,7 +860,7 @@
   border-bottom: 1px solid var(--capture-rule);
   background: var(--capture-green-soft);
   color: var(--capture-green);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -877,7 +877,7 @@
 
 .exalto-onboarding .credential-import > label {
   color: var(--capture-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   text-transform: uppercase;
 }
@@ -897,7 +897,7 @@
   border-radius: 2px;
   background: #fffdf7;
   color: var(--capture-ink);
-  font: 500 10.5px var(--capture-mono-font);
+  font: 500 11px var(--capture-mono-font);
 }
 
 .exalto-onboarding .credential-import input:focus {
@@ -920,14 +920,15 @@
   align-items: center;
   gap: 5px;
   color: var(--capture-red);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .exalto-onboarding .test-prompt-receipt > strong {
   font-family: var(--capture-display-font);
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -.015em;
 }
 
 .exalto-onboarding .test-prompt-receipt > small {
@@ -968,7 +969,7 @@
 .exalto-onboarding .test-result small {
   margin-top: 2px;
   color: var(--capture-muted);
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .exalto-onboarding .test-result.is-captured {
@@ -1036,7 +1037,7 @@
 .exalto-onboarding .ready-summary small {
   margin-top: 2px;
   color: var(--capture-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .exalto-onboarding .account-step .native-account-card {
@@ -1051,7 +1052,7 @@
 
 .exalto-onboarding .account-step .section-label,
 .exalto-onboarding .account-step .account-state {
-  font: 600 10px/1.25 var(--capture-mono-font);
+  font: 600 11px/1.25 var(--capture-body-font);
 }
 
 .exalto-onboarding .account-step .native-account-card p {
@@ -1065,7 +1066,7 @@
 
 .exalto-onboarding .account-step .native-account-card .mac-button.is-large {
   min-height: 36px;
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 .exalto-onboarding .final-actions {
@@ -1089,7 +1090,7 @@
 
 .exalto-onboarding .aside-label {
   color: #8cb4d0;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1098,10 +1099,10 @@
   margin-top: 12px;
   color: var(--capture-paper);
   font-family: var(--capture-display-font);
-  font-size: 27px;
-  font-weight: 600;
-  letter-spacing: -.02em;
-  line-height: 1.08;
+  font-size: 25px;
+  font-weight: 650;
+  letter-spacing: -.015em;
+  line-height: 1.12;
 }
 
 .exalto-onboarding .onboarding-aside > p {
@@ -1141,7 +1142,7 @@
 .exalto-onboarding .aside-flow span {
   grid-row: span 2;
   color: #8cb4d0;
-  font: 600 10px var(--capture-mono-font);
+  font: 600 11px var(--capture-body-font);
 }
 
 .exalto-onboarding .aside-flow strong {
@@ -1152,7 +1153,7 @@
 .exalto-onboarding .aside-flow small {
   margin-top: 2px;
   color: #8797a2;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .exalto-onboarding .coexisting-credential-note {
@@ -1174,7 +1175,7 @@
 .exalto-onboarding .aside-privacy {
   border-color: #31404d;
   color: #aebbc3;
-  font-size: 10.5px;
+  font-size: 11.5px;
   line-height: 1.5;
 }
 

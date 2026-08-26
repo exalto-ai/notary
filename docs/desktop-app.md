@@ -59,11 +59,10 @@ boundary. The remote notary witnesses encrypted protocol traffic. It does not
 receive the prompt, response, or provider credential in plaintext.
 
 The visual system uses the live site's exact paper, card, ink, navy, blue,
-green, phosphor, and REC red color roles. It self-hosts Fraunces Variable for
-display moments, Newsreader Variable for narrative copy, and IBM Plex Mono for
-technical labels. Dense developer controls keep a compact working sans. Trace
-transcripts use restrained green human and blue model attribution drawn from
-the site's authorship ledger.
+green, phosphor, and REC red color roles. It uses the macOS system sans-serif
+family for display and body copy, with the system monospace family reserved for
+keys, commands, IDs, endpoints, and paths. Trace transcripts use restrained
+green human and blue model attribution drawn from the site's authorship ledger.
 
 Closing the window removes the app from the Dock and leaves the status-menu
 controller running. Opening Exalto Capture from that menu restores the regular

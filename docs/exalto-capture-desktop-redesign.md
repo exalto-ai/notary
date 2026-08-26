@@ -69,11 +69,11 @@ Requests made while capture is off cannot be sealed later. Capture does not requ
 The app and embedded local dashboard now share the visual language established on exalto.ai:
 
 - The site's exact paper `#f5f3ec`, card `#fdfcf7`, ink `#1a2233`, blue `#1e4a73`, proof green `#0e8f5d`, phosphor `#35e39b`, dark band `#0c1622`, and REC red `#b3402a` roles.
-- Self-hosted Fraunces Variable for display moments, Newsreader Variable for narrative copy, and IBM Plex Mono for technical labels. Dense developer controls retain a readable working sans.
+- The macOS system sans-serif family for both display and body copy, with the system monospace family reserved for keys, commands, IDs, endpoints, and paths. The app ships no separate webfont payload.
 - The Exalto mark and visible Exalto Capture product name.
 - Receipt-like evidence summaries, numbered Capture, Review, Seal, Verify or share flows, and explicit trust-boundary diagrams.
 - Blue model and green human attribution in disclosed trace transcripts, adapted from the live site's authorship ledger.
-- Readable developer density in place of either microtype or oversized generic dashboard cards. Technical labels use a 10px floor in the desktop surfaces, working controls are about 38–40px high, onboarding prose is 16px Newsreader, and trace evidence prose is 14.5px Newsreader.
+- Readable developer density in place of either microtype or oversized generic dashboard cards. Interface metadata uses an 11px floor, working controls are about 38–40px high, onboarding prose is 16px system sans, and trace evidence prose is 14.5px system sans.
 
 The native shell is designed and visually checked at its configured 1280 × 820 window. Short onboarding steps are vertically balanced with their primary action attached to the content. The dense client setup remains top-aligned and scrollable. Capture uses its full working area for the recorder, workflow, local-trace receipt, trust-boundary map, and connection status. The embedded trace workspace defaults to a 380px list rail and uses a two-column fact ledger when space permits.
 
