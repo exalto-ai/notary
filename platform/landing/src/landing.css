@@ -573,7 +573,7 @@ a:hover {
 
 .pot-head {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 40px;
   flex-wrap: wrap;
@@ -608,7 +608,7 @@ a:hover {
   gap: 16px;
   align-items: center;
   flex-wrap: wrap;
-  padding-bottom: 6px;
+  margin-top: 28px;
 }
 
 .pot-join {
@@ -912,16 +912,13 @@ a:hover {
 /* Thought Score card */
 
 .thought-score {
-  position: absolute;
-  top: 84px;
-  right: -120px;
-  width: 250px;
+  width: 280px;
+  flex: none;
   background: var(--card);
   border: 1px solid rgba(26, 34, 51, 0.15);
   border-radius: 10px;
   box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.6);
   padding: 18px 20px;
-  z-index: 4;
 }
 
 .ts-head {
@@ -2034,12 +2031,6 @@ a:hover {
 
 /* ---------- responsive ---------- */
 
-@media (max-width: 1280px) {
-  .thought-score {
-    right: 16px;
-  }
-}
-
 @media (max-width: 1100px) {
   :root {
     --pad-x: 40px;
@@ -2063,17 +2054,9 @@ a:hover {
     margin-left: 48px;
   }
 
-  .pot-editor-frame {
-    display: flex;
-    flex-direction: column;
-  }
-
   .thought-score {
-    position: static;
-    order: 2;
-    width: auto;
-    margin-top: 18px;
-    border-radius: 10px;
+    width: 100%;
+    max-width: 440px;
   }
 
   .pot-wrap {
