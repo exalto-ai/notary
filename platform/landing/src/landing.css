@@ -1222,10 +1222,20 @@ a:hover {
 /* stacked diagram (narrow screens) */
 
 .stack-card {
+  position: relative;
   background: var(--card);
   border: 1px solid rgba(26, 34, 51, 0.13);
   border-radius: 4px;
   padding: 16px 18px;
+}
+
+.stack-card-icon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
 }
 
 .stack-card-anyone {
@@ -1632,6 +1642,7 @@ a:hover {
 }
 
 .eco-card {
+  position: relative;
   border: 1px solid rgba(26, 34, 51, 0.13);
   background: var(--card);
   border-radius: 3px;
@@ -1752,6 +1763,12 @@ a:hover {
   font-family: var(--mono);
   font-size: 10px;
   color: var(--muted);
+}
+
+.capture-titlebar-mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
   margin-left: 8px;
 }
 
@@ -2759,10 +2776,6 @@ a:hover {
   width: 40px;
   height: 40px;
   border-radius: 9px;
-}
-
-.eco-card-pot {
-  position: relative;
 }
 
 .eco-card-icon {

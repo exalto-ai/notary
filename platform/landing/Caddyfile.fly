@@ -6,7 +6,7 @@
 		@brand path /favicon.svg /pot-mark-white.svg /pot-mark-blue.svg /pot-tile.svg
 		header @brand Cache-Control "public, max-age=0, must-revalidate"
 
-		@art path /art/*
+		@art path /art/* /icons/*
 		header @art Cache-Control "public, max-age=86400"
 
 		handle {
