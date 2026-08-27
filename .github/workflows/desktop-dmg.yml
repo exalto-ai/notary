@@ -170,11 +170,10 @@ jobs:
           xcrun stapler validate "$DMG"
           spctl --assess --type execute --verbose=4 "$APP"
           spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG"
-          # The installed application identity is fixed: Notary.app backed by
-          # notary-app, identified as ai.exalto.notary, with exactly the
-          # notary-app executable and its notaryd sidecar and no retired
-          # executable left in the bundle.
-          test "$(basename "$APP")" = "Notary.app"
+          # The visible bundle is Exalto Capture.app, backed by the compatible
+          # notary-app executable and ai.exalto.notary identifier, with exactly
+          # its notaryd sidecar and no retired executable left in the bundle.
+          test "$(basename "$APP")" = "Exalto Capture.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
             "$APP/Contents/Info.plist")" = "ai.exalto.notary"
           test "$(cd "$APP/Contents/MacOS" && ls | sort | tr '\n' ' ')" = "notary-app notaryd "
@@ -196,7 +195,7 @@ jobs:
           mount_point="$(mktemp -d)"
           trap 'hdiutil detach "$mount_point" -force >/dev/null 2>&1 || true' EXIT
           hdiutil attach "$DMG" -mountpoint "$mount_point" -nobrowse -readonly -quiet
-          app="$mount_point/Notary.app"
+          app="$mount_point/Exalto Capture.app"
           test -d "$app"
           executable="$app/Contents/MacOS/notary-app"
           open "$app"
@@ -219,7 +218,7 @@ jobs:
             echo "the packaged application exited during startup" >&2
             exit 1
           fi
-          osascript -e 'quit app "Notary"' >/dev/null 2>&1 || true
+          osascript -e 'quit app "Exalto Capture"' >/dev/null 2>&1 || true
           pkill -f "$executable" >/dev/null 2>&1 || true
       - uses: actions/upload-artifact@v7
         with:

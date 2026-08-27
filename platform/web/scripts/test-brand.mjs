@@ -12,25 +12,47 @@ const siteCaddy = readFileSync(resolve(root, 'Caddyfile'), 'utf8');
 const flyCaddy = readFileSync(resolve(root, 'Caddyfile.fly'), 'utf8');
 const gatewayCaddy = readFileSync(resolve(root, '../../deploy/gateway.Caddyfile'), 'utf8');
 const relayAnimation = readFileSync(resolve(root, 'src/RelayAnimation.tsx'), 'utf8');
+const siteApp = readFileSync(resolve(root, 'src/site/SiteApp.tsx'), 'utf8');
+const publicTracePages = readFileSync(resolve(root, 'src/site/PublicTracePages.tsx'), 'utf8');
+const accountDashboard = readFileSync(resolve(root, 'src/site/AccountDashboard.tsx'), 'utf8');
 
 function requireText(source, expected, label) {
   if (!source.includes(expected))
     throw new Error(`${label} is missing ${JSON.stringify(expected)}`);
 }
 
-requireText(html, '<title>Notary by Exalto</title>', 'default browser title');
-requireText(html, 'property="og:site_name" content="Notary by Exalto"', 'Open Graph identity');
+requireText(html, '<title>Exalto Seal</title>', 'default browser title');
+requireText(html, 'property="og:site_name" content="Exalto Seal"', 'Open Graph identity');
 requireText(
   html,
-  'content="Notary by Exalto · Verifiable intelligence · Notarized traces for independent verification"',
+  'content="Exalto Seal · Verifiable intelligence · Sealed traces for independent verification"',
   'social-preview alt text',
 );
-requireText(html, '"name": "Notary by Exalto"', 'structured metadata');
-if (!llms.startsWith('# Notary by Exalto\n')) {
+requireText(html, '"name": "Exalto Seal"', 'structured metadata');
+if (!llms.startsWith('# Exalto Seal\n')) {
   throw new Error('llms.txt must begin with the formal endorsed identity');
 }
-requireText(mark, '<title id="title">Notary</title>', 'public mark title');
-requireText(favicon, '<title id="title">Notary</title>', 'favicon title');
+requireText(mark, '<title id="title">Exalto Seal</title>', 'public mark title');
+requireText(favicon, '<title id="title">Exalto Seal</title>', 'favicon title');
+requireText(siteApp, '<PenMark /> <span>Exalto Seal</span>', 'site header identity');
+requireText(siteApp, '<b>Exalto Seal</b> <span>· © 2026</span>', 'site footer identity');
+requireText(publicTracePages, "'Shared trace · Exalto Seal'", 'shared Trace title identity');
+requireText(
+  accountDashboard,
+  'Sealed traces you’ve shared through Exalto Seal.',
+  'hosted Trace account identity',
+);
+for (const [label, source] of [
+  ['HTML metadata', html],
+  ['llms.txt', llms],
+  ['site app', siteApp],
+  ['public Trace pages', publicTracePages],
+  ['account dashboard', accountDashboard],
+]) {
+  for (const retired of ['Notary by Exalto', 'Continue to Notary', 'aria-label="Notary home"']) {
+    if (source.includes(retired)) throw new Error(`${label} retains retired identity ${retired}`);
+  }
+}
 if (packageJson.name !== '@exalto/notary-web') {
   throw new Error('hosted frontend package identity is stale');
 }

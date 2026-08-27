@@ -52,6 +52,9 @@ use crate::{
     },
 };
 
+const DESKTOP_CONTROL_STDIN_ENV: &str = "NOTARYD_DESKTOP_CONTROL_STDIN";
+const DESKTOP_FORCE_CAPTURE_DISABLED_ENV: &str = "NOTARYD_DESKTOP_FORCE_CAPTURE_DISABLED";
+
 #[cfg(test)]
 use crate::{
     DEFAULT_MAX_ATTESTABLE_HTTP_BYTES, DEFAULT_NOTARY_MAX_FRAME_BYTES,
@@ -66,6 +69,18 @@ enum Provider {
     Anthropic,
     Deepseek,
     Openrouter,
+}
+
+fn desktop_force_capture_disabled(force: bool, desktop_control: bool, private_init: bool) -> bool {
+    force && desktop_control && private_init
+}
+
+fn desktop_force_capture_disabled_from_environment() -> bool {
+    desktop_force_capture_disabled(
+        std::env::var_os(DESKTOP_FORCE_CAPTURE_DISABLED_ENV).is_some(),
+        std::env::var_os(DESKTOP_CONTROL_STDIN_ENV).is_some(),
+        std::env::var_os(CHILD_INITIALIZATION_STDIN_ENV).is_some(),
+    )
 }
 
 impl Provider {
@@ -365,12 +380,21 @@ pub async fn run(args: ProxyArgs) -> Result<()> {
         );
     }
     if cluster_runtime.is_some()
-        && (std::env::var_os("NOTARYD_DESKTOP_CONTROL_STDIN").is_some()
+        && (std::env::var_os(DESKTOP_CONTROL_STDIN_ENV).is_some()
             || std::env::var_os(CHILD_INITIALIZATION_STDIN_ENV).is_some())
     {
         bail!("desktop child-process control is unavailable in cluster mode");
     }
     let persistence = Persistence::open(&config).await?;
+    if desktop_force_capture_disabled_from_environment() {
+        // A desktop recovery marker means the app may have crashed while it
+        // temporarily borrowed capture. Persist OFF before either listener is
+        // bound, so no retrying client can enter the proxy during recovery.
+        persistence
+            .metadata
+            .set_capture_enabled(false, current_unix_ms()?)
+            .await?;
+    }
     let vault = if cluster_runtime.is_some() {
         Vault::open_cluster().context("opening the shared cluster vault")?
     } else {
@@ -378,12 +402,15 @@ pub async fn run(args: ProxyArgs) -> Result<()> {
             "opening the local checkpoint vault (set NOTARYD_VAULT_PASSPHRASE_FILE before first start when an OS vault is unavailable)",
         )?
     };
-    let provider_credentials = if std::env::var_os(CHILD_INITIALIZATION_STDIN_ENV).is_some() {
-        DesktopProviderCredentials::read_initialization_from_stdin()
-            .context("reading private desktop initialization")?
-    } else {
-        DesktopProviderCredentials::default()
-    };
+    let (provider_credentials, desktop_instance_secret) =
+        if std::env::var_os(CHILD_INITIALIZATION_STDIN_ENV).is_some() {
+            let (credentials, secret) =
+                DesktopProviderCredentials::read_child_initialization_from_stdin()
+                    .context("reading private desktop initialization")?;
+            (credentials, Some(secret))
+        } else {
+            (DesktopProviderCredentials::default(), None)
+        };
     if let Some(cluster_runtime) = &cluster_runtime {
         let vault_identity = vault.cluster_identity_sha256()?;
         persistence
@@ -448,6 +475,7 @@ pub async fn run(args: ProxyArgs) -> Result<()> {
             .map(|_| state.vault.cluster_identity_sha256())
             .transpose()?,
         Some(capture_mode),
+        desktop_instance_secret,
     )
     .await?;
     let admin = crate::admin::router(admin_state.clone())?;
@@ -2343,6 +2371,14 @@ fn hop_by_hop_header_names(headers: &HeaderMap) -> HashSet<HeaderName> {
 mod tests {
     use super::*;
     use std::sync::Mutex as StdMutex;
+
+    #[test]
+    fn forced_capture_off_is_private_to_a_supervised_desktop_child() {
+        assert!(desktop_force_capture_disabled(true, true, true));
+        assert!(!desktop_force_capture_disabled(false, true, true));
+        assert!(!desktop_force_capture_disabled(true, false, true));
+        assert!(!desktop_force_capture_disabled(true, true, false));
+    }
 
     #[derive(Clone)]
     struct DirectObservation {

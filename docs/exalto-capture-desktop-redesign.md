@@ -85,12 +85,12 @@ The first-run path has six steps:
 
 1. **Welcome** introduces the local-first workflow and its proof limitation.
 2. **Protect private traces** configures macOS Keychain by default, with passphrase protection as an advanced option.
-3. **Confirm the notary** recommends Exalto Seal, states what the notary can and cannot see, and honestly labels alternate notary configuration as administrator-managed in this build.
+3. **Choose a sealing service** recommends Exalto Seal, states what the service can and cannot see, and honestly labels alternate compatible-notary configuration as administrator-managed in this build.
 4. **Connect an AI tool** starts with Codex CLI, Claude Code, or API and SDK clients.
 5. **Capture a disposable trace** generates a fresh marker, asks the model to echo it, and verifies that a new matching trace was created.
 6. **Ready** offers an optional Exalto account and hands the user to Capture or Traces.
 
-The disposable-trace check does not accept a changed total alone. Each test uses a fresh 96-bit marker and asks the model to echo it. Confirmation requires a trace ID that was not in the baseline, the expected provider, a Captured or Sealed state, a successful 2xx provider response, and the exact marker in the response preview. The native layer fetches full details only for plausible candidates and returns only the matching trace ID to the UI. The test can be skipped when the developer is not ready to spend a provider request or has disabled response previews.
+The disposable-trace check does not accept a changed total or response header alone. Each test uses a fresh 96-bit marker and asks the model to echo it. Confirmation requires a trace ID that was not in the baseline, the expected provider, a Captured or Sealed state, a successful 2xx provider response, and the exact marker in the response preview. The native layer fetches full details only for plausible candidates and returns only the matching trace ID to the UI. The test can be skipped when the developer is not ready to spend a provider request or has disabled response previews. Every attempt has an owner-scoped native lease and setup-window generation before service startup begins. Closing or quitting atomically stops accepting new leases, snapshots the matching owner, and invalidates pending work before restoration. Explicit reopen allows new leases again only after an abandoned quit has finished. Late provider results cannot affect a later attempt. Local-service start, stop, and restart operations are serialized, and stale child-termination events cannot clear a newer supervised process. A private marker repairs an interrupted lease on the next launch, and supervised recovery persists capture off before either local listener binds. A locked vault or absent service can preserve that marker across close or quit until the next unlocked launch.
 
 The setup is client-first because Codex CLI and Claude Code can reuse their saved product sign-ins. API and SDK users then choose the provider-specific route and either import a supported key into macOS Keychain or leave it in their existing environment. Provider remains an internal routing distinction until an API client needs it.
 
@@ -116,20 +116,25 @@ Secret values are not placed in process arguments, app configuration, logs, prev
 
 The complete `.llmcapture` artifact is vault-encrypted. When retained previews are enabled, bounded prompt and response excerpts are stored separately in local metadata for browsing and are not protected by the trace vault. Onboarding and Privacy settings disclose this exception. Setting the runtime preview limit to zero disables retained previews, but also disables automatic marker confirmation for the disposable onboarding test.
 
-Official key-creation links are opened through a fixed native allowlist rather than an arbitrary URL from the webview. Provider credentials are never sent to the remote notary.
+Official key-creation links are opened through a fixed native allowlist rather than an arbitrary URL from the webview. Provider credentials are never sent to the sealing service.
 
 ## Naming and compatibility boundary
 
 This release changes the visible product name to **Exalto Capture** while preserving installed identity and user data compatibility:
 
-- Keep `productName: "Notary"` so updates replace the existing `Notary.app` bundle.
-- Set the macOS `bundleName`, `CFBundleDisplayName`, and visible application-menu labels to **Exalto Capture**.
+- Set `productName`, the macOS `bundleName`, `CFBundleDisplayName`, and visible application-menu labels to **Exalto Capture**.
 - Keep bundle identifier `ai.exalto.notary`.
 - Keep the `notary-app`, `notaryd`, and `notaryctl` executable and package identities.
 - Keep local `notary` data paths, Keychain service names, onboarding markers, internal routes, enums, and `.llmcapture` and `.llmtrace` extensions.
-- Keep existing updater artifact names and update-channel compatibility.
+- Keep existing updater object names and update-channel compatibility. Those
+  transport identifiers do not control the installed bundle name.
+- Safely migrate an enabled legacy `Notary.plist` LaunchAgent to
+  `Exalto Capture.plist` only from a durable Applications install, leaving
+  unrecognized entries and development or disk-image launches untouched.
 
-A Finder-level rename to `Exalto Capture.app` needs a separate migration release with old-client update, duplicate-app, autostart, and vault-access testing.
+A fresh install is named `Exalto Capture.app`. An existing `Notary.app` updated
+in place can retain its filesystem path, so old-client update, duplicate-app,
+autostart, and vault-access behavior still require release testing.
 
 The temporary hosted Trace Catalogue origin is `llm-notary.exalto.ai`, per the current product decision. That hostname did not resolve during this review. DNS and hosted routing for it are therefore a release gate. The updater origin remains unchanged in this PR so installed clients keep a working update channel.
 
@@ -167,5 +172,5 @@ The following items remain intentionally outside this PR:
 - A simpler native in-app seal and verify path, including an optional first-run action for the disposable trace.
 - A shared-trace collection API before adding a local Shared or Public Traces destination.
 - Direct Codex desktop support, any supported Claude Desktop route, and future provider expansion such as xAI and Grok.
-- A final package and installed-app rename migration from `Notary.app` to `Exalto Capture.app` after updater, duplicate-app, autostart, and vault-access testing.
+- An automatic rename migration for existing `Notary.app` installations after updater, duplicate-app, autostart, and vault-access testing.
 - An optional live hosted sealing check for a small disposable trace once the hosted notary and catalogue hostname are release-ready.

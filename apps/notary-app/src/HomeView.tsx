@@ -33,6 +33,7 @@ export function HomeView({
     + state.counts.capture_failed;
   const hasCapturedTrace = traceTotal > 0;
   const hasSealedTrace = state.counts.notarized > 0;
+  const sealingServiceName = state.sealing_service?.name ?? 'Sealing service';
 
   return <div className="native-page capture-page">
     <section className={`capture-console ${recording ? 'is-recording' : ''}`}>
@@ -57,12 +58,12 @@ export function HomeView({
 
     {(notice || state.message) && <div className="native-notice">{notice ?? state.message}</div>}
 
-    {state.running && !state.notary && <div className="capture-warning" role="status">
-      <strong>Exalto Seal is unavailable</strong>
-      <span>Do not rely on a new trace until a notary is reachable.</span>
+    {state.running && !state.sealing_service && <div className="capture-warning" role="status">
+      <strong>Sealing service is unavailable</strong>
+      <span>Do not rely on a new trace until a sealing service is reachable.</span>
       <div>
         <button type="button" onClick={onRetryConnections}>Try again</button>
-        <button type="button" onClick={() => onNavigate('settings')}>Review notary status</button>
+        <button type="button" onClick={() => onNavigate('settings')}>Review sealing status</button>
       </div>
     </div>}
 
@@ -94,11 +95,11 @@ export function HomeView({
           </button>
         </div>
         <section className="capture-route-card">
-          <header><span className="section-label">What crosses each boundary</span><strong>The notary witnesses ciphertext. Plaintext stays between this Mac and the provider.</strong></header>
+          <header><span className="section-label">What crosses each boundary</span><strong>{state.sealing_service ? `${sealingServiceName} receives ciphertext.` : 'A configured sealing service receives ciphertext.'} Plaintext stays between this Mac and the provider.</strong></header>
           <div className="native-route">
             <RouteStop title="AI client" detail="Credential and plaintext" active={state.running} tone="local" />
             <RouteStop title="This Mac" detail="Private capture" active={recording} tone="local" />
-            <RouteStop title="Notary" detail={recording ? 'Ciphertext only' : 'Not used'} active={recording} tone="seal" />
+            <RouteStop title={sealingServiceName} detail={recording ? 'Ciphertext only' : 'Not used'} active={recording} tone="seal" />
             <RouteStop title="Provider" detail="Authenticated request" active={state.running} tone="seal" />
           </div>
         </section>
@@ -114,7 +115,7 @@ export function HomeView({
           <header><div><span className="section-label">Privacy and storage</span><h2>{vault.label}</h2></div><ShieldCheck size={18} aria-hidden="true" /></header>
           <p>{vault.detail}</p>
           <dl>
-            <div><dt>Notary</dt><dd>{state.notary === 'registry' ? 'Exalto Seal' : state.notary === 'configured' ? 'Configured notary' : 'Unavailable'}</dd></div>
+            <div><dt>Sealing service</dt><dd>{state.sealing_service?.name ?? 'Unavailable'}</dd></div>
             <div><dt>Local route</dt><dd><code>{state.proxy_listener}</code></dd></div>
           </dl>
         </section>

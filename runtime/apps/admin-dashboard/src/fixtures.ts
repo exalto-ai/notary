@@ -380,9 +380,9 @@ export const fixtureNotaries: Notaries = {
   active_key_id: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   notaries: [
     {
-      name: 'Alice',
+      name: 'Exalto Seal',
       operator: 'Exalto',
-      endpoint: 'tls://alice.notary.exalto.ai:443',
+      endpoint: 'tls://seal.exalto.ai:443',
       transport: 'tls',
       key_id: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       verification_key: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -392,7 +392,7 @@ export const fixtureNotaries: Notaries = {
       notarize_until_unix_ms: null,
     },
     {
-      name: 'Alice (retiring key)',
+      name: 'Exalto Seal (retiring key)',
       operator: 'Exalto',
       endpoint: 'tls://notary-old.exalto.ai:7047',
       transport: 'tls',
@@ -404,7 +404,7 @@ export const fixtureNotaries: Notaries = {
       notarize_until_unix_ms: fixtureNow + hour * 24 * 14,
     },
     {
-      name: 'Alice (historical key)',
+      name: 'Exalto Seal (historical key)',
       operator: 'Exalto',
       endpoint: 'tls://notary-history.exalto.ai:7047',
       transport: 'tls',
@@ -416,7 +416,7 @@ export const fixtureNotaries: Notaries = {
       notarize_until_unix_ms: fixtureNow - hour * 24 * 90,
     },
     {
-      name: 'Revoked Notary',
+      name: 'Revoked sealing service',
       operator: 'Exalto',
       endpoint: 'tls://notary-revoked.exalto.ai:7047',
       transport: 'tls',
@@ -1176,8 +1176,8 @@ export function createFixtureApi({
     account: async () => account,
     startAccountConnection: async () => ({
       request_id: 'auth-docs-fixture',
-      user_code: 'NOTARY-7K3',
-      verification_uri_complete: 'https://notary.example/authorize?user_code=NOTARY-7K3',
+      user_code: '7A3C-91F2',
+      verification_uri_complete: 'https://notary.example/authorize?user_code=7A3C-91F2',
       expires_in_seconds: 600,
       poll_interval_seconds: 0,
       state: 'pending',

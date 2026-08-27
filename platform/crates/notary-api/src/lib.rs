@@ -233,14 +233,14 @@ type ApiResult<T> = std::result::Result<T, ApiError>;
 #[derive(OpenApi)]
 #[openapi(
     info(
-        title = "Notary platform API",
+        title = "Exalto Seal API",
         version = "1.0.0",
-        description = "Account, Device, hosted Trace, public Trace, Registry, verification, admission, usage, credits, and billing API for Notary by Exalto. This contract is separate from the loopback local administration API."
+        description = "Account, Device, hosted Trace, public Trace, Registry, verification, admission, usage, credits, and billing API for Exalto Seal. This contract is separate from the loopback local administration API."
     ),
-    servers((url = "https://notary.exalto.ai", description = "Notary by Exalto")),
+    servers((url = "https://notary.exalto.ai", description = "Exalto Seal")),
     modifiers(&SecurityAddon),
     tags(
-        (name = "health", description = "Notary platform health"),
+        (name = "health", description = "Exalto Seal platform health"),
         (name = "browser-auth", description = "Google- or GitHub-backed browser authentication"),
         (name = "account", description = "Current Account identity and usage"),
         (name = "devices", description = "Connected devices and Device authorization"),
@@ -396,7 +396,7 @@ impl NotaryApiArgs {
             NotaryApiCommand::VerificationWorker => run_verification_worker(),
             NotaryApiCommand::Help => {
                 println!(
-                    "Hosted Notary platform API\n\nUsage: notary-api <COMMAND>\n\nCommands:\n  serve    Serve HTTP and run background workers\n  migrate  Apply PostgreSQL migrations\n  help     Print help"
+                    "Hosted Exalto Seal API\n\nUsage: notary-api <COMMAND>\n\nCommands:\n  serve    Serve HTTP and run background workers\n  migrate  Apply PostgreSQL migrations\n  help     Print help"
                 );
                 Ok(())
             }
@@ -444,7 +444,7 @@ where
     ));
     workers.spawn(traces::worker::run_worker(state, shutdown_rx));
     let worker_shutdown = shutdown_tx.clone();
-    tracing::info!(%listen, "Notary platform API listening");
+    tracing::info!(%listen, "Exalto Seal API listening");
     let result = axum::serve(
         listener,
         app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
@@ -1145,7 +1145,7 @@ mod tests {
             document["components"]["schemas"]["CreateTraceReport"]["properties"]["message"]["maxLength"],
             500
         );
-        assert_eq!(document["info"]["title"], "Notary platform API");
+        assert_eq!(document["info"]["title"], "Exalto Seal API");
         assert_eq!(document["servers"][0]["url"], "https://notary.exalto.ai");
         for removed in [
             "/api/me",

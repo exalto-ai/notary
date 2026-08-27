@@ -34,10 +34,16 @@ export type DesktopState = {
   daemon_build_id: string | null;
   proxy_listener: string;
   admin_listener: string;
-  notary: string | null;
+  sealing_service: SealingServiceIdentity | null;
   capture_enabled: boolean;
+  temporary_capture_generation: number;
   counts: TraceCounts;
   message: string | null;
+};
+
+export type SealingServiceIdentity = {
+  name: string;
+  kind: 'exalto_seal' | 'registry' | 'configured';
 };
 
 export type DesktopUpdateState = {
@@ -96,6 +102,16 @@ export type ProviderCredentialStatus = {
   validation: ProviderCredentialValidation;
 };
 
+export type ProviderCaptureTestResult = {
+  provider: ProviderCredentialProvider;
+  model: string;
+  marker: string;
+  trace_id: string | null;
+  http_status: number;
+  successful: boolean;
+  captured: boolean;
+};
+
 const emptyCounts: TraceCounts = {
   captured: 0,
   notarizing: 0,
@@ -124,8 +140,9 @@ function fallbackState(overrides: Partial<DesktopState> = {}): DesktopState {
     daemon_build_id: null,
     proxy_listener: '127.0.0.1:8787',
     admin_listener: '127.0.0.1:8788',
-    notary: null,
+    sealing_service: null,
     capture_enabled: false,
+    temporary_capture_generation: 1,
     counts: emptyCounts,
     message: null,
     ...overrides,
@@ -141,6 +158,26 @@ function forcedState(): DesktopState | null {
       onboarding_complete: false,
       vault_mode: 'not configured',
       vault_locked: false,
+    });
+  }
+  if (screen === 'onboarding-third-party') {
+    return fallbackState({
+      running: true,
+      managed_by_desktop: true,
+      vault_configured: true,
+      agent_configured: true,
+      onboarding_complete: false,
+      sealing_service: { name: 'Northstar Seal', kind: 'registry' },
+    });
+  }
+  if (screen === 'onboarding-external') {
+    return fallbackState({
+      running: true,
+      managed_by_desktop: false,
+      vault_configured: true,
+      agent_configured: true,
+      onboarding_complete: false,
+      sealing_service: { name: 'Exalto Seal', kind: 'exalto_seal' },
     });
   }
   if (screen === 'unlock') {
@@ -162,8 +199,19 @@ function forcedState(): DesktopState | null {
       capture_enabled: screen === 'capture-on',
       version: '0.1.0',
       daemon_build_id: 'dev',
-      notary: 'registry',
+      sealing_service: { name: 'Exalto Seal', kind: 'exalto_seal' },
       counts: { ...emptyCounts, captured: 3, notarizing: 1, notarized: 8, needs_attention: 2 },
+    });
+  }
+  if (screen === 'capture-third-party') {
+    return fallbackState({
+      running: true,
+      managed_by_desktop: true,
+      capture_enabled: true,
+      version: '0.1.0',
+      daemon_build_id: 'dev',
+      sealing_service: { name: 'Northstar Seal', kind: 'registry' },
+      counts: { ...emptyCounts, captured: 1 },
     });
   }
   return null;
@@ -192,8 +240,9 @@ export async function getDesktopState(): Promise<DesktopState> {
       daemon_build_id: status.build_id ?? null,
       proxy_listener: status.proxy_listener,
       admin_listener: status.admin_listener,
-      notary: status.notary,
+      sealing_service: null,
       capture_enabled: status.capture_enabled,
+      temporary_capture_generation: 1,
       counts: status.counts,
       message: null,
     };
@@ -237,21 +286,41 @@ export async function setCaptureEnabled(enabled: boolean): Promise<boolean> {
   return invoke<boolean>('set_capture_enabled', { enabled });
 }
 
-export async function getRecentTraceProbes(): Promise<TraceProbe[]> {
+export async function beginTemporaryCapture(
+  windowGeneration: number,
+  leaseId: string,
+): Promise<boolean> {
+  if (!isTauri()) return false;
+  return invoke<boolean>('begin_temporary_capture', { windowGeneration, leaseId });
+}
+
+export async function endTemporaryCapture(leaseId: string): Promise<boolean> {
+  if (!isTauri()) return false;
+  return invoke<boolean>('end_temporary_capture', { leaseId });
+}
+
+export async function recoverTemporaryCapture(): Promise<boolean> {
+  if (!isTauri()) return false;
+  return invoke<boolean>('recover_temporary_capture');
+}
+
+export async function getRecentTraceProbes(leaseId: string): Promise<TraceProbe[]> {
   if (!isTauri()) return [];
-  return invoke<TraceProbe[]>('get_recent_trace_probes');
+  return invoke<TraceProbe[]>('get_recent_trace_probes', { leaseId });
 }
 
 export async function confirmDisposableTrace(
   baselineTraceIds: string[],
   expectedProvider: string,
   confirmationMarker: string,
+  leaseId: string,
 ): Promise<string | null> {
   if (!isTauri()) return null;
   return invoke<string | null>('confirm_disposable_trace', {
     baselineTraceIds,
     expectedProvider,
     confirmationMarker,
+    leaseId,
   });
 }
 
@@ -442,4 +511,33 @@ export async function copyProviderLocalAccessToken(
 ): Promise<void> {
   if (!isTauri()) return;
   await invoke('copy_provider_local_access_token', { provider });
+}
+
+export async function runProviderCaptureTest(
+  provider: ProviderCredentialProvider,
+  model: string,
+  marker: string,
+  baselineTraceIds: string[],
+  leaseId: string,
+): Promise<ProviderCaptureTestResult> {
+  if (!isTauri()) {
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    const captured = new URLSearchParams(window.location.search).get('test-result') !== 'unconfirmed';
+    return {
+      provider,
+      model,
+      marker,
+      trace_id: captured ? 'trc-browser-disposable-test' : null,
+      http_status: 200,
+      successful: true,
+      captured,
+    };
+  }
+  return invoke<ProviderCaptureTestResult>('run_provider_capture_test', {
+    provider,
+    model,
+    marker,
+    baselineTraceIds,
+    leaseId,
+  });
 }

@@ -203,6 +203,15 @@ so the runtime does not depend on a hosted account or platform API.
 
 ## Capture one call
 
+Capture starts off on a new installation. Enable it explicitly before the
+request you want to preserve:
+
+```bash
+curl -X PUT http://127.0.0.1:8788/v1/settings/capture \
+  -H 'content-type: application/json' \
+  -d '{"enabled":true}'
+```
+
 Keep the API key in the provider client and replace only its base URL. For an
 OpenAI Responses request:
 

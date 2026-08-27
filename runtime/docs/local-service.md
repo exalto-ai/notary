@@ -33,7 +33,8 @@ curl -X PUT http://127.0.0.1:8788/v1/settings/capture \
 ```
 
 The write returns the authoritative stored value. The setting lives in daemon
-metadata, defaults to on, and survives daemon and desktop restarts. If admin
+metadata, defaults to off on a new installation, and survives daemon and
+desktop restarts. Existing installations keep their stored choice. If admin
 authentication is configured, these routes require it like the other `/v1`
 routes.
 

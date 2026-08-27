@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ExternalLink, FileCheck2, Radio, Settings, Square } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { ExternalLink, FileCheck2, Radio, RefreshCw, Settings, Square } from 'lucide-react';
 import type { DesktopState } from './bridge';
 import notaryMark from './notary-mark.svg';
 import {
@@ -65,51 +65,108 @@ export function WorkspaceFrame({
   running,
   desktopSettings,
   onDesktopSettingsAction,
+  onRouteChange,
   onStartService,
   serviceStarting = false,
+  loadTimeoutMs = 7000,
+  workspaceSource,
+  allowLegacyFrameLoadFallback = false,
 }: {
   route: WorkspaceView;
   constraint?: TraceConstraint | null;
   running: boolean;
   desktopSettings?: DesktopSettingsPayload;
   onDesktopSettingsAction?: (action: DesktopSettingsAction) => void;
+  onRouteChange?: (view: View) => void;
   onStartService?: () => void;
   serviceStarting?: boolean;
+  loadTimeoutMs?: number;
+  workspaceSource?: string;
+  allowLegacyFrameLoadFallback?: boolean;
 }) {
   const [loaded, setLoaded] = useState(false);
+  const [frameLoaded, setFrameLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
-  const source = `http://127.0.0.1:8788/dashboard?embedded=desktop#/${route}${constraint ? `?${constraint}` : ''}`;
+  const embeddedRoute = useRef<View | null>(null);
+  const workspaceOrigin = 'http://127.0.0.1:8788';
+  const requestedSource = workspaceSource
+    ?? `${workspaceOrigin}/dashboard?embedded=desktop#/${route}${constraint ? `?${constraint}` : ''}`;
+  const lastParentRequest = useRef({ route, source: requestedSource });
+  const [navigation, setNavigation] = useState({ source: requestedSource, revision: 0 });
 
   const sendDesktopSettings = () => {
     if (!desktopSettings) return;
     frame.current?.contentWindow?.postMessage(
       { type: 'notary:desktop-settings', payload: desktopSettings },
-      'http://127.0.0.1:8788',
+      workspaceOrigin,
     );
   };
 
-  useEffect(() => setLoaded(false), [source]);
-  useEffect(sendDesktopSettings, [desktopSettings]);
   useEffect(() => {
-    if (!onDesktopSettingsAction) return;
+    if (
+      lastParentRequest.current.route === route
+      && lastParentRequest.current.source === requestedSource
+      && embeddedRoute.current === null
+    ) {
+      return;
+    }
+    lastParentRequest.current = { route, source: requestedSource };
+    if (embeddedRoute.current === route) {
+      embeddedRoute.current = null;
+      return;
+    }
+    embeddedRoute.current = null;
+    setNavigation((current) => ({
+      source: requestedSource,
+      revision: current.source === requestedSource ? current.revision + 1 : current.revision,
+    }));
+  }, [requestedSource, route]);
+  useEffect(() => {
+    setLoaded(false);
+    setFrameLoaded(false);
+    setLoadFailed(false);
+  }, [navigation, running]);
+  useEffect(() => {
+    if (!allowLegacyFrameLoadFallback || !running || !frameLoaded || loaded || loadFailed) return;
+    const delay = Math.min(1500, Math.max(100, Math.floor(loadTimeoutMs / 2)));
+    const timeout = window.setTimeout(() => setLoaded(true), delay);
+    return () => window.clearTimeout(timeout);
+  }, [allowLegacyFrameLoadFallback, frameLoaded, loadFailed, loaded, loadTimeoutMs, running]);
+  useEffect(() => {
+    if (!running || loaded || loadFailed) return;
+    const timeout = window.setTimeout(() => setLoadFailed(true), loadTimeoutMs);
+    return () => window.clearTimeout(timeout);
+  }, [loadFailed, loaded, loadTimeoutMs, navigation, running]);
+  useEffect(sendDesktopSettings, [desktopSettings]);
+  useLayoutEffect(() => {
     const receive = (event: MessageEvent) => {
       if (
-        event.origin !== 'http://127.0.0.1:8788' ||
+        event.origin !== workspaceOrigin ||
         event.source !== frame.current?.contentWindow
       ) {
         return;
       }
+      setLoaded(true);
+      setLoadFailed(false);
       if (event.data?.type === 'notary:desktop-settings-ready') sendDesktopSettings();
       if (
+        onDesktopSettingsAction &&
         event.data?.type === 'notary:desktop-settings-action' &&
         isDesktopSettingsAction(event.data.payload)
       ) {
         onDesktopSettingsAction(event.data.payload);
       }
+      if (event.data?.type === 'notary:desktop-route-change' && onRouteChange) {
+        const nextView = desktopViewFromDashboardRoute(event.data.payload);
+        if (!nextView || nextView === route) return;
+        embeddedRoute.current = nextView;
+        onRouteChange(nextView);
+      }
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [desktopSettings, onDesktopSettingsAction]);
+  }, [desktopSettings, onDesktopSettingsAction, onRouteChange, route]);
 
   if (!running) {
     return <EmptyPanel
@@ -122,15 +179,38 @@ export function WorkspaceFrame({
     />;
   }
 
+  if (loadFailed) {
+    return <EmptyPanel
+      icon={<Square size={26} />}
+      title="Local workspace didn't respond"
+      copy="The local service is running, but its workspace did not answer. Retry now. If this continues, restart the local service."
+      action={<button
+        className="mac-button is-primary"
+        type="button"
+        onClick={() => setNavigation((current) => ({
+          source: current.source,
+          revision: current.revision + 1,
+        }))}
+      >
+        <RefreshCw size={14} /> Retry local workspace
+      </button>}
+    />;
+  }
+
   return <div className="workspace-frame">
     {!loaded && <div className="workspace-loading"><span className="spinner" />Loading local workspace…</div>}
     <iframe
       ref={frame}
-      key={source}
-      src={source}
+      key={`${navigation.source}:${navigation.revision}`}
+      src={navigation.source}
       title={`${viewMeta[route].title} workspace`}
+      onError={() => setLoadFailed(true)}
       onLoad={() => {
-        setLoaded(true);
+        setFrameLoaded(true);
+        frame.current?.contentWindow?.postMessage(
+          { type: 'notary:desktop-ready-request' },
+          workspaceOrigin,
+        );
         sendDesktopSettings();
       }}
     />
@@ -168,6 +248,16 @@ function isDesktopSettingsAction(value: unknown): value is DesktopSettingsAction
   const action = (value as { action?: unknown }).action;
   if (action === 'check_for_updates' || action === 'restart_to_update') return true;
   return action === 'set_launch_at_login' && typeof (value as { enabled?: unknown }).enabled === 'boolean';
+}
+
+function desktopViewFromDashboardRoute(value: unknown): View | null {
+  if (!value || typeof value !== 'object' || !('view' in value)) return null;
+  const view = (value as { view?: unknown }).view;
+  if (view === 'overview') return 'home';
+  if (view === 'traces' || view === 'activity' || view === 'providers' || view === 'settings') {
+    return view;
+  }
+  return null;
 }
 
 function EmptyPanel({ icon, title, copy, action }: { icon: ReactNode; title: string; copy: string; action?: ReactNode }) {

@@ -1,4 +1,4 @@
-# Notary agent guide
+# Exalto agent guide
 
 ## Project map
 
@@ -68,6 +68,6 @@ gh stack view --json
 - The Cloudflare tunnel targets the stable `web` gateway. Do not rename or routinely recreate that service; replaceable SPA/API containers belong behind it.
 - Treat deployment-compatibility dual writes as temporary migration scaffolding. Before merging any change that introduces one, file a follow-up issue to remove it and link that issue from the migration, ADR, or pull request. The issue must name both data paths, the condition that makes removal safe, and the cleanup and validation required; do not leave an untracked second source of truth.
 - Treat generated OpenAPI as the exact HTTP contract. Regenerate clients and update every affected guide when a route, status, field, or authentication rule changes.
-- Use the settled product model: Notary (formally Notary by Exalto), a Trace as the evidence primitive, Captured and Notarized as its states, and notarization as an operation on a trace. `node scripts/check-terminology.mjs` enforces this repository-wide. When a retired name must stay — a negative test, an anti-regression rule, historical material — classify it in that script with the reason rather than weakening the rule.
+- Use the settled product model: Exalto is the family, Exalto Capture is the macOS capture app, Exalto Seal is the hosted sealing and verification service, and Exalto Notary Protocol is the protocol. A Trace is the evidence primitive. User-facing states are Captured and Sealed; runtime APIs retain Notarized and notarization for protocol compatibility. A generic or third-party notary remains a technical role, never a replacement product name. `node scripts/check-terminology.mjs` enforces this repository-wide. When a retired name must stay, such as a negative test, anti-regression rule, or historical material, classify it in that script with the reason rather than weakening the rule.
 - Keep `README.md` short; put task and reference depth under `docs/`, and keep public-site copy and `platform/web/public/llms.txt` aligned with the same trust boundaries.
 - Prefer small, task-focused diffs. Update README or docs when CLI behavior, capture artifacts, trust assumptions, or deployment steps change.

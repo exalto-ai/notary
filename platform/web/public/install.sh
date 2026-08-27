@@ -1,5 +1,5 @@
 #!/bin/sh
-# Install the latest Notary command-line tools for Apple silicon macOS or Linux.
+# Install the latest Exalto Notary Protocol command-line tools for Apple silicon macOS or Linux.
 set -eu
 
 download_root="${NOTARY_DOWNLOAD_ROOT:-https://notary.exalto.ai/downloads/releases}"
@@ -11,7 +11,7 @@ machine="$(uname -m)"
 case "$system" in
   Darwin) platform="darwin" ;;
   Linux) platform="linux" ;;
-  *) echo "Notary supports macOS and Linux through this installer." >&2; exit 1 ;;
+  *) echo "The Exalto CLI installer supports macOS and Linux." >&2; exit 1 ;;
 esac
 
 case "$machine" in
@@ -21,7 +21,7 @@ case "$machine" in
 esac
 
 if [ "$platform" = "darwin" ] && [ "$architecture" != "aarch64" ]; then
-  echo "Notary supports Apple silicon Macs; Intel Macs are not supported." >&2
+  echo "The Exalto CLI installer supports Apple silicon Macs; Intel Macs are not supported." >&2
   exit 1
 fi
 
@@ -68,7 +68,7 @@ mkdir -p "$install_dir"
 install -m 0755 "$temporary_dir/notary-runtime-${version}-${platform}-${architecture}/notaryctl" "$install_dir/notaryctl"
 install -m 0755 "$temporary_dir/notary-runtime-${version}-${platform}-${architecture}/notaryd" "$install_dir/notaryd"
 
-echo "Installed Notary $version from latest (notaryctl and notaryd) to $install_dir"
+echo "Installed notaryctl and notaryd $version from latest to $install_dir"
 case ":$PATH:" in
   *":$install_dir:"*) ;;
   *) echo "Add $install_dir to your PATH, then run: notaryd" ;;

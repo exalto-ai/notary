@@ -66,7 +66,7 @@ export function OverviewView({
           detail={
             status.capture_enabled
               ? 'Provider connection delegated'
-              : 'No notary or evidence artifact'
+              : 'No seal or evidence artifact'
           }
         />
         <ServiceFact

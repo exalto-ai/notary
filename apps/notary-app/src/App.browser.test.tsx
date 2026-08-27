@@ -1,9 +1,13 @@
-import { cleanup, render } from '@testing-library/react';
+import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
-import App from './App';
+import App, {
+  DISPOSABLE_TEST_STOPPED_MESSAGE,
+  SENSITIVE_INPUT_RESET_EVENT,
+} from './App';
 import { createDisposableTestMarker } from './Onboarding';
 import { formatBytes } from './product';
+import { WorkspaceFrame } from './Shell';
 
 function renderApp(query: string) {
   window.history.replaceState({}, '', `/${query}`);
@@ -77,6 +81,161 @@ describe('Exalto Capture desktop shell', () => {
       .toContain('/dashboard?embedded=desktop#/activity');
   });
 
+  test('replaces an unresponsive local workspace spinner with a retry action', async () => {
+    render(
+      <WorkspaceFrame
+        route="traces"
+        running
+        loadTimeoutMs={250}
+        workspaceSource="data:text/html,<title>silent%20workspace</title>"
+      />,
+    );
+    await expect.element(page.getByText('Loading local workspace…')).toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: "Local workspace didn't respond" }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole('button', { name: 'Retry local workspace' }))
+      .toBeVisible();
+
+    await userEvent.click(page.getByRole('button', { name: 'Retry local workspace' }));
+    expect(document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')).not.toBeNull();
+  });
+
+  test('requires a fresh workspace response after the local service restarts', async () => {
+    const source = 'data:text/html,<title>silent%20workspace</title>';
+    const view = render(
+      <WorkspaceFrame route="traces" running loadTimeoutMs={1_000} workspaceSource={source} />,
+    );
+    const frame = document.querySelector<HTMLIFrameElement>('.workspace-frame iframe');
+    expect(frame?.contentWindow).not.toBeNull();
+    await act(async () => {
+      window.dispatchEvent(new MessageEvent('message', {
+        origin: 'http://127.0.0.1:8788',
+        source: frame?.contentWindow,
+        data: { type: 'notary:desktop-route-change', payload: { view: 'traces' } },
+      }));
+    });
+    await expect.element(page.getByText('Loading local workspace…')).not.toBeInTheDocument();
+
+    view.rerender(
+      <WorkspaceFrame route="traces" running={false} loadTimeoutMs={250} workspaceSource={source} />,
+    );
+    await expect.element(page.getByRole('heading', { name: 'Local service is off' })).toBeVisible();
+    view.rerender(
+      <WorkspaceFrame route="traces" running loadTimeoutMs={250} workspaceSource={source} />,
+    );
+    await expect.element(page.getByText('Loading local workspace…')).toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: "Local workspace didn't respond" }))
+      .toBeVisible();
+  });
+
+  test('allows a bounded frame-load fallback for a known older external workspace', async () => {
+    render(
+      <WorkspaceFrame
+        route="traces"
+        running
+        loadTimeoutMs={300}
+        workspaceSource="data:text/html,<title>legacy%20workspace</title>"
+        allowLegacyFrameLoadFallback
+      />,
+    );
+    await expect.element(page.getByText('Loading local workspace…')).toBeVisible();
+    await expect.element(page.getByText('Loading local workspace…')).not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('heading', { name: "Local workspace didn't respond" }))
+      .not.toBeInTheDocument();
+  });
+
+  test('keeps native navigation synchronized with routes opened inside the workspace', async () => {
+    renderApp('?screen=capture-on&view=traces');
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')?.src)
+      .toContain('/dashboard?embedded=desktop#/traces');
+    const frame = document.querySelector<HTMLIFrameElement>('.workspace-frame iframe');
+    if (!frame?.contentWindow) throw new Error('Workspace frame is missing');
+    const initialSource = frame.getAttribute('src');
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'http://127.0.0.1:8788',
+        source: frame.contentWindow,
+        data: {
+          type: 'notary:desktop-route-change',
+          payload: { view: 'activity' },
+        },
+      }),
+    );
+
+    await expect.element(page.getByRole('button', { name: 'Activity log' })).toHaveClass('is-selected');
+    await expect.element(page.getByText('Local capture, sealing, and sharing events')).toBeVisible();
+    expect(document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')).toBe(frame);
+    expect(frame.getAttribute('src')).toBe(initialSource);
+
+    await userEvent.click(page.getByRole('button', { name: /Traces/ }));
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe'))
+      .not.toBe(frame);
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')?.src)
+      .toMatch(/#\/traces$/);
+  });
+
+  test('returns from an embedded trace detail when Traces is clicked again', async () => {
+    renderApp('?screen=capture-on&view=traces');
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe'))
+      .toBeTruthy();
+    const frame = document.querySelector<HTMLIFrameElement>('.workspace-frame iframe');
+    if (!frame?.contentWindow) throw new Error('Workspace frame is missing');
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'http://127.0.0.1:8788',
+        source: frame.contentWindow,
+        data: {
+          type: 'notary:desktop-route-change',
+          payload: { view: 'traces', detail: 'trc-browser-detail' },
+        },
+      }),
+    );
+
+    await userEvent.click(page.getByRole('button', { name: /Traces/ }));
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe'))
+      .not.toBe(frame);
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')?.src)
+      .toMatch(/#\/traces$/);
+  });
+
+  test('clears a Trace count filter after the embedded route confirms Traces', async () => {
+    renderApp('?screen=capture-on');
+    await userEvent.click(page.getByRole('button', { name: /Captured/ }));
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')?.src)
+      .toContain('#/traces?state=captured');
+    const frame = document.querySelector<HTMLIFrameElement>('.workspace-frame iframe');
+    if (!frame?.contentWindow) throw new Error('Workspace frame is missing');
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'http://127.0.0.1:8788',
+        source: frame.contentWindow,
+        data: {
+          type: 'notary:desktop-route-change',
+          payload: { view: 'traces' },
+        },
+      }),
+    );
+    await userEvent.click(page.getByRole('button', { name: /Traces/ }));
+
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')?.src)
+      .toMatch(/#\/traces$/);
+  });
+
   test('keeps the primary capture control on Capture', async () => {
     renderApp('?view=activity');
     await expect.element(page.getByText('Start the local service to inspect private traces and connections. Capture remains off.')).toBeVisible();
@@ -100,7 +259,7 @@ describe('Exalto Capture desktop shell', () => {
     await expect.element(page.getByRole('heading', { name: 'Start with Exalto Seal' })).toBeVisible();
     await userEvent.click(page.getByRole('button', { name: /About compatible notaries/ }));
     await expect.element(page.getByText('Self-hosted notary')).toBeVisible();
-    await expect.element(page.getByText('Not configured', { exact: true }).first()).toBeVisible();
+    await expect.element(page.getByText('Administrator managed', { exact: true }).first()).toBeVisible();
     await userEvent.click(page.getByRole('button', { name: /Continue with Exalto Seal/ }));
 
     await expect.element(page.getByRole('heading', { name: 'Which local tool will you use first?' })).toBeVisible();
@@ -116,7 +275,7 @@ describe('Exalto Capture desktop shell', () => {
     await expect.element(page.getByRole('radio', { name: /Use scoped local token/ })).toBeChecked();
     const providerKey = page.getByLabelText('OpenAI API key');
     await expect.element(providerKey).toHaveAttribute('type', 'password');
-    await expect.element(page.getByRole('button', { name: /Start capture service/ })).toBeDisabled();
+    await expect.element(page.getByRole('button', { name: /Start service and prepare test/ })).toBeDisabled();
     await userEvent.fill(providerKey, 'sk-browser-test-1234');
     await userEvent.click(page.getByRole('button', { name: 'Validate and save' }));
     await expect.element(page.getByText('OpenAI key is ready')).toBeVisible();
@@ -133,16 +292,141 @@ describe('Exalto Capture desktop shell', () => {
     await expect.element(page.getByText(/Local access token copied/)).not.toBeInTheDocument();
     await userEvent.click(page.getByRole('radio', { name: 'OpenAI' }));
 
-    await userEvent.click(page.getByRole('button', { name: /Start capture service/ }));
+    await userEvent.click(page.getByRole('button', { name: /Start service and prepare test/ }));
     await expect.element(page.getByRole('heading', { name: 'Capture one disposable trace' })).toBeVisible();
     await expect.element(page.getByText(/^Reply with exactly: EXALTO-CAPTURE-TEST-[0-9A-F]{24}$/)).toBeVisible();
-    expect(document.body.textContent).toContain('$OPENAI_API_KEY');
-    await expect.element(page.getByRole('button', { name: 'Check for new trace' })).toBeVisible();
-    await userEvent.click(page.getByRole('button', { name: 'Skip test' }));
+    expect(document.body.textContent).not.toContain('$OPENAI_API_KEY');
+    await expect.element(page.getByText('No credential is copied into a command')).toBeVisible();
+    const model = page.getByLabelText('OpenAI model ID');
+    await expect.element(page.getByRole('button', { name: 'Run secure test' })).toBeDisabled();
+    await userEvent.fill(model, 'gpt-4.1-mini');
+    await userEvent.click(page.getByRole('button', { name: 'Run secure test' }));
+    await expect.element(page.getByRole('button', { name: 'Back' })).toBeDisabled();
+    await expect.element(page.getByRole('button', { name: 'Test in progress…' })).toBeDisabled();
+    await expect.element(page.getByText('Test trace captured')).toBeVisible();
+    await expect.element(page.getByText(/previous capture setting was restored/)).toBeVisible();
+    await userEvent.click(page.getByRole('button', { name: 'Continue' }));
 
     await expect.element(page.getByRole('heading', { name: 'Exalto Capture is ready' })).toBeVisible();
     await expect.element(page.getByText(/Local capture does not require an Exalto account/)).toBeVisible();
     await expect.element(page.getByRole('button', { name: /Open Capture/ })).toBeVisible();
+    await userEvent.click(page.getByRole('button', { name: 'Back' }));
+    await expect.element(page.getByRole('heading', { name: 'Which local tool will you use first?' })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Capture one disposable trace' })).not.toBeInTheDocument();
+  });
+
+  test('does not misreport a successful provider request when previews prevent confirmation', async () => {
+    renderApp('?screen=onboarding&test-result=unconfirmed');
+    await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
+    await userEvent.click(page.getByRole('button', { name: /Protect traces/ }));
+    await userEvent.click(page.getByRole('button', { name: /Continue with Exalto Seal/ }));
+    await userEvent.click(page.getByRole('radio', { name: /API or SDK/ }));
+    await userEvent.fill(page.getByLabelText(/OpenAI API key|Replace OpenAI key/), 'sk-browser-test-1234');
+    await userEvent.click(page.getByRole('button', { name: 'Validate and save' }));
+    await userEvent.click(page.getByRole('button', { name: /Start service and prepare test/ }));
+    await userEvent.fill(page.getByLabelText('OpenAI model ID'), 'gpt-4.1-mini');
+    await userEvent.click(page.getByRole('button', { name: 'Run secure test' }));
+
+    await expect.element(page.getByText('Request succeeded, trace not auto-confirmed')).toBeVisible();
+    await expect.element(page.getByText(/automatic confirmation requires response previews/i)).toBeVisible();
+    await expect.element(page.getByRole('button', { name: 'Continue' })).toBeVisible();
+    await expect.element(page.getByText('No new trace yet')).not.toBeInTheDocument();
+  });
+
+  test('preserves a third-party sealing service across onboarding and Capture', async () => {
+    renderApp('?screen=onboarding-third-party');
+    await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
+    await userEvent.click(page.getByRole('button', { name: /Protect traces/ }));
+    await expect.element(page.getByRole('heading', { name: 'Continue with Northstar Seal' })).toBeVisible();
+    await expect.element(page.getByRole('button', { name: /Continue with Northstar Seal/ })).toBeVisible();
+    await expect.element(page.getByText('Northstar Seal', { exact: true }).last()).toBeVisible();
+    await expect.element(page.getByText('Exalto Seal', { exact: true })).not.toBeInTheDocument();
+
+    cleanup();
+    renderApp('?screen=capture-third-party');
+    await expect.element(page.getByText('Northstar Seal', { exact: true }).first()).toBeVisible();
+    await expect.element(page.getByText('Exalto Seal', { exact: true })).not.toBeInTheDocument();
+  });
+
+  test('preserves an externally managed service without borrowing its capture setting', async () => {
+    renderApp('?screen=onboarding-external');
+    await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
+    await userEvent.click(page.getByRole('button', { name: /Protect traces/ }));
+    await userEvent.click(page.getByRole('button', { name: /Continue with Exalto Seal/ }));
+    await expect.element(page.getByText(/skip the disposable test/)).toBeVisible();
+    await userEvent.click(page.getByRole('button', { name: /Continue without disposable test/ }));
+    await expect.element(page.getByRole('heading', { name: 'Exalto Capture is ready' })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Capture one disposable trace' })).not.toBeInTheDocument();
+  });
+
+  test('does not create an unprotected passphrase vault', async () => {
+    renderApp('?screen=onboarding');
+    await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
+    await userEvent.click(page.getByRole('button', { name: /Advanced protection/ }));
+    await userEvent.click(page.getByRole('radio', { name: /Use a passphrase/ }));
+
+    const protect = page.getByRole('button', { name: /Protect traces/ });
+    const passphrase = page.getByLabelText('Passphrase', { exact: true });
+    const confirmation = page.getByLabelText('Confirm passphrase', { exact: true });
+    await expect.element(protect).toBeDisabled();
+    await expect.element(page.getByText('Enter a non-empty passphrase.')).toBeVisible();
+
+    await userEvent.fill(passphrase, '   ');
+    await userEvent.fill(confirmation, '   ');
+    await expect.element(protect).toBeDisabled();
+    await userEvent.fill(passphrase, 'correct horse battery staple');
+    await expect.element(page.getByText('The passphrases do not match.')).toBeVisible();
+    await expect.element(protect).toBeDisabled();
+    await userEvent.fill(confirmation, 'correct horse battery staple');
+    await expect.element(protect).toBeEnabled();
+  });
+
+  test('clears unsaved secrets whenever the native window is hidden', async () => {
+    renderApp('?screen=unlock');
+    await userEvent.fill(page.getByLabelText('Vault passphrase'), 'unsaved unlock secret');
+    await act(async () => {
+      window.dispatchEvent(new Event(SENSITIVE_INPUT_RESET_EVENT));
+    });
+    await expect.element(page.getByLabelText('Vault passphrase')).toHaveValue('');
+
+    cleanup();
+    renderApp('?screen=capture-on&view=providers');
+    await userEvent.click(page.getByRole('button', { name: 'Connection setup' }));
+    await userEvent.click(page.getByRole('radio', { name: /API or SDK/ }));
+    const openAiKey = page.getByLabelText(/OpenAI API key|Replace OpenAI key/);
+    await userEvent.fill(openAiKey, 'unsaved provider secret');
+
+    await act(async () => {
+      window.dispatchEvent(new Event(SENSITIVE_INPUT_RESET_EVENT));
+    });
+    await userEvent.click(page.getByRole('radio', { name: /API or SDK/ }));
+    await expect
+      .element(page.getByLabelText(/OpenAI API key|Replace OpenAI key/))
+      .toHaveValue('');
+
+    cleanup();
+    renderApp('?screen=capture-on&view=traces');
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe'))
+      .not.toBeNull();
+    const originalWorkspace = document.querySelector<HTMLIFrameElement>('.workspace-frame iframe');
+    await act(async () => {
+      window.dispatchEvent(new Event(SENSITIVE_INPUT_RESET_EVENT));
+    });
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe'))
+      .not.toBe(originalWorkspace);
+
+    cleanup();
+    renderApp('?screen=onboarding');
+    await expect.element(page.getByRole('button', { name: /Begin setup/ })).toBeVisible();
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent(SENSITIVE_INPUT_RESET_EVENT, {
+        detail: { resumeDisposableSetup: true },
+      }));
+    });
+    await expect.element(page.getByRole('heading', { name: 'Which local tool will you use first?' })).toBeVisible();
+    await expect.element(page.getByText(DISPOSABLE_TEST_STOPPED_MESSAGE)).toBeVisible();
   });
 
   test('uses private Trace language in the locked state', async () => {

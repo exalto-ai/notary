@@ -46,7 +46,7 @@ cargo install --locked --path crates/notaryctl --bin notaryctl`;
 
 const docPages: Record<DocPageKey, DocPage> = {
   overview: {
-    title: 'How Notary by Exalto fits.',
+    title: 'How Exalto Capture and Exalto Seal fit.',
     lead: 'Run your existing model client through a local proxy, keep encrypted evidence on your machine, and turn only the interactions you choose into independently verifiable OpenTelemetry trace packages.',
     blocks: [
       {
@@ -93,9 +93,9 @@ const docPages: Record<DocPageKey, DocPage> = {
         heading: 'What is automatic',
         items: [
           'The first service start creates or opens the local encrypted-checkpoint vault. On a desktop OS, its random key is stored in the system credential service.',
-          'The service discovers the production notary endpoint and public key from the Notary directory, then pins that trust information locally.',
+          'The service discovers the production notary endpoint and public key from the Exalto Seal Registry, then pins that trust information locally.',
           'Notarization and verification use the pinned notary identity. Normal hosted use does not require copying a public key into an API request.',
-          'Provider credentials remain in your existing SDK or agent environment; Notary does not require a project .env file.',
+          'Provider credentials remain in your existing SDK or agent environment; the local service does not require a project .env file.',
         ],
       },
       {
@@ -104,13 +104,13 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'The claim',
-        note: 'A trusted notary attests that disclosed bytes came from an authenticated TLS interaction with the named provider, and Notary deterministically binds the OpenTelemetry representation to those bytes.',
+        note: 'A trusted notary attests that disclosed bytes came from an authenticated TLS interaction with the named provider, and the Exalto Notary Protocol deterministically binds the OpenTelemetry representation to those bytes.',
       },
     ],
   },
   'how-it-works': {
     title: 'Trust and guarantees',
-    lead: 'Notary makes a narrow provenance claim. Understanding who sees what—and what the proof does not establish—is part of using it correctly.',
+    lead: 'The Exalto Notary Protocol makes a narrow provenance claim. Understanding who sees what—and what the proof does not establish—is part of using it correctly.',
     blocks: [
       {
         heading: 'Each participant',
@@ -158,12 +158,12 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'How trust is established',
-        body: 'The service retrieves the versioned production Notary Registry over authenticated HTTPS and caches its key history. The JSON directory is not separately signed. Notarized packages identify the notary key that signed their evidence; verification accepts it only if that key was trusted at the package timestamp. A self-hosted deployment pairs `notary.endpoint` with `notary.public_key` in `config.toml`, but that is not part of the normal hosted workflow.',
+        body: 'The service retrieves the versioned Exalto Seal Registry over authenticated HTTPS and caches its key history. The JSON directory is not separately signed. Notarized packages identify the notary key that signed their evidence; verification accepts it only if that key was trusted at the package timestamp. A self-hosted deployment pairs `notary.endpoint` with `notary.public_key` in `config.toml`, but that is not part of the normal hosted workflow.',
       },
     ],
   },
   'getting-started': {
-    title: 'Choose how to run Notary.',
+    title: 'Choose how to capture.',
     lead: 'Use the guided macOS app for everyday capture and review. Use the CLI and local service when you are integrating an SDK, coding agent, server, or automated workflow.',
     blocks: [
       {
@@ -183,7 +183,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Install the macOS app',
-        body: 'On the home page, choose Download for macOS. Open the downloaded DMG, move Notary to Applications, then launch it. The app guides first-time setup and supervises its bundled local service.',
+        body: 'On the home page, choose Download for macOS. Open the downloaded DMG, move Exalto Capture to Applications, then launch it. The app guides first-time setup and supervises its bundled local service.',
       },
       {
         heading: 'System requirements',
@@ -223,7 +223,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Configuration file',
-        body: 'The first service start creates an editable `config.toml` at the standard Notary user location: `~/.config/notary/config.toml` on Linux, `%APPDATA%\\notary\\config.toml` on Windows, and `~/Library/Application Support/notary/config.toml` on macOS. It is written once and never replaced. Start with an explicit file when needed:',
+        body: 'The first service start creates an editable `config.toml` at the standard local-service configuration location: `~/.config/notary/config.toml` on Linux, `%APPDATA%\\notary\\config.toml` on Windows, and `~/Library/Application Support/notary/config.toml` on macOS. It is written once and never replaced. Start with an explicit file when needed:',
         code: 'notaryd --config /path/to/config.toml',
       },
       {
@@ -233,7 +233,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Connect a hosted account when needed',
-        body: 'Local capture, notarization, and verification do not require an account. Connect one to use account allowances, share a notarized trace, or manage the same device from hosted Settings. `notaryctl account connect` opens a browser approval flow and stores the rotating device credential only in the daemon credential vault. `account show` shows the connected identity, plan, and balances without revealing the credential; `account disconnect` disconnects that device without deleting local evidence.',
+        body: 'Local capture, sealing, and verification do not require an account. Connect one to use account allowances, share a sealed trace, or manage the same device from hosted Settings. `notaryctl account connect` opens a browser approval flow and stores the rotating device credential only in the daemon credential vault. `account show` shows the connected identity, plan, and balances without revealing the credential; `account disconnect` disconnects that device without deleting local evidence.',
         code: 'notaryctl account connect\nnotaryctl account show\nnotaryctl account disconnect',
       },
       {
@@ -304,15 +304,15 @@ const docPages: Record<DocPageKey, DocPage> = {
       {
         heading: 'OpenRouter + Chat Completions',
         body: 'The model slug remains trace metadata. The resulting evidence authenticates OpenRouter—not the vendor named in that slug. The Authorization, HTTP-Referer, and X-Title header values are hidden in a notarized package.',
-        code: 'curl http://127.0.0.1:8787/openrouter/api/v1/chat/completions \\\n  -H "Authorization: Bearer $OPENROUTER_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -H "HTTP-Referer: https://example.test" \\\n  -H "X-Title: Notary example" \\\n  -d \'{"model":"YOUR_MODEL","stream":true,"messages":[{"role":"user","content":"Reply with exactly: notary"}]}\'',
+        code: 'curl http://127.0.0.1:8787/openrouter/api/v1/chat/completions \\\n  -H "Authorization: Bearer $OPENROUTER_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -H "HTTP-Referer: https://example.test" \\\n  -H "X-Title: Exalto example" \\\n  -d \'{"model":"YOUR_MODEL","stream":true,"messages":[{"role":"user","content":"Reply with exactly: notary"}]}\'',
       },
       {
         heading: 'Where subscription login works',
-        body: 'The supported, live-tested clients are Codex CLI with its saved ChatGPT login and Claude Code with its saved claude.ai login. The Notary macOS app can supervise the local proxy, but it does not configure or sign in to either client. Native Claude Desktop cannot use this route. Codex desktop is not yet end-to-end tested or supported. Browser, Slack, remote, and cloud sessions cannot reach the local proxy.',
+        body: 'The supported, live-tested clients are Codex CLI with its saved ChatGPT login and Claude Code with its saved claude.ai login. Exalto Capture can supervise the local proxy, but it does not configure or sign in to either client. Native Claude Desktop cannot use this route. Codex desktop is not yet end-to-end tested or supported. Browser, Slack, remote, and cloud sessions cannot reach the local proxy.',
       },
       {
         heading: 'Where the API key comes from',
-        body: 'Keep configuring credentials exactly as your SDK or agent expects—for example, OPENAI_API_KEY in your shell or secret manager. Notary does not create, load, or require a .env file. A .env file is only one optional way your own application might populate environment variables.',
+        body: 'Keep configuring credentials exactly as your SDK or agent expects—for example, OPENAI_API_KEY in your shell or secret manager. Exalto Capture does not create, load, or require a .env file. A .env file is only one optional way your own application might populate environment variables.',
       },
       {
         heading: 'Provider boundary',
@@ -321,12 +321,12 @@ const docPages: Record<DocPageKey, DocPage> = {
       {
         heading: 'Codex + OpenAI API key',
         body: "Replace YOUR_RESPONSES_MODEL with a model available to the OpenAI API key. The explicit no-WebSocket capability keeps Codex on this prototype's supported HTTP transport.",
-        code: 'Add this to ~/.codex/config.toml:\n\nmodel_provider = "notary"\nmodel = "YOUR_RESPONSES_MODEL"\n\n[model_providers.notary]\nname = "Notary local proxy"\nbase_url = "http://127.0.0.1:8787/openai/v1"\nenv_key = "OPENAI_API_KEY"\nwire_api = "responses"\nsupports_websockets = false',
+        code: 'Add this to ~/.codex/config.toml:\n\nmodel_provider = "notary"\nmodel = "YOUR_RESPONSES_MODEL"\n\n[model_providers.notary]\nname = "Exalto local proxy"\nbase_url = "http://127.0.0.1:8787/openai/v1"\nenv_key = "OPENAI_API_KEY"\nwire_api = "responses"\nsupports_websockets = false',
       },
       {
         heading: 'Codex + ChatGPT plan',
-        body: 'This flow is live-tested with Codex CLI. First run codex login status and confirm that Codex says it is logged in using ChatGPT. Do not set env_key in this provider. Codex owns the login and refreshes it; Notary only forwards the request headers and hides every header value from the notarized package. The proof authenticates chatgpt.com and the disclosed bodies, not the account owner, plan, or billing. Codex desktop is not yet end-to-end tested or supported, and cloud work cannot reach the loopback route.',
-        code: 'Add this to ~/.codex/config.toml:\n\nmodel_provider = "notary-chatgpt"\n\n[model_providers.notary-chatgpt]\nname = "Notary — ChatGPT plan"\nbase_url = "http://127.0.0.1:8787/codex"\nrequires_openai_auth = true\nwire_api = "responses"\nsupports_websockets = false',
+        body: 'This flow is live-tested with Codex CLI. First run codex login status and confirm that Codex says it is logged in using ChatGPT. Do not set env_key in this provider. Codex owns the login and refreshes it; the local service only forwards the request headers and hides every header value from the notarized package. The proof authenticates chatgpt.com and the disclosed bodies, not the account owner, plan, or billing. Codex desktop is not yet end-to-end tested or supported, and cloud work cannot reach the loopback route.',
+        code: 'Add this to ~/.codex/config.toml:\n\nmodel_provider = "notary-chatgpt"\n\n[model_providers.notary-chatgpt]\nname = "Exalto local proxy · ChatGPT plan"\nbase_url = "http://127.0.0.1:8787/codex"\nrequires_openai_auth = true\nwire_api = "responses"\nsupports_websockets = false',
       },
       {
         heading: 'Run Codex',
@@ -339,7 +339,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Claude Code + claude.ai plan',
-        body: 'Run claude auth status first; Claude Code itself must report a saved first-party login. A login in the native Claude desktop app is separate. Remove apiKeyHelper and do not set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN. Claude Code owns login and refresh; Notary forwards its authorization and Messages protocol unchanged and hides every header value from the notarized package. The proof authenticates api.anthropic.com and the disclosed bodies, not the account owner, subscription, or billing. Native Claude Desktop, web, Slack, remote, and cloud sessions do not run through this local route.',
+        body: 'Run claude auth status first; Claude Code itself must report a saved first-party login. A login in the native Claude desktop app is separate. Remove apiKeyHelper and do not set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN. Claude Code owns login and refresh; the local service forwards its authorization and Messages protocol unchanged and hides every header value from the notarized package. The proof authenticates api.anthropic.com and the disclosed bodies, not the account owner, subscription, or billing. Native Claude Desktop, web, Slack, remote, and cloud sessions do not run through this local route.',
         code: "env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN \\\n  ANTHROPIC_BASE_URL=http://127.0.0.1:8787/anthropic \\\n  claude -p 'Reply with exactly: notary'",
       },
       {
@@ -384,7 +384,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Buy more notarization',
-        body: 'Every plan can buy additional notarization credits for $10 USD per GB through Stripe Checkout. Purchased credits do not expire. Notary consumes monthly notarization allowance before non-expiring purchased credits. Refunds and disputes remove the corresponding credits; reinstated payments restore them.',
+        body: 'Every plan can buy additional notarization credits for $10 USD per GB through Stripe Checkout. Purchased credits do not expire. Exalto Seal consumes monthly notarization allowance before non-expiring purchased credits. Refunds and disputes remove the corresponding credits; reinstated payments restore them.',
       },
       {
         heading: 'Trace storage',
@@ -400,7 +400,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Your usage',
-        body: 'Hosted Account shows the current plan, capture and notarization balances, trace storage, monthly reset, purchases, offers, and activity. A connected local service can retrieve the same account summary with `notaryctl account show --json`.',
+        body: 'Your Exalto account shows the current plan, capture and notarization balances, trace storage, monthly reset, purchases, offers, and activity. A connected local service can retrieve the same account summary with `notaryctl account show --json`.',
       },
       {
         heading: 'Evidence is unchanged',
@@ -418,8 +418,8 @@ const docPages: Record<DocPageKey, DocPage> = {
         code: 'curl -X POST http://127.0.0.1:8788/v1/traces/trc-example/notarizations',
       },
       {
-        heading: 'Notary discovery is automatic',
-        body: 'For hosted use, the service refreshes the production Notary Registry, selects a worker compatible with the capture, and verifies the resulting evidence against its locally pinned key history. For local or self-hosted use, set `notary.endpoint` and `notary.public_key` together in `config.toml`.',
+        heading: 'A compatible notary is selected automatically',
+        body: 'For hosted use, the service refreshes the Exalto Seal Registry, selects a worker compatible with the capture, and verifies the resulting evidence against its locally pinned key history. For local or self-hosted use, set `notary.endpoint` and `notary.public_key` together in `config.toml`.',
       },
       {
         heading: 'Fresh notary connection',
@@ -510,7 +510,7 @@ const docPages: Record<DocPageKey, DocPage> = {
   },
   share: {
     title: 'Share a Notarized Trace',
-    lead: 'Sharing is a deliberate upload of one already-notarized package. The local service verifies it and shows the full disclosed conversation before it contacts Notary.',
+    lead: 'Sharing is a deliberate upload of one already-notarized package. The local service verifies it and shows the full disclosed conversation before it contacts Exalto Seal.',
     blocks: [
       {
         heading: 'Connect the local service',
@@ -607,7 +607,7 @@ const docSubheadings: Partial<Record<DocPageKey, ReadonlySet<string>>> = {
     'Stopping and retrying',
   ]),
   'trace-packages': new Set([
-    'Notary discovery is automatic',
+    'A compatible notary is selected automatically',
     'Fresh notary connection',
     'Expect this step to take time',
     'Interruption behavior',

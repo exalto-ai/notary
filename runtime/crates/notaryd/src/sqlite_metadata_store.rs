@@ -421,12 +421,12 @@ mod tests {
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("metadata.db");
         let first = SqliteMetadataStore::open(path.clone(), true).await.unwrap();
-        assert!(first.capture_enabled().await.unwrap());
-        assert!(!first.set_capture_enabled(false, 1).await.unwrap());
+        assert!(!first.capture_enabled().await.unwrap());
+        assert!(first.set_capture_enabled(true, 1).await.unwrap());
         drop(first);
 
         let reopened = SqliteMetadataStore::open(path, true).await.unwrap();
-        assert!(!reopened.capture_enabled().await.unwrap());
+        assert!(reopened.capture_enabled().await.unwrap());
     }
 
     async fn sqlite_conformance(full_text_search: bool) {

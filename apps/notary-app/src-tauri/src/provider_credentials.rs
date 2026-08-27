@@ -4,14 +4,28 @@ use notary_core::vault::{
     DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX, DesktopCredentialProvider, DesktopProviderCredentials,
 };
 use rand::{TryRngCore as _, rngs::OsRng};
-use reqwest::{StatusCode, header::HeaderValue};
+use reqwest::{
+    StatusCode,
+    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue},
+};
 use serde::Serialize;
+use serde_json::json;
 use zeroize::Zeroizing;
 
-use crate::daemon::{DaemonProcess, reload_managed_daemon_credentials};
-use crate::service_client::daemon_is_healthy;
+use crate::daemon::{
+    DaemonProcess, authenticated_managed_generation, managed_daemon_is_healthy,
+    reload_managed_daemon_credentials, same_managed_daemon_is_healthy,
+};
+use crate::service_client::{
+    TemporaryCaptureState, confirm_disposable_trace_id, daemon_is_healthy,
+    run_while_window_generation_is_current,
+};
 
 const CREDENTIAL_SERVICE: &str = "ai.exalto.notary.provider-api-key";
+const CAPTURE_ORIGIN: &str = "http://127.0.0.1:8787";
+const DISPOSABLE_TRACE_MARKER_PREFIX: &str = "EXALTO-CAPTURE-TEST-";
+const DISPOSABLE_TRACE_MARKER_SUFFIX_LEN: usize = 24;
+const PROVIDER_TEST_MAX_RESPONSE_BYTES: usize = 256 * 1024;
 
 type StoredProviderCredential = (Zeroizing<String>, Zeroizing<String>);
 
@@ -47,6 +61,14 @@ impl CredentialProvider {
             Self::Openai => "https://api.openai.com/v1/models",
             Self::Anthropic => "https://api.anthropic.com/v1/models",
             Self::Openrouter => "https://openrouter.ai/api/v1/key",
+        }
+    }
+
+    const fn capture_test_path(self) -> &'static str {
+        match self {
+            Self::Openai => "/openai/v1/responses",
+            Self::Anthropic => "/anthropic/v1/messages",
+            Self::Openrouter => "/openrouter/api/v1/chat/completions",
         }
     }
 
@@ -88,6 +110,17 @@ pub(super) struct ProviderCredentialStatus {
     configured: bool,
     masked_suffix: Option<String>,
     validation: CredentialValidation,
+}
+
+#[derive(Serialize)]
+pub(super) struct ProviderCaptureTestResult {
+    provider: CredentialProvider,
+    model: String,
+    marker: String,
+    trace_id: Option<String>,
+    http_status: u16,
+    successful: bool,
+    captured: bool,
 }
 
 fn credential_entry(provider: CredentialProvider) -> Result<keyring::Entry, String> {
@@ -307,6 +340,158 @@ fn validation_request(
         .map_err(|_| "API key validation is temporarily unavailable.".to_string())
 }
 
+fn normalize_provider_test_model(
+    provider: CredentialProvider,
+    model: String,
+) -> Result<String, String> {
+    let model = model.trim();
+    validate_provider_test_model(provider, model)?;
+    Ok(model.to_owned())
+}
+
+fn validate_provider_test_model(provider: CredentialProvider, model: &str) -> Result<(), String> {
+    let valid_syntax = !model.is_empty()
+        && model.len() <= 200
+        && model.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b':' | b'/')
+        });
+    let valid_provider_shape = match provider {
+        CredentialProvider::Openai | CredentialProvider::Anthropic => !model.contains('/'),
+        CredentialProvider::Openrouter => model
+            .split_once('/')
+            .is_some_and(|(namespace, name)| !namespace.is_empty() && !name.is_empty()),
+    };
+    if !valid_syntax || !valid_provider_shape {
+        return Err("Enter a valid model identifier for this provider.".into());
+    }
+    Ok(())
+}
+
+fn validate_provider_test_marker(marker: &str) -> Result<(), String> {
+    let valid = marker
+        .strip_prefix(DISPOSABLE_TRACE_MARKER_PREFIX)
+        .is_some_and(|suffix| {
+            suffix.len() == DISPOSABLE_TRACE_MARKER_SUFFIX_LEN
+                && suffix
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || matches!(byte, b'A'..=b'F'))
+        });
+    if !valid {
+        return Err("The disposable test marker is invalid. Start a new connection test.".into());
+    }
+    Ok(())
+}
+
+fn provider_test_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .no_proxy()
+        .redirect(reqwest::redirect::Policy::none())
+        .connect_timeout(Duration::from_secs(3))
+        .timeout(Duration::from_secs(60))
+        .user_agent(concat!("Exalto-Capture/", env!("CARGO_PKG_VERSION")))
+        .build()
+        .map_err(|_| "The local provider test could not be prepared.".to_string())
+}
+
+fn provider_test_request(
+    client: &reqwest::Client,
+    provider: CredentialProvider,
+    model: &str,
+    marker: &str,
+    local_access_token: &str,
+) -> Result<reqwest::Request, String> {
+    validate_provider_test_model(provider, model)?;
+    validate_provider_test_marker(marker)?;
+    let prompt = format!("Reply with exactly: {marker}");
+    let body = match provider {
+        CredentialProvider::Openai => json!({
+            "model": model,
+            "input": prompt,
+            "max_output_tokens": 64,
+            "stream": false,
+        }),
+        CredentialProvider::Anthropic => json!({
+            "model": model,
+            "max_tokens": 64,
+            "messages": [{ "role": "user", "content": prompt }],
+            "stream": false,
+        }),
+        CredentialProvider::Openrouter => json!({
+            "model": model,
+            "max_tokens": 64,
+            "messages": [{ "role": "user", "content": prompt }],
+            "stream": false,
+        }),
+    };
+    let body = serde_json::to_vec(&body)
+        .map_err(|_| "The local provider test could not be prepared.".to_string())?;
+    let url = format!("{CAPTURE_ORIGIN}{}", provider.capture_test_path());
+    let mut request = client
+        .post(url)
+        .header(CONTENT_TYPE, "application/json")
+        .header(ACCEPT, "application/json")
+        .body(body);
+    match provider {
+        CredentialProvider::Openai | CredentialProvider::Openrouter => {
+            let authorization = Zeroizing::new(format!("Bearer {local_access_token}"));
+            request = request.header(AUTHORIZATION, sensitive_header(authorization.as_bytes())?);
+        }
+        CredentialProvider::Anthropic => {
+            request = request
+                .header(
+                    "x-api-key",
+                    sensitive_header(local_access_token.as_bytes())?,
+                )
+                .header("anthropic-version", "2023-06-01");
+        }
+    }
+    if provider == CredentialProvider::Openrouter {
+        request = request
+            .header("http-referer", "https://exalto.ai")
+            .header("x-title", "Exalto Capture");
+    }
+    request
+        .build()
+        .map_err(|_| "The local provider test could not be prepared.".to_string())
+}
+
+fn provider_test_trace_id(headers: &HeaderMap) -> Result<Option<String>, String> {
+    let Some(value) = headers.get("x-notary-trace-id") else {
+        return Ok(None);
+    };
+    let value = value
+        .to_str()
+        .map_err(|_| "The local capture service returned an invalid Trace identifier.")?;
+    let valid = value.strip_prefix("trc-").is_some_and(|suffix| {
+        !suffix.is_empty()
+            && value.len() <= 256
+            && suffix
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+    });
+    if !valid {
+        return Err("The local capture service returned an invalid Trace identifier.".into());
+    }
+    Ok(Some(value.to_owned()))
+}
+
+async fn drain_provider_test_response(response: &mut reqwest::Response) -> Result<(), String> {
+    let mut received = 0_usize;
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|_| "The provider test response could not be read.".to_string())?
+    {
+        received = received
+            .checked_add(chunk.len())
+            .ok_or_else(|| "The provider test response was too large.".to_string())?;
+        if received > PROVIDER_TEST_MAX_RESPONSE_BYTES {
+            return Err("The provider test response was too large.".into());
+        }
+    }
+    Ok(())
+}
+
 fn validation_from_status(status: StatusCode) -> CredentialValidation {
     if status.is_success() {
         CredentialValidation::Valid
@@ -349,6 +534,7 @@ pub(super) async fn import_provider_api_key(
     guard_import_target(&process).await?;
     let validation = validate_api_key(provider, &api_key).await;
     if validation == CredentialValidation::Valid {
+        let _lifecycle = process.lifecycle.lock().await;
         guard_import_target(&process).await?;
         store_validated_provider_credential(provider, &api_key)?;
         reload_managed_daemon_credentials(&process)?;
@@ -357,11 +543,192 @@ pub(super) async fn import_provider_api_key(
 }
 
 #[tauri::command]
-pub(super) fn remove_provider_api_key(
+pub(super) async fn run_provider_capture_test(
+    provider: String,
+    model: String,
+    marker: String,
+    baseline_trace_ids: Vec<String>,
+    lease_id: String,
+    process: tauri::State<'_, DaemonProcess>,
+    temporary_capture: tauri::State<'_, TemporaryCaptureState>,
+) -> Result<ProviderCaptureTestResult, String> {
+    let mut generation_events = temporary_capture.subscribe_window_generation();
+    let expected_generation = *generation_events.borrow();
+    if !temporary_capture.owns_live_lease(&lease_id)? {
+        return Err("The disposable capture test is no longer active.".into());
+    }
+    let provider = CredentialProvider::from_str(&provider)?;
+    let model = normalize_provider_test_model(provider, model)?;
+    validate_provider_test_marker(&marker)?;
+    let _lifecycle = run_while_window_generation_is_current(
+        &mut generation_events,
+        expected_generation,
+        "The disposable capture test is no longer active.",
+        process.lifecycle.lock(),
+    )
+    .await?;
+    let managed_generation = run_while_window_generation_is_current(
+        &mut generation_events,
+        expected_generation,
+        "The disposable capture test is no longer active.",
+        authenticated_managed_generation(&process),
+    )
+    .await?
+    .ok_or_else(|| {
+        "The secure provider test requires the local service supervised by Exalto Capture."
+            .to_string()
+    })?;
+    if !temporary_capture.owns_live_lease(&lease_id)? {
+        return Err("The disposable capture test is no longer active.".into());
+    }
+    validate_managed_test_target(true, true)?;
+    let local_access_token = match read_provider_credential(provider)? {
+        Some((api_key, local_access_token)) => {
+            drop(api_key);
+            local_access_token
+        }
+        None => {
+            return Err(
+                "Import and validate this provider key before running a connection test.".into(),
+            );
+        }
+    };
+    let client = provider_test_client()?;
+    let request = provider_test_request(&client, provider, &model, &marker, &local_access_token)?;
+    drop(local_access_token);
+    // Once the scoped token has been copied into the request, every exit from
+    // the dispatch path must pass through the uncancelled identity check below.
+    // Window cancellation still bounds the request work immediately, while the
+    // final 250 ms proof decides whether the token must be rotated.
+    let outcome = async {
+        let mut response = run_while_window_generation_is_current(
+            &mut generation_events,
+            expected_generation,
+            "The disposable capture test is no longer active.",
+            client.execute(request),
+        )
+        .await?
+        .map_err(|_| {
+            "The provider test could not reach the local capture service. Start Exalto Capture and try again."
+                .to_string()
+        })?;
+        let http_status = response.status().as_u16();
+        let returned_trace_id = provider_test_trace_id(response.headers())?;
+        run_while_window_generation_is_current(
+            &mut generation_events,
+            expected_generation,
+            "The disposable capture test is no longer active.",
+            drain_provider_test_response(&mut response),
+        )
+        .await??;
+        if !run_while_window_generation_is_current(
+            &mut generation_events,
+            expected_generation,
+            "The disposable capture test is no longer active.",
+            same_managed_daemon_is_healthy(&process, managed_generation),
+        )
+        .await?
+        {
+            return Err(
+                "The supervised local service changed during the secure provider test. The result was discarded."
+                    .into(),
+            );
+        }
+        if !temporary_capture.owns_live_lease(&lease_id)? {
+            return Err("The disposable capture test is no longer active.".into());
+        }
+        let successful = (200..=299).contains(&http_status);
+        let trace_id = if successful {
+            match returned_trace_id {
+                Some(trace_id) => run_while_window_generation_is_current(
+                    &mut generation_events,
+                    expected_generation,
+                    "The disposable capture test is no longer active.",
+                    confirm_disposable_trace_id(
+                        &baseline_trace_ids,
+                        provider.name(),
+                        &marker,
+                        &trace_id,
+                    ),
+                )
+                .await??
+                .then_some(trace_id),
+                None => None,
+            }
+        } else {
+            None
+        };
+        if !run_while_window_generation_is_current(
+            &mut generation_events,
+            expected_generation,
+            "The disposable capture test is no longer active.",
+            same_managed_daemon_is_healthy(&process, managed_generation),
+        )
+        .await?
+        {
+            return Err(
+                "The supervised local service changed while confirming the provider test. The result was discarded."
+                    .into(),
+            );
+        }
+        if !temporary_capture.owns_live_lease(&lease_id)? {
+            return Err("The disposable capture test is no longer active.".into());
+        }
+        let captured = trace_id.is_some();
+        Ok(ProviderCaptureTestResult {
+            provider,
+            model,
+            marker,
+            trace_id,
+            http_status,
+            successful,
+            captured,
+        })
+    }
+    .await;
+
+    // This proof is deliberately not tied to window cancellation. It is the
+    // short security postflight that prevents a scoped token from remaining
+    // valid after a listener replacement, on success and on every error path.
+    if !same_managed_daemon_is_healthy(&process, managed_generation).await {
+        let rotation = rotate_provider_local_access_token(provider, &process);
+        return Err(if rotation.is_ok() {
+            "The supervised local service changed during the secure provider test. The result was discarded and the scoped local token was rotated. Copy the new token before trying again."
+                .into()
+        } else {
+            "The supervised local service changed during the secure provider test. The result was discarded. Remove and re-import this provider key before trying again."
+                .into()
+        });
+    }
+    outcome
+}
+
+fn rotate_provider_local_access_token(
+    provider: CredentialProvider,
+    process: &DaemonProcess,
+) -> Result<(), String> {
+    let replacement = generate_local_access_token()?;
+    store_local_access_token(provider, &replacement)?;
+    reload_managed_daemon_credentials(process)
+}
+
+fn validate_managed_test_target(managed_child: bool, daemon_healthy: bool) -> Result<(), String> {
+    if !managed_child || !daemon_healthy {
+        return Err(
+            "The secure provider test requires the local service supervised by Exalto Capture."
+                .into(),
+        );
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub(super) async fn remove_provider_api_key(
     provider: String,
     process: tauri::State<'_, DaemonProcess>,
 ) -> Result<ProviderCredentialStatus, String> {
     let provider = CredentialProvider::from_str(&provider)?;
+    let _lifecycle = process.lifecycle.lock().await;
     delete_api_key(provider)?;
     let token_removal = delete_local_access_token(provider);
     let daemon_reload = reload_managed_daemon_credentials(&process);
@@ -382,12 +749,18 @@ fn validate_import_target(managed_child: bool, daemon_healthy: bool) -> Result<(
 
 async fn guard_import_target(process: &DaemonProcess) -> Result<(), String> {
     let managed_child = process
-        .0
+        .child
         .lock()
         .map_err(|_| "daemon process state is unavailable")?
         .is_some();
     if managed_child {
-        return Ok(());
+        if managed_daemon_is_healthy(process).await {
+            return Ok(());
+        }
+        return Err(
+            "The bundled local service has not authenticated its listener. Wait for it to finish starting, or stop the service using the capture ports."
+                .into(),
+        );
     }
     validate_import_target(false, daemon_is_healthy().await)
 }
@@ -436,6 +809,55 @@ fn copy_local_access_token_to_clipboard(_token: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const TEST_MARKER: &str = "EXALTO-CAPTURE-TEST-0123456789ABCDEF01234567";
+
+    fn request_body(request: &reqwest::Request) -> serde_json::Value {
+        let bytes = request
+            .body()
+            .and_then(reqwest::Body::as_bytes)
+            .expect("provider test body is buffered");
+        serde_json::from_slice(bytes).expect("provider test body is JSON")
+    }
+
+    #[tokio::test]
+    async fn window_invalidation_cancels_a_stalled_provider_test() {
+        let (generation_events, mut receiver) = tokio::sync::watch::channel(7_u64);
+        let lifecycle = std::sync::Arc::new(tokio::sync::Mutex::new(()));
+        let task_lifecycle = std::sync::Arc::clone(&lifecycle);
+        let request_started = std::sync::Arc::new(tokio::sync::Notify::new());
+        let task_request_started = std::sync::Arc::clone(&request_started);
+        let stalled = tokio::spawn(async move {
+            let _lifecycle = run_while_window_generation_is_current(
+                &mut receiver,
+                7,
+                "The disposable capture test is no longer active.",
+                task_lifecycle.lock(),
+            )
+            .await?;
+            task_request_started.notify_one();
+            run_while_window_generation_is_current(
+                &mut receiver,
+                7,
+                "The disposable capture test is no longer active.",
+                std::future::pending::<()>(),
+            )
+            .await
+        });
+        request_started.notified().await;
+        generation_events.send_replace(8);
+        let _restoration_lifecycle = tokio::time::timeout(Duration::from_secs(1), lifecycle.lock())
+            .await
+            .expect("capture restoration should acquire the lifecycle promptly");
+        let result = tokio::time::timeout(Duration::from_secs(1), stalled)
+            .await
+            .expect("provider test cancellation should not wait for the request timeout")
+            .expect("provider test task should complete");
+        assert_eq!(
+            result.unwrap_err(),
+            "The disposable capture test is no longer active."
+        );
+    }
 
     #[test]
     fn provider_allowlist_is_exact_and_does_not_echo_input() {
@@ -537,6 +959,213 @@ mod tests {
             validation_from_status(StatusCode::TOO_MANY_REQUESTS),
             CredentialValidation::Unavailable
         );
+    }
+
+    #[test]
+    fn provider_test_inputs_are_bounded_and_do_not_echo_rejected_values() {
+        for (provider, model) in [
+            (CredentialProvider::Openai, "gpt-4.1-mini"),
+            (CredentialProvider::Anthropic, "claude-3-5-haiku-latest"),
+            (CredentialProvider::Openrouter, "openai/gpt-4o-mini:free"),
+            (
+                CredentialProvider::Openai,
+                "ft:gpt-4o-mini:example_org:example_model",
+            ),
+        ] {
+            assert_eq!(
+                normalize_provider_test_model(provider, model.into()).unwrap(),
+                model
+            );
+        }
+        assert_eq!(
+            normalize_provider_test_model(CredentialProvider::Openai, "  gpt-4.1-mini  ".into())
+                .unwrap(),
+            "gpt-4.1-mini"
+        );
+
+        for invalid in [
+            "",
+            "model with spaces",
+            "model?query=secret",
+            "model#fragment",
+            "model\nname",
+        ] {
+            let error = normalize_provider_test_model(CredentialProvider::Openai, invalid.into())
+                .unwrap_err();
+            if !invalid.is_empty() {
+                assert!(!error.contains(invalid));
+            }
+        }
+        assert!(
+            normalize_provider_test_model(CredentialProvider::Openai, "m".repeat(201)).is_err()
+        );
+        assert!(
+            normalize_provider_test_model(CredentialProvider::Openai, "openai/gpt-4o-mini".into())
+                .is_err()
+        );
+        assert!(
+            normalize_provider_test_model(CredentialProvider::Openrouter, "gpt-4o-mini".into())
+                .is_err()
+        );
+
+        validate_provider_test_marker(TEST_MARKER).unwrap();
+        for invalid in [
+            "EXALTO-CAPTURE-TEST-0123456789abcdef01234567",
+            "EXALTO-CAPTURE-TEST-01234567",
+            "secret-marker",
+        ] {
+            let error = validate_provider_test_marker(invalid).unwrap_err();
+            assert!(!error.contains(invalid));
+        }
+    }
+
+    #[test]
+    fn provider_test_requests_use_scoped_tokens_on_exact_loopback_routes() {
+        let client = provider_test_client().unwrap();
+        let local_token = format!("{DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}", "a".repeat(64));
+        let prompt = format!("Reply with exactly: {TEST_MARKER}");
+
+        let openai = provider_test_request(
+            &client,
+            CredentialProvider::Openai,
+            "gpt-4.1-mini",
+            TEST_MARKER,
+            &local_token,
+        )
+        .unwrap();
+        assert_eq!(openai.method(), reqwest::Method::POST);
+        assert_eq!(
+            openai.url().as_str(),
+            "http://127.0.0.1:8787/openai/v1/responses"
+        );
+        assert_eq!(openai.headers()[CONTENT_TYPE], "application/json");
+        assert_eq!(
+            openai.headers()[AUTHORIZATION],
+            format!("Bearer {local_token}")
+        );
+        assert!(openai.headers()[AUTHORIZATION].is_sensitive());
+        assert_eq!(
+            request_body(&openai),
+            json!({
+                "model": "gpt-4.1-mini",
+                "input": prompt,
+                "max_output_tokens": 64,
+                "stream": false,
+            })
+        );
+        assert!(!format!("{openai:?}").contains(&local_token));
+
+        let anthropic = provider_test_request(
+            &client,
+            CredentialProvider::Anthropic,
+            "claude-3-5-haiku-latest",
+            TEST_MARKER,
+            &local_token,
+        )
+        .unwrap();
+        assert_eq!(
+            anthropic.url().as_str(),
+            "http://127.0.0.1:8787/anthropic/v1/messages"
+        );
+        assert_eq!(anthropic.headers()["x-api-key"], local_token);
+        assert!(anthropic.headers()["x-api-key"].is_sensitive());
+        assert_eq!(anthropic.headers()["anthropic-version"], "2023-06-01");
+        assert!(anthropic.headers().get(AUTHORIZATION).is_none());
+        assert_eq!(
+            request_body(&anthropic),
+            json!({
+                "model": "claude-3-5-haiku-latest",
+                "max_tokens": 64,
+                "messages": [{ "role": "user", "content": prompt }],
+                "stream": false,
+            })
+        );
+        assert!(!format!("{anthropic:?}").contains(&local_token));
+
+        let openrouter = provider_test_request(
+            &client,
+            CredentialProvider::Openrouter,
+            "openai/gpt-4o-mini",
+            TEST_MARKER,
+            &local_token,
+        )
+        .unwrap();
+        assert_eq!(
+            openrouter.url().as_str(),
+            "http://127.0.0.1:8787/openrouter/api/v1/chat/completions"
+        );
+        assert_eq!(
+            openrouter.headers()[AUTHORIZATION],
+            format!("Bearer {local_token}")
+        );
+        assert!(openrouter.headers()[AUTHORIZATION].is_sensitive());
+        assert_eq!(openrouter.headers()["http-referer"], "https://exalto.ai");
+        assert_eq!(openrouter.headers()["x-title"], "Exalto Capture");
+        assert_eq!(
+            request_body(&openrouter),
+            json!({
+                "model": "openai/gpt-4o-mini",
+                "max_tokens": 64,
+                "messages": [{ "role": "user", "content": prompt }],
+                "stream": false,
+            })
+        );
+        assert!(!format!("{openrouter:?}").contains(&local_token));
+    }
+
+    #[test]
+    fn provider_test_request_builder_revalidates_model_and_marker() {
+        let client = provider_test_client().unwrap();
+        let local_token = format!("{DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX}{}", "a".repeat(64));
+        assert!(
+            provider_test_request(
+                &client,
+                CredentialProvider::Openai,
+                "model with spaces",
+                TEST_MARKER,
+                &local_token,
+            )
+            .is_err()
+        );
+        assert!(
+            provider_test_request(
+                &client,
+                CredentialProvider::Openai,
+                "gpt-4.1-mini",
+                "invalid-marker",
+                &local_token,
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn provider_test_trace_ids_are_optional_and_path_safe() {
+        let mut headers = HeaderMap::new();
+        assert_eq!(provider_test_trace_id(&headers).unwrap(), None);
+
+        headers.insert(
+            "x-notary-trace-id",
+            HeaderValue::from_static("trc-1234-safe_identifier"),
+        );
+        assert_eq!(
+            provider_test_trace_id(&headers).unwrap().as_deref(),
+            Some("trc-1234-safe_identifier")
+        );
+
+        for invalid in ["trace-1234", "trc-../escape", "trc-"] {
+            headers.insert("x-notary-trace-id", HeaderValue::from_str(invalid).unwrap());
+            let error = provider_test_trace_id(&headers).unwrap_err();
+            assert!(!error.contains(invalid));
+        }
+    }
+
+    #[test]
+    fn provider_test_rejects_external_or_unhealthy_local_services() {
+        assert!(validate_managed_test_target(true, true).is_ok());
+        assert!(validate_managed_test_target(false, true).is_err());
+        assert!(validate_managed_test_target(true, false).is_err());
+        assert!(validate_managed_test_target(false, false).is_err());
     }
 
     #[test]

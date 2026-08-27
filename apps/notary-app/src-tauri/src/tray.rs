@@ -6,10 +6,45 @@ use tauri::{
     tray::TrayIconBuilder,
 };
 
+use crate::ExitState;
 use crate::daemon::{DaemonProcess, start_daemon};
-use crate::service_client::{read_admin_status, write_capture_setting};
+use crate::service_client::{TemporaryCaptureState, read_admin_status, write_capture_setting};
+
+pub(super) const SAFE_HIDE_MENU_ID: &str = "app_hide";
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum AppMenuAction {
+    Hide,
+    Settings,
+    HelpGuide,
+    HelpCatalogue,
+    HelpReport,
+}
+
+pub(super) fn app_menu_action(id: &str) -> Option<AppMenuAction> {
+    match id {
+        SAFE_HIDE_MENU_ID => Some(AppMenuAction::Hide),
+        "app_settings" => Some(AppMenuAction::Settings),
+        "help_guide" => Some(AppMenuAction::HelpGuide),
+        "help_catalogue" => Some(AppMenuAction::HelpCatalogue),
+        "help_report" => Some(AppMenuAction::HelpReport),
+        _ => None,
+    }
+}
 
 pub(super) fn show_main_window(app: &tauri::AppHandle) {
+    let exit = app.state::<ExitState>();
+    match app
+        .state::<TemporaryCaptureState>()
+        .allow_live_leases_if(|| !exit.is_draining())
+    {
+        Ok(true) => {}
+        Ok(false) => return,
+        Err(error) => {
+            eprintln!("Could not reopen disposable capture setup: {error}");
+            return;
+        }
+    }
     #[cfg(target_os = "macos")]
     let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
@@ -59,7 +94,15 @@ pub(super) fn create_app_menu(app: &tauri::App) -> tauri::Result<()> {
             .get(4)
             .and_then(|item| item.as_predefined_menuitem())
         {
-            hide.set_text("Hide Exalto Capture")?;
+            let safe_hide = MenuItem::with_id(
+                app,
+                SAFE_HIDE_MENU_ID,
+                "Hide Exalto Capture",
+                true,
+                Some("CmdOrCtrl+H"),
+            )?;
+            app_menu.remove(hide)?;
+            app_menu.insert(&safe_hide, 4)?;
         }
         if let Some(quit) = original_items
             .last()
@@ -146,7 +189,8 @@ pub(super) fn create_tray(app: &tauri::App) -> tauri::Result<CheckMenuItem<tauri
                                 return;
                             }
                         }
-                        match write_capture_setting(requested).await {
+                        let temporary_capture = app_handle.state::<TemporaryCaptureState>();
+                        match write_capture_setting(requested, &temporary_capture).await {
                             Ok(enabled) => {
                                 let _ = capture_requests.set_checked(enabled);
                                 let _ = capture_requests.set_text(if enabled {
@@ -198,4 +242,18 @@ pub(super) fn schedule_capture_menu_updates(capture_requests: CheckMenuItem<taur
             tokio::time::sleep(Duration::from_secs(3)).await;
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn macos_hide_uses_the_safe_application_menu_action() {
+        assert_eq!(
+            app_menu_action(SAFE_HIDE_MENU_ID),
+            Some(AppMenuAction::Hide)
+        );
+        assert_eq!(app_menu_action("hide"), None);
+    }
 }

@@ -29,10 +29,10 @@ Monterey or later.
 2. Open the downloaded DMG.
 3. Move the application to Applications, then launch it.
 
-The updater-compatible artifact is still named `Notary.app`. The window,
-macOS application menu, status menu, and in-app product name are Exalto
-Capture. Production downloads are signed with a Developer ID certificate,
-notarized by Apple, and stapled for offline Gatekeeper checks.
+The installed bundle, window, macOS application menu, status menu, and in-app
+product name are all Exalto Capture. Production downloads are signed with a
+Developer ID certificate, notarized by Apple, and stapled for offline
+Gatekeeper checks.
 
 ## What the app does
 
@@ -54,8 +54,8 @@ provider routes can still send requests directly to their providers, but those
 requests create no capture, no trace, and no evidence that can be sealed later.
 
 The screen also shows the Capture, Review, Seal, Verify or share workflow,
-private trace counts, local protection, configured notary state, and a trust
-boundary. The remote notary witnesses encrypted protocol traffic. It does not
+private trace counts, local protection, configured sealing-service state, and a trust
+boundary. The selected sealing service witnesses encrypted protocol traffic. It does not
 receive the prompt, response, or provider credential in plaintext.
 
 The visual system uses the live site's exact paper, card, ink, navy, blue,
@@ -72,8 +72,9 @@ exits. It does not force-kill a draining service solely because shutdown takes
 longer than expected.
 
 After onboarding, later launches start the bundled service automatically for
-Keychain and empty-passphrase vaults. A protected passphrase vault opens
-locked and starts capture only after the user unlocks it.
+Keychain vaults and previously created empty-passphrase compatibility vaults.
+A protected passphrase vault opens locked and starts the service only after the
+user unlocks it. Starting the service does not turn capture on.
 
 The provider proxy listens on the fixed loopback address `127.0.0.1:8787`.
 The local administration API and embedded workspace use `127.0.0.1:8788`.
@@ -88,13 +89,14 @@ It then guides the user through six stages:
 1. **Welcome** introduces the local-first proof workflow and its limitations.
 2. **Protect private traces** uses macOS Keychain by default, with passphrase
    protection as an advanced option.
-3. **Confirm the notary** recommends Exalto Seal and explains what the notary
-   can and cannot see. Alternate notary configuration remains
+3. **Choose a sealing service** recommends Exalto Seal and explains what the service
+   can and cannot see. Alternate compatible-notary configuration remains
    administrator-managed in this build.
 4. **Connect an AI tool** starts with Codex CLI, Claude Code, or an API and SDK
    client.
-5. **Capture a disposable trace** provides one low-cost test prompt and checks
-   that the expected new trace appeared locally.
+5. **Capture a disposable trace** temporarily enables capture, provides one
+   low-cost test prompt, checks that the expected new trace appeared locally,
+   and restores the user's previous capture setting before leaving the step.
 6. **Ready** offers an optional Exalto account, then opens Capture or Traces.
 
 Each disposable test generates a fresh 96-bit marker. The prompt follows this
@@ -104,15 +106,42 @@ shape:
 Reply with exactly: EXALTO-CAPTURE-TEST-<24 uppercase hex characters>
 ```
 
-The check requires a trace ID that was not present before the test, the
-expected provider, a captured or sealed state, a successful 2xx provider
-response, and the exact marker in the response preview. The native layer reads
-full details only for plausible new candidates and returns only the matching
-trace ID to the webview. The user can skip this request if they are not ready
-to spend provider usage or have disabled response previews.
+Each preparation has an owner-scoped native lease tied to the current setup-window
+generation before service startup begins. Switching to Terminal leaves the test
+active so a CLI command can run. Closing setup or quitting atomically stops new
+leases, snapshots the current owner, invalidates that generation, and restores
+only the matching lease. Explicit reopen permits new leases after an abandoned
+quit has finished. Late provider responses cannot end a later test or update its
+UI. Local-service lifecycle operations are serialized, and a stale child exit
+cannot clear a newer supervised service.
+
+Before changing an off setting for this test, the native app writes a private
+recovery marker next to its existing desktop setup markers. It clears that
+marker only after capture is confirmed off again. Closing setup, quitting, or
+relaunching after an interrupted test therefore retries the restore. On recovery,
+the supervised local service persists capture off before binding either listener.
+If a passphrase vault is still locked or the service is absent, the app may close
+or quit while preserving the marker for the next unlocked launch. The app never
+temporarily enables capture on a service started outside Exalto Capture.
+
+For Codex CLI, Claude Code, and client-managed API keys, the check requires a
+trace ID that was not present before the test, the expected provider, a
+captured or sealed state, a successful 2xx provider response, and the exact
+marker in the response preview. The native layer reads full details only for
+plausible new candidates and returns only the matching trace ID to the webview.
+
+For a Keychain-managed provider key, the app runs the disposable request
+natively. The provider key and scoped local token never enter the webview or a
+generated terminal command. The native request is limited to the selected
+provider's fixed loopback route, disables redirects and inherited proxies, and
+returns only status fields plus a trace ID that the local metadata path confirms
+against the pre-request baseline, provider, successful state, and exact marker.
+The response header alone is not accepted. The provider response body does not
+enter the webview. The user can skip either test if they are not ready to spend
+provider usage.
 
 Local capture can work before an Exalto account is connected. The Capture
-screen warns the user not to rely on new evidence when no notary is reachable.
+screen warns the user not to rely on new evidence when no sealing service is reachable.
 
 ## AI connections
 
@@ -160,8 +189,11 @@ real provider key is passed to the supervised local service through a bounded,
 anonymous standard-input channel and retained only in daemon memory while the
 service runs.
 
-The developer copies the scoped local access token into the provider's normal
-API-key variable or request header. The local service substitutes the stored
+The developer can copy the scoped local access token into the provider's normal
+API-key variable or request header for their own client. The onboarding test
+uses it only in native memory, so its validation cannot accidentally bypass
+Keychain substitution by reading a real provider key from the shell. The local
+service substitutes the stored
 provider key only when all of these conditions are true:
 
 - the request uses the matching fixed provider route;
@@ -192,7 +224,7 @@ silently delete or disable the saved path.
 
 In both modes, provider keys are excluded from app configuration, process
 arguments, logs, activity events, previews, iframe messages, analytics, and
-browser storage. The remote notary sees encrypted protocol records, not the
+browser storage. The selected sealing service sees encrypted protocol records, not the
 provider key in plaintext.
 
 These guarantees do not mean the local private capture is credential-free.
@@ -219,7 +251,7 @@ reject credential fields, signed credential queries, known secret patterns,
 and other unsafe disclosure shapes. Those checks do not turn an unreviewed
 local package into a generally safe public artifact.
 
-The remote notary relays encrypted TLS records and completes proof work. It
+The selected sealing service relays encrypted TLS records and completes proof work. It
 learns the provider hostname, ciphertext sizes, timing, and protocol metadata,
 but not application plaintext. Sealing later creates the selective disclosure,
 verifies it locally, and writes the deterministic `.llmtrace` without
@@ -343,9 +375,9 @@ key check in a private sidecar next to the configuration, so the app can reject
 an incorrect passphrase before starting the local service while preserving the
 v1 configuration format for older readers.
 
-An empty passphrase is an explicit convenience choice. Captures are still
-encrypted on disk, but this provides no meaningful device protection to anyone
-who can access that account's application data.
+New desktop vaults reject empty and whitespace-only passphrases. Older
+empty-passphrase compatibility vaults remain readable so an app update does not
+strand existing captures, but onboarding no longer offers or creates them.
 
 The app unlocks the vault before launching the daemon and sends the already
 unlocked key through the child's anonymous standard-input pipe. The key is not
@@ -360,22 +392,28 @@ explains this instead of silently changing protection for existing captures.
 
 ## Naming and compatibility identifiers
 
-The visible product is Exalto Capture. The first redesign release preserves
-the identifiers needed to update the installed Notary 0.1.4 application and
-reuse its data safely:
+The visible product and macOS bundle are Exalto Capture. Compatibility-sensitive
+identifiers remain unchanged so the app can reuse existing data safely:
 
-- Tauri `productName` remains `Notary`, while macOS `bundleName`,
-  `CFBundleDisplayName`, and visible menu labels are Exalto Capture.
+- Tauri `productName`, macOS `bundleName`, `CFBundleDisplayName`, and visible
+  menu labels are Exalto Capture.
 - The application identifier remains `ai.exalto.notary`.
 - The `notary-app`, `notaryd`, and `notaryctl` executable and package names
   remain unchanged.
-- Existing `notary` data paths, Keychain service names, updater artifacts,
-  internal routes, enums, and onboarding markers remain compatible.
+- Existing `notary` data paths, Keychain service names, updater object names,
+  internal routes, enums, and onboarding markers remain compatible. The
+  updater object names are transport identifiers and are not the installed
+  application name.
+- An enabled legacy `Notary.plist` LaunchAgent is migrated once to
+  `Exalto Capture.plist` when the app runs from `/Applications` or the current
+  user's `Applications` directory. Development and disk-image launches never
+  rewrite the user's launch-at-login entry.
 - `.llmcapture` and `.llmtrace` extensions remain unchanged.
 
-A final Finder-level rename from `Notary.app` to `Exalto Capture.app` requires
-a separate migration release with old-client update, duplicate-app, autostart,
-and vault-access testing.
+An existing `Notary.app` updated in place can retain its old filesystem name
+because Tauri replaces the current bundle at its current path. A fresh install
+uses `Exalto Capture.app`. Test the old-client update and duplicate-app path
+before relying on an automatic filesystem rename for existing installations.
 
 ## Develop from source
 
@@ -449,8 +487,8 @@ npm --prefix apps/notary-app run tauri:build:debug
 Exercise the native lifecycle with clean config, data, and vault directories:
 
 - Complete all six onboarding stages.
-- Exercise Keychain and passphrase vault protection, including the explicit
-  empty-passphrase warning.
+- Exercise Keychain and passphrase vault protection, including rejection of an
+  empty or whitespace-only passphrase.
 - Test Codex CLI and Claude Code saved-sign-in setup.
 - Test one supported API provider in Keychain mode, including validation,
   local-token copy, token-gated substitution, replacement, and removal.

@@ -1439,7 +1439,7 @@ fn apply_initial_migration(transaction: &rusqlite::Transaction<'_>) -> Result<()
                 singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
                 capture_enabled INTEGER NOT NULL CHECK (capture_enabled IN (0, 1))
             );
-            INSERT INTO settings (singleton, capture_enabled) VALUES (1, 1);",
+            INSERT INTO settings (singleton, capture_enabled) VALUES (1, 0);",
     )?;
     Ok(())
 }

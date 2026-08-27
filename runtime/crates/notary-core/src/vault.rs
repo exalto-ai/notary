@@ -36,7 +36,7 @@ pub const CHILD_INITIALIZATION_STDIN_ENV: &str = "NOTARYD_DESKTOP_INITIALIZATION
 /// credential substitution by the supervised desktop daemon.
 pub const DESKTOP_LOCAL_ACCESS_TOKEN_PREFIX: &str = "exalto_local_";
 
-const DESKTOP_INITIALIZATION_FORMAT: &str = "exalto-capture/desktop-initialization/v2";
+const DESKTOP_INITIALIZATION_FORMAT: &str = "exalto-capture/desktop-initialization/v3";
 const MAX_DESKTOP_INITIALIZATION_BYTES: usize = 8 * 1024;
 
 /// Provider API-key slots accepted by the private desktop-to-daemon channel.
@@ -118,6 +118,25 @@ impl DesktopProviderCredentials {
     /// Encodes a bounded, versioned replacement payload for the private child
     /// stdin pipe. The returned bytes zeroize themselves when dropped.
     pub fn encode_initialization_line(&self) -> Result<Zeroizing<Vec<u8>>> {
+        self.encode_initialization_line_with_secret(None)
+    }
+
+    /// Encodes the first child payload with a per-launch secret that never
+    /// crosses a listener. The desktop later uses it to authenticate readiness
+    /// with a fresh challenge before trusting the supervised loopback process.
+    pub fn encode_child_initialization_line(
+        &self,
+        desktop_instance_secret: &[u8; 32],
+    ) -> Result<Zeroizing<Vec<u8>>> {
+        self.encode_initialization_line_with_secret(Some(desktop_instance_secret))
+    }
+
+    fn encode_initialization_line_with_secret(
+        &self,
+        desktop_instance_secret: Option<&[u8; 32]>,
+    ) -> Result<Zeroizing<Vec<u8>>> {
+        let desktop_instance_secret_hex =
+            desktop_instance_secret.map(|secret| Zeroizing::new(hex::encode(secret)));
         let wire = DesktopInitializationRef {
             format: DESKTOP_INITIALIZATION_FORMAT,
             provider_credentials: DesktopProviderCredentialsRef {
@@ -131,6 +150,9 @@ impl DesktopProviderCredentials {
                     .as_ref()
                     .map(DesktopProviderCredentialRef::from),
             },
+            desktop_instance_secret_hex: desktop_instance_secret_hex
+                .as_ref()
+                .map(|encoded| encoded.as_str()),
         };
         let mut encoded = Zeroizing::new(
             serde_json::to_vec(&wire)
@@ -146,6 +168,27 @@ impl DesktopProviderCredentials {
     /// Reads one bounded initialization or replacement payload from a buffered
     /// private pipe.
     pub fn read_initialization_line(reader: &mut impl std::io::BufRead) -> Result<Self> {
+        let (credentials, desktop_instance_secret) = Self::read_initialization_payload(reader)?;
+        if desktop_instance_secret.is_some() {
+            bail!("desktop credential replacement cannot change process identity");
+        }
+        Ok(credentials)
+    }
+
+    /// Reads the first desktop child payload and requires its private
+    /// per-launch process identity secret.
+    pub fn read_child_initialization_from_stdin() -> Result<(Self, Zeroizing<[u8; 32]>)> {
+        let (credentials, secret) =
+            Self::read_initialization_payload(&mut std::io::stdin().lock())?;
+        let secret = secret.ok_or_else(|| {
+            anyhow::anyhow!("desktop child initialization is missing its process identity")
+        })?;
+        Ok((credentials, secret))
+    }
+
+    fn read_initialization_payload(
+        reader: &mut impl std::io::BufRead,
+    ) -> Result<(Self, Option<Zeroizing<[u8; 32]>>)> {
         let mut encoded = Zeroizing::new(Vec::with_capacity(1024));
         reader
             .take((MAX_DESKTOP_INITIALIZATION_BYTES + 1) as u64)
@@ -183,7 +226,19 @@ impl DesktopProviderCredentials {
                 credentials.insert(provider, credential.api_key, credential.local_access_token);
             }
         }
-        Ok(credentials)
+        let desktop_instance_secret = wire
+            .desktop_instance_secret_hex
+            .map(|encoded| {
+                if encoded.len() != 64 || !encoded.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+                    bail!("desktop child process identity is invalid");
+                }
+                let mut secret = Zeroizing::new([0_u8; 32]);
+                hex::decode_to_slice(encoded.as_bytes(), &mut *secret)
+                    .map_err(|_| anyhow::anyhow!("desktop child process identity is invalid"))?;
+                Ok(secret)
+            })
+            .transpose()?;
+        Ok((credentials, desktop_instance_secret))
     }
 
     /// Reads the initialization payload from the process-private stdin pipe.
@@ -215,6 +270,8 @@ impl DesktopProviderCredentials {
 struct DesktopInitializationRef<'a> {
     format: &'static str,
     provider_credentials: DesktopProviderCredentialsRef<'a>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    desktop_instance_secret_hex: Option<&'a str>,
 }
 
 #[derive(Serialize)]
@@ -244,6 +301,7 @@ impl<'a> From<&'a DesktopProviderCredential> for DesktopProviderCredentialRef<'a
 struct DesktopInitializationOwned {
     format: String,
     provider_credentials: DesktopProviderCredentialsOwned,
+    desktop_instance_secret_hex: Option<Zeroizing<String>>,
 }
 
 #[derive(Deserialize)]
@@ -939,6 +997,29 @@ mod tests {
             Some(("sk-anthropic-secret-5678", anthropic_token.as_str()))
         );
         assert_eq!(decoded.get(DesktopCredentialProvider::Openrouter), None);
+
+        let child_secret = [9_u8; 32];
+        let encoded = credentials
+            .encode_child_initialization_line(&child_secret)
+            .unwrap();
+        let (decoded, decoded_secret) = DesktopProviderCredentials::read_initialization_payload(
+            &mut std::io::Cursor::new(encoded.as_slice()),
+        )
+        .unwrap();
+        assert_eq!(
+            decoded.get(DesktopCredentialProvider::Openai),
+            Some((secret, openai_token.as_str()))
+        );
+        assert_eq!(&*decoded_secret.unwrap(), &child_secret);
+
+        let replacement_error = DesktopProviderCredentials::read_initialization_line(
+            &mut std::io::Cursor::new(encoded.as_slice()),
+        )
+        .unwrap_err();
+        assert_eq!(
+            replacement_error.to_string(),
+            "desktop credential replacement cannot change process identity"
+        );
     }
 
     #[test]
@@ -988,6 +1069,34 @@ mod tests {
         assert!(
             DesktopProviderCredentials::read_initialization_line(&mut std::io::Cursor::new(
                 oversized
+            ))
+            .is_err()
+        );
+
+        let mut missing_secret = DesktopProviderCredentials::default()
+            .encode_initialization_line()
+            .unwrap();
+        let (_, secret) = DesktopProviderCredentials::read_initialization_payload(
+            &mut std::io::Cursor::new(missing_secret.as_slice()),
+        )
+        .unwrap();
+        assert!(secret.is_none());
+        missing_secret.fill(0);
+
+        let mut invalid_child_secret = serde_json::to_vec(&serde_json::json!({
+            "format": DESKTOP_INITIALIZATION_FORMAT,
+            "provider_credentials": {
+                "openai": null,
+                "anthropic": null,
+                "openrouter": null,
+            },
+            "desktop_instance_secret_hex": "not-a-secret",
+        }))
+        .unwrap();
+        invalid_child_secret.push(b'\n');
+        assert!(
+            DesktopProviderCredentials::read_initialization_payload(&mut std::io::Cursor::new(
+                invalid_child_secret
             ))
             .is_err()
         );

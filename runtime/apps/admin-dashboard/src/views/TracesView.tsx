@@ -123,7 +123,7 @@ function notarizationPhaseLabel(phase: string) {
     case 'proving':
       return 'Generating private proof';
     case 'signing':
-      return 'Requesting notary signature';
+      return 'Requesting seal';
     case 'packaging':
       return 'Building portable package';
     case 'complete':
@@ -1387,7 +1387,7 @@ function NotarizedTraceInspector({
                 fields={[
                   ['Trace', verification.trace_id ?? 'Not reported'],
                   ['Verified at', formatDate(verification.verified_at_unix_ms)],
-                  ['Notary key', verification.notary_key_id ?? 'Not reported'],
+                  ['Sealing key', verification.notary_key_id ?? 'Not reported'],
                   ['Trust source', verification.trust_source ?? 'Not reported'],
                 ]}
               />

@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Notary local administration API",
+    "title": "Exalto Capture local administration API",
     "description": "Loopback administration API. Routes are available without credentials by default; configure admin.auth to require HTTP Basic authentication.",
     "license": {
       "name": "MIT OR Apache-2.0",
@@ -84,7 +84,7 @@
         "tags": [
           "local-admin"
         ],
-        "summary": "Get the Notary account connection",
+        "summary": "Get the Exalto account connection",
         "description": "Reports whether this local service has an account connection used for hosted admission, credits, and sharing.",
         "operationId": "account_status",
         "responses": {
@@ -130,7 +130,7 @@
         "tags": [
           "local-admin"
         ],
-        "summary": "Connect a Notary account",
+        "summary": "Connect an Exalto account",
         "description": "Starts browser approval for an account connection used for hosted admission, credits, and sharing. Browser approval is unavailable while the daemon uses an injected API key.",
         "operationId": "start_account_connection",
         "requestBody": {
@@ -196,7 +196,7 @@
         "tags": [
           "local-admin"
         ],
-        "summary": "Disconnect the Notary account",
+        "summary": "Disconnect the Exalto account",
         "description": "Removes the local account credentials. Future hosted sessions use public access until a new browser approval is completed. Injected API keys must instead be revoked in the hosted dashboard.",
         "operationId": "end_account_connection",
         "responses": {
@@ -248,7 +248,7 @@
           "local-admin"
         ],
         "summary": "Poll account authorization",
-        "description": "Checks a pending Notary account approval after its required polling interval.",
+        "description": "Checks a pending Exalto account approval after its required polling interval.",
         "operationId": "poll_account_connection",
         "parameters": [
           {

@@ -24,6 +24,7 @@ use axum::{
     routing::{delete, get, post},
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64_STANDARD};
+use hmac::{Hmac, Mac};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};
@@ -34,6 +35,7 @@ use tower_http::{
     trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer},
 };
 use utoipa::{Modify, OpenApi, ToSchema};
+use zeroize::Zeroizing;
 
 use notary_core::{
     pagination::{CursorScope, Page, PageQuery, PaginationError, decode_cursor, encode_cursor},
@@ -73,6 +75,7 @@ const SESSION_MAX_AGE_SECONDS: u64 = 43_200;
 const DEPENDENCY_PROBE_TIMEOUT: Duration = Duration::from_secs(2);
 const DEPENDENCY_PROBE_CACHE_TTL: Duration = Duration::from_secs(1);
 const DASHBOARD_HEADER: &str = "x-notary-request";
+const DESKTOP_HEALTH_DOMAIN: &[u8] = b"exalto-capture/desktop-health/v1\0";
 const DASHBOARD_CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 const DESKTOP_DASHBOARD_CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'self' tauri://localhost http://tauri.localhost https://tauri.localhost";
 
@@ -96,6 +99,7 @@ pub(crate) struct AdminState {
     cluster_vault_identity: Option<String>,
     dependency_probe: Arc<Mutex<DependencyProbeCache>>,
     capture_mode: Arc<crate::service::proxy::CaptureMode>,
+    desktop_instance_secret: Option<Arc<Zeroizing<[u8; 32]>>>,
 }
 
 impl AdminState {
@@ -105,6 +109,7 @@ impl AdminState {
         cluster_runtime: Option<Arc<ClusterRuntime>>,
         cluster_vault_identity: Option<String>,
         capture_mode: Option<Arc<crate::service::proxy::CaptureMode>>,
+        desktop_instance_secret: Option<Zeroizing<[u8; 32]>>,
     ) -> Result<Self> {
         if cluster_runtime.is_none() {
             let interrupted = persistence
@@ -141,6 +146,7 @@ impl AdminState {
             cluster_vault_identity,
             dependency_probe: Arc::new(Mutex::new(None)),
             capture_mode,
+            desktop_instance_secret: desktop_instance_secret.map(Arc::new),
         })
     }
 }
@@ -254,6 +260,7 @@ pub(crate) fn router(state: AdminState) -> Result<Router> {
         .route("/dashboard/", get(dashboard_index))
         .route("/assets/{*path}", get(dashboard_asset))
         .route("/healthz", get(health))
+        .route("/healthz/desktop", get(desktop_health))
         .route("/readyz", get(readiness))
         .route("/openapi.json", get(openapi))
         .route("/v1/session", post(start_session))
@@ -334,7 +341,7 @@ fn embedded_dashboard_response(path: &str, desktop_embed: bool) -> Response {
 #[derive(OpenApi)]
 #[openapi(
     info(
-        title = "Notary local administration API",
+        title = "Exalto Capture local administration API",
         version = "1.0.0",
         description = "Loopback administration API. Routes are available without credentials by default; configure admin.auth to require HTTP Basic authentication."
     ),
@@ -384,6 +391,46 @@ async fn health() -> Json<HealthResponse> {
         api_version: API_VERSION.into(),
         build_id: crate::service::BUILD_ID.into(),
     })
+}
+
+#[derive(Debug, Deserialize)]
+struct DesktopHealthQuery {
+    challenge: String,
+}
+
+async fn desktop_health(
+    State(state): State<AdminState>,
+    Query(query): Query<DesktopHealthQuery>,
+) -> Result<Json<DesktopHealthResponse>, StatusCode> {
+    let secret = state
+        .desktop_instance_secret
+        .as_ref()
+        .ok_or(StatusCode::NOT_FOUND)?;
+    if query.challenge.len() != 64 || !query.challenge.bytes().all(|byte| byte.is_ascii_hexdigit())
+    {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    let challenge = hex::decode(query.challenge).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let mac = desktop_health_mac(secret.as_ref(), &challenge)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(DesktopHealthResponse {
+        service: "notaryd".into(),
+        api_version: API_VERSION.into(),
+        build_id: crate::service::BUILD_ID.into(),
+        proof: hex::encode(mac.finalize().into_bytes()),
+    }))
+}
+
+fn desktop_health_mac(secret: &[u8; 32], challenge: &[u8]) -> Result<Hmac<Sha256>> {
+    let mut mac = <Hmac<Sha256> as Mac>::new_from_slice(secret)
+        .map_err(|_| anyhow::anyhow!("desktop process identity could not initialize"))?;
+    mac.update(DESKTOP_HEALTH_DOMAIN);
+    mac.update(challenge);
+    mac.update(b"\0notaryd\0");
+    mac.update(API_VERSION.as_bytes());
+    mac.update(b"\0");
+    mac.update(crate::service::BUILD_ID.as_bytes());
+    Ok(mac)
 }
 
 #[utoipa::path(get, path = "/readyz", summary = "Check service readiness", description = "Runs bounded metadata, selected artifact-writer, and shared trust dependency probes. Dependency outages or schema mismatches make readiness fail while /healthz remains local liveness.", responses((status = 200, body = ReadinessResponse), (status = 503, body = ErrorEnvelope)), tag = "local-admin")]
@@ -1419,7 +1466,7 @@ async fn activity(
     }))
 }
 
-#[utoipa::path(get, path = "/v1/account", summary = "Get the Notary account connection", description = "Reports whether this local service has an account connection used for hosted admission, credits, and sharing.", responses((status = 200, body = AccountConnectionResponse), (status = 401, body = ErrorEnvelope), (status = 503, body = ErrorEnvelope)), security((), ("basicAuth" = [])), tag = "local-admin")]
+#[utoipa::path(get, path = "/v1/account", summary = "Get the Exalto account connection", description = "Reports whether this local service has an account connection used for hosted admission, credits, and sharing.", responses((status = 200, body = AccountConnectionResponse), (status = 401, body = ErrorEnvelope), (status = 503, body = ErrorEnvelope)), security((), ("basicAuth" = [])), tag = "local-admin")]
 async fn account_status(
     State(_state): State<AdminState>,
 ) -> Result<Json<AccountConnectionResponse>, ApiError> {
@@ -1461,7 +1508,7 @@ fn default_device_name() -> String {
     auth::DEFAULT_DEVICE_NAME.to_owned()
 }
 
-#[utoipa::path(post, path = "/v1/account", summary = "Connect a Notary account", description = "Starts browser approval for an account connection used for hosted admission, credits, and sharing. Browser approval is unavailable while the daemon uses an injected API key.", request_body = AccountConnectionRequest, responses((status = 202, body = AccountConnectionStartedResponse), (status = 401, body = ErrorEnvelope), (status = 409, body = ErrorEnvelope), (status = 503, body = ErrorEnvelope)), security((), ("basicAuth" = [])), tag = "local-admin")]
+#[utoipa::path(post, path = "/v1/account", summary = "Connect an Exalto account", description = "Starts browser approval for an account connection used for hosted admission, credits, and sharing. Browser approval is unavailable while the daemon uses an injected API key.", request_body = AccountConnectionRequest, responses((status = 202, body = AccountConnectionStartedResponse), (status = 401, body = ErrorEnvelope), (status = 409, body = ErrorEnvelope), (status = 503, body = ErrorEnvelope)), security((), ("basicAuth" = [])), tag = "local-admin")]
 async fn start_account_connection(
     State(state): State<AdminState>,
     Json(body): Json<AccountConnectionRequest>,
@@ -1490,7 +1537,7 @@ async fn start_account_connection(
     Ok((StatusCode::ACCEPTED, Json(response)))
 }
 
-#[utoipa::path(get, path = "/v1/account/{request_id}", summary = "Poll account authorization", description = "Checks a pending Notary account approval after its required polling interval.", params(("request_id" = String, Path)), responses((status = 200, body = AccountConnectionResponse), (status = 401, body = ErrorEnvelope), (status = 404, body = ErrorEnvelope), (status = 503, body = ErrorEnvelope)), security((), ("basicAuth" = [])), tag = "local-admin")]
+#[utoipa::path(get, path = "/v1/account/{request_id}", summary = "Poll account authorization", description = "Checks a pending Exalto account approval after its required polling interval.", params(("request_id" = String, Path)), responses((status = 200, body = AccountConnectionResponse), (status = 401, body = ErrorEnvelope), (status = 404, body = ErrorEnvelope), (status = 503, body = ErrorEnvelope)), security((), ("basicAuth" = [])), tag = "local-admin")]
 async fn poll_account_connection(
     State(state): State<AdminState>,
     Path(request_id): Path<String>,
@@ -1542,7 +1589,7 @@ async fn poll_account_connection(
     }
 }
 
-#[utoipa::path(delete, path = "/v1/account", summary = "Disconnect the Notary account", description = "Removes the local account credentials. Future hosted sessions use public access until a new browser approval is completed. Injected API keys must instead be revoked in the hosted dashboard.", responses((status = 204, description = "Account disconnected; hosted sessions return to public access"), (status = 401, body = ErrorEnvelope), (status = 409, body = ErrorEnvelope), (status = 503, body = ErrorEnvelope)), security((), ("basicAuth" = [])), tag = "local-admin")]
+#[utoipa::path(delete, path = "/v1/account", summary = "Disconnect the Exalto account", description = "Removes the local account credentials. Future hosted sessions use public access until a new browser approval is completed. Injected API keys must instead be revoked in the hosted dashboard.", responses((status = 204, description = "Account disconnected; hosted sessions return to public access"), (status = 401, body = ErrorEnvelope), (status = 409, body = ErrorEnvelope), (status = 503, body = ErrorEnvelope)), security((), ("basicAuth" = [])), tag = "local-admin")]
 async fn end_account_connection(State(state): State<AdminState>) -> Result<StatusCode, ApiError> {
     let _credentials = state.account_credentials.lock().await;
     if auth::api_key_mode_active()
@@ -2534,6 +2581,14 @@ struct HealthResponse {
     build_id: String,
 }
 
+#[derive(Debug, Serialize)]
+struct DesktopHealthResponse {
+    service: String,
+    api_version: String,
+    build_id: String,
+    proof: String,
+}
+
 #[derive(Debug, Serialize, ToSchema)]
 struct ReadinessResponse {
     service: String,
@@ -3250,7 +3305,7 @@ impl ApiError {
         Self {
             status: StatusCode::CONFLICT,
             code: "account_authentication_required",
-            message: "The Notary account connection must be renewed",
+            message: "The Exalto account connection must be renewed",
         }
     }
     fn service_unavailable(code: &'static str) -> Self {
@@ -3582,7 +3637,7 @@ mod tests {
         config.storage.package_dir = directory.join("traces");
         config.admin.auth = auth;
         let persistence = Persistence::open(&config).await.unwrap();
-        AdminState::new(persistence, Arc::new(config), None, None, None)
+        AdminState::new(persistence, Arc::new(config), None, None, None, None)
             .await
             .unwrap()
     }
@@ -3622,6 +3677,61 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn desktop_health_proves_the_private_supervisor_secret() {
+        let directory = tempfile::tempdir().unwrap();
+        let secret = [7_u8; 32];
+        let challenge = [9_u8; 32];
+        let mut managed_state = state(directory.path()).await;
+        managed_state.desktop_instance_secret = Some(Arc::new(Zeroizing::new(secret)));
+        let app = router(managed_state).unwrap();
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::get(format!(
+                    "/healthz/desktop?challenge={}",
+                    hex::encode(challenge)
+                ))
+                .body(Body::empty())
+                .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value =
+            serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes())
+                .unwrap();
+        let mac = desktop_health_mac(&secret, &challenge).unwrap();
+        assert_eq!(body["proof"], hex::encode(mac.finalize().into_bytes()));
+        assert_eq!(body["service"], "notaryd");
+        assert_eq!(body["api_version"], API_VERSION);
+
+        let invalid = app
+            .oneshot(
+                Request::get("/healthz/desktop?challenge=short")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(invalid.status(), StatusCode::BAD_REQUEST);
+
+        let unbound = router(state(directory.path()).await)
+            .unwrap()
+            .oneshot(
+                Request::get(format!(
+                    "/healthz/desktop?challenge={}",
+                    hex::encode(challenge)
+                ))
+                .body(Body::empty())
+                .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(unbound.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -3738,7 +3848,7 @@ mod tests {
         );
         assert_eq!(
             ApiError::account_authentication_required().message,
-            "The Notary account connection must be renewed"
+            "The Exalto account connection must be renewed"
         );
     }
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Notary",
+  "productName": "Exalto Capture",
   "version": "0.1.4",
   "identifier": "ai.exalto.notary",
   "build": {

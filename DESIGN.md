@@ -1,7 +1,7 @@
 ---
 version: beta
-name: Notary by Exalto / Axis
-description: A compact evidence workspace for people who need to find, inspect, notarize, and verify LLM interactions without ceremony.
+name: Exalto Capture / Exalto Seal / Axis
+description: A compact evidence workspace for people who need to capture, inspect, seal, and verify LLM interactions without ceremony.
 colors:
   canvas: "#FFFFFF"
   surface: "#FFFFFF"
@@ -65,23 +65,25 @@ layout:
   splitRailRange: 272–460px
 ---
 
-# Notary design language
+# Exalto design language
 
-> **Exalto Capture desktop scope:** For `apps/notary-app`, use the current
-> [exalto.ai](https://exalto.ai/) product language and
+> **Product naming:** Exalto is the family, Exalto Capture is the macOS app,
+> Exalto Seal is the hosted sealing and verification service, and Exalto
+> Notary Protocol is the protocol. A generic notary remains a technical role.
+> Never present `Notary` or `Notary by Exalto` as a product name. For
+> `apps/notary-app`, also follow the current [exalto.ai](https://exalto.ai/)
+> product language and the
 > [Exalto Capture desktop redesign](docs/exalto-capture-desktop-redesign.md).
-> The desktop product is now Exalto Capture, uses Capture, Choose, Seal, Verify
-> or share terminology, and adopts the site's warm evidence-receipt visual
-> language. The guidance below remains the baseline for the standalone local
-> administration dashboard and public web surfaces until those are migrated.
+> The native app uses macOS system sans and mono fonts for compact, neutral,
+> Codex-style legibility while retaining the site's color and trust language.
 
 ## Product posture
 
-Notary is evidence infrastructure. Its audience already understands model providers, local tooling, and the difference between a claim and a record. The interface’s job is to make the next accountable action obvious: capture, inspect, notarize, verify, or share.
+Exalto is evidence infrastructure. Its audience already understands model providers, local tooling, and the difference between a claim and a record. The interface’s job is to make the next accountable action obvious: capture, inspect, seal, verify, or share.
 
 Axis should feel like a precise instrument panel built around an evidence record. It is cool, compact, legible, and calm. It must never read like a generic AI product, a marketing dashboard, or a document with decorative metadata.
 
-The visual signature is the indigo rounded-square pen mark. It appears as the favicon and the smallest brand identifier. The ordinary product name is `Notary`; the formal standalone identity is `Notary by Exalto`, with `Notary` visually dominant and `by Exalto` subordinate. The normal mark keeps roughly 11% inset around the pen; the favicon uses roughly 21% so the pen remains legible instead of touching the browser chrome. Everything else stays quiet enough for the evidence itself to lead.
+Exalto Capture uses the navy rounded-square capture-reticle mark. Exalto Seal uses the indigo rounded-square pen mark. Each appears as the favicon and smallest identifier for its product. Preserve generous inset so either symbol remains legible instead of touching the surrounding chrome. Everything else stays quiet enough for the evidence itself to lead.
 
 ## The governing rule: start with the work
 
@@ -157,7 +159,7 @@ Construct grids from one outer 1px `rule` and one 1px internal rule between adja
 
 ### Brand and navigation
 
-Use the rounded-square pen mark on the blue action background with a light pen. Preserve visible breathing room around the pen and increase it further at favicon sizes. The public wordmark is `Notary`. Use the endorsed `Notary by Exalto` lockup only where standalone ownership matters, keeping `Notary` dominant and `by Exalto` subordinate. The administration workspace uses the visible product name `Notary`, a quiet `Local admin` or `Cluster admin` context where needed, and the browser title `Admin · Notary by Exalto`.
+Use the capture-reticle mark for Exalto Capture and the pen mark for Exalto Seal. Preserve visible breathing room and increase it further at favicon sizes. The public wordmark is `Exalto Seal`. The local administration workspace belongs to Exalto Capture, with a quiet `Local admin` or `Cluster admin` context where needed and the browser title `Admin · Exalto Capture`.
 
 Navigation is a single horizontal band. Active items use an indigo bottom rule or left rule, never a pill. A count may appear in mono when it changes a decision. Do not add a second sidebar when the top navigation already exposes the relevant destinations.
 

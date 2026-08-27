@@ -396,6 +396,15 @@
   color: var(--capture-ink);
 }
 
+.exalto-onboarding .passphrase-fields label span {
+  font-size: 12px;
+}
+
+.exalto-onboarding .passphrase-mismatch {
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
 .exalto-onboarding .configured-protection {
   margin-top: 24px;
   padding: 16px;
@@ -905,6 +914,47 @@
   outline: 2px solid rgba(30, 74, 115, .16);
 }
 
+.exalto-onboarding .managed-test-runner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.exalto-onboarding .managed-test-runner .instruction-heading,
+.exalto-onboarding .managed-test-runner > p {
+  grid-column: 1 / -1;
+}
+
+.exalto-onboarding .managed-test-runner > label {
+  display: grid;
+  gap: 6px;
+  padding: 0 0 0 12px;
+}
+
+.exalto-onboarding .managed-test-runner > label > span {
+  color: var(--capture-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.exalto-onboarding .managed-test-runner input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--capture-rule);
+  border-radius: 2px;
+  background: #fffdf7;
+  color: var(--capture-ink);
+  font: 500 12px var(--capture-mono-font);
+}
+
+.exalto-onboarding .managed-test-runner > button {
+  min-height: 38px;
+  margin-right: 12px;
+}
+
 .exalto-onboarding .test-prompt-receipt {
   display: grid;
   gap: 10px;
@@ -976,6 +1026,12 @@
   border-color: var(--capture-green);
   background: var(--capture-green-soft);
   color: var(--capture-green);
+}
+
+.exalto-onboarding .test-result.is-unconfirmed {
+  border-color: #bb8a3b;
+  background: #fff4dd;
+  color: #785116;
 }
 
 .exalto-onboarding .test-result.is-not-found {

@@ -213,6 +213,11 @@ pub(crate) async fn migrate_database(
         .fetch_one(&mut *transaction)
         .await
         .context("reading daemon migration role")?;
+    let settings_existed: bool =
+        sqlx::query_scalar("SELECT to_regclass('notaryd.settings') IS NOT NULL")
+            .fetch_one(&mut *transaction)
+            .await
+            .context("checking for existing daemon settings")?;
     let schema_owner: Option<String> =
         sqlx::query_scalar("SELECT pg_get_userbyid(nspowner) FROM pg_namespace WHERE nspname = $1")
             .bind(SCHEMA)
@@ -283,6 +288,21 @@ pub(crate) async fn migrate_database(
         .execute(&mut *transaction)
         .await
         .with_context(|| format!("recording daemon PostgreSQL migration {version}"))?;
+    }
+    if !settings_existed {
+        // The migration journal is checksum-protected, so its historical seed
+        // remains unchanged. Override that seed only while creating metadata;
+        // rerunning migrations on an existing database preserves its setting.
+        let initialized = sqlx::query(
+            "UPDATE notaryd.settings SET capture_enabled = FALSE WHERE singleton = TRUE",
+        )
+        .execute(&mut *transaction)
+        .await
+        .context("initializing new daemon metadata with capture disabled")?;
+        ensure!(
+            initialized.rows_affected() == 1,
+            "new daemon metadata is missing its capture setting"
+        );
     }
     transaction
         .commit()
@@ -3992,6 +4012,21 @@ mod tests {
         )
         .await
         .expect("apply isolated daemon migration");
+        let mut initial = PgConnection::connect(&blank_url).await.unwrap();
+        assert!(
+            !sqlx::query_scalar::<_, bool>(
+                "SELECT capture_enabled FROM notaryd.settings WHERE singleton = TRUE",
+            )
+            .fetch_one(&mut initial)
+            .await
+            .unwrap(),
+            "new daemon metadata must require explicit capture opt-in"
+        );
+        sqlx::query("UPDATE notaryd.settings SET capture_enabled = TRUE WHERE singleton = TRUE")
+            .execute(&mut initial)
+            .await
+            .unwrap();
+        drop(initial);
         migrate_database(
             &blank_url,
             PostgresSslMode::Disable,
@@ -4004,6 +4039,15 @@ mod tests {
             .connect(&blank_url)
             .await
             .expect("open migrated test database");
+        assert!(
+            sqlx::query_scalar::<_, bool>(
+                "SELECT capture_enabled FROM notaryd.settings WHERE singleton = TRUE",
+            )
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+            "rerunning migrations must preserve the existing capture setting"
+        );
         let daemon_journal: bool =
             sqlx::query_scalar("SELECT to_regclass('notaryd.schema_migrations') IS NOT NULL")
                 .fetch_one(&pool)
@@ -4075,6 +4119,15 @@ mod tests {
         .await
         .unwrap();
         let legacy_pool = PgPoolOptions::new().connect(&legacy_url).await.unwrap();
+        assert!(
+            sqlx::query_scalar::<_, bool>(
+                "SELECT capture_enabled FROM notaryd.settings WHERE singleton = TRUE",
+            )
+            .fetch_one(&legacy_pool)
+            .await
+            .unwrap(),
+            "upgrading an existing database must preserve its capture setting"
+        );
         assert_eq!(
             sqlx::query_scalar::<_, String>(
                 "SELECT progress FROM notaryd.trace_shares WHERE trace_id = 'trc-upgrade'",

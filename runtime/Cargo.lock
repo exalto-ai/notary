@@ -3971,6 +3971,7 @@ dependencies = [
  "clap",
  "fs2",
  "hex",
+ "hmac 0.12.1",
  "http 1.4.2",
  "http-body-util",
  "k256",

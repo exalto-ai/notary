@@ -1,4 +1,4 @@
-// Repository-wide brand and terminology audit for the Notary product model.
+// Repository-wide brand and terminology audit for the Exalto product model.
 //
 // The check is semantic, not a blind ban. "Capture" stays valid wherever it
 // names a real capture operation, checkpoint, capture-specific storage, or
@@ -35,6 +35,10 @@ const excludedPatterns = [
 
 const rules = [
   {
+    label: 'retired public product name',
+    pattern: /\bNotary by Exalto\b/g,
+  },
+  {
     label: 'retired brand or first-party identifier',
     // Separator-optional and case-insensitive: LLMNotary, LLM NOTARY, and
     // llm-notary are all the retired brand. The exact temporary public host is
@@ -62,6 +66,16 @@ const rules = [
 // A match is allowed only when the file is listed here and the matched line
 // contains the given text. Every entry states why the retired name must stay.
 const classified = [
+  {
+    file: 'DESIGN.md',
+    contains: 'Never present `Notary` or `Notary by Exalto`',
+    reason: 'states the rule that the retired public product name must not return',
+  },
+  {
+    file: 'platform/web/scripts/test-brand.mjs',
+    contains: "'Notary by Exalto'",
+    reason: 'asserts the retired public product name never reappears',
+  },
   {
     file: 'platform/crates/notary-api/src/config.rs',
     contains: 'LLM_NOTARY_',

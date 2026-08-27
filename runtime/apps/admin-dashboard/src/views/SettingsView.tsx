@@ -16,7 +16,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CodeXml, Copy, Moon, PanelLeft, ShieldCheck, Sun } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +42,6 @@ import {
   LoadingState,
   mutationError,
   QueryError,
-  requiredValue,
   StatusLabel,
 } from '../shared';
 
@@ -105,6 +104,7 @@ function accountPollRetryDelaySeconds(intervalSeconds: number, failures: number)
 
 export function useAccountConnection(api: LocalApi) {
   const queryClient = useQueryClient();
+  const operation = useRef(0);
   const account = useQuery({ queryKey: ['account'], queryFn: api.account, retry: false });
   const [started, setStarted] = useState<{
     flow: AccountConnectionStarted;
@@ -130,29 +130,45 @@ export function useAccountConnection(api: LocalApi) {
     });
   };
   const begin = useMutation({
-    mutationFn: api.startAccountConnection,
-    onSuccess: schedule,
-    onError: (error) => mutationError('Could not begin authorization', error),
+    mutationFn: async (generation: number) => ({
+      generation,
+      flow: await api.startAccountConnection(),
+    }),
+    onSuccess: ({ generation, flow }) => {
+      if (operation.current === generation) schedule(flow);
+    },
+    onError: (error, generation) => {
+      if (operation.current === generation) mutationError('Could not begin authorization', error);
+    },
   });
   const poll = useMutation({
-    mutationFn: () =>
-      api.pollAccountConnection(
-        requiredValue(started, 'started account connection').flow.request_id,
-      ),
-    onSuccess: (result) => {
+    mutationFn: async (attempt: {
+      requestId: string;
+      generation: number;
+      intervalSeconds: number;
+    }) => ({
+      attempt,
+      result: await api.pollAccountConnection(attempt.requestId),
+    }),
+    onSuccess: ({ attempt, result }) => {
+      if (operation.current !== attempt.generation) return;
       queryClient.setQueryData(['account'], result);
       if (result.signed_in || result.connection_state === 'connected') setStarted(null);
-      else if (started)
-        setStarted({
-          ...started,
-          nextPollAt: Date.now() + started.flow.poll_interval_seconds * 1000,
-          failures: 0,
+      else
+        setStarted((current) => {
+          if (!current || current.flow.request_id !== attempt.requestId) return current;
+          return {
+            ...current,
+            nextPollAt: Date.now() + attempt.intervalSeconds * 1000,
+            failures: 0,
+          };
         });
     },
-    onError: (error) => {
+    onError: (error, attempt) => {
+      if (operation.current !== attempt.generation) return;
       mutationError('Could not check authorization', error);
       setStarted((current) => {
-        if (!current) return current;
+        if (!current || current.flow.request_id !== attempt.requestId) return current;
         const failures = current.failures + 1;
         const delay = accountPollRetryDelaySeconds(current.flow.poll_interval_seconds, failures);
         return { ...current, failures, nextPollAt: Date.now() + delay * 1000 };
@@ -171,6 +187,28 @@ export function useAccountConnection(api: LocalApi) {
     started && now >= started.startedAt + started.flow.expires_in_seconds * 1000,
   );
   const pollReady = Boolean(started && !expired && now >= started.nextPollAt);
+  const startAuthorization = () => {
+    if (begin.isPending || poll.isPending || (started && !expired)) return;
+    const generation = operation.current + 1;
+    operation.current = generation;
+    setStarted(null);
+    poll.reset();
+    begin.mutate(generation);
+  };
+  const checkAuthorization = () => {
+    if (!started) return;
+    poll.mutate({
+      requestId: started.flow.request_id,
+      generation: operation.current,
+      intervalSeconds: started.flow.poll_interval_seconds,
+    });
+  };
+  const cancelAuthorization = () => {
+    operation.current += 1;
+    setStarted(null);
+    begin.reset();
+    poll.reset();
+  };
 
   useEffect(() => {
     // A zero interval is used by deterministic dashboard fixtures to require
@@ -184,7 +222,7 @@ export function useAccountConnection(api: LocalApi) {
       poll.isPending
     )
       return;
-    poll.mutate();
+    checkAuthorization();
   }, [expired, poll, pollReady, started]);
 
   return {
@@ -196,7 +234,9 @@ export function useAccountConnection(api: LocalApi) {
     begin,
     poll,
     disconnect,
-    cancel: () => setStarted(null),
+    startAuthorization,
+    checkAuthorization,
+    cancel: cancelAuthorization,
     refresh: () => account.refetch(),
   };
 }
@@ -228,7 +268,18 @@ export function AccountConnectionCard({
   compact?: boolean;
   fixture?: boolean;
 }) {
-  const { account, started, expired, pollReady, begin, poll, cancel, refresh } = controller;
+  const {
+    account,
+    started,
+    expired,
+    pollReady,
+    begin,
+    poll,
+    startAuthorization,
+    checkAuthorization,
+    cancel,
+    refresh,
+  } = controller;
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const { disconnect } = controller;
   const api = controller.account.data;
@@ -383,12 +434,19 @@ export function AccountConnectionCard({
                 : 'Connect an account to see hosted credits and use account-owned sharing.'}
           </Text>
           <Group>
-            <Button variant="outline" loading={begin.isPending} onClick={() => begin.mutate()}>
-              {api?.connection_state === 'reauthorization_required'
-                ? 'Reconnect'
-                : compact
-                  ? 'Connect account'
-                  : 'Sign in or create account'}
+            <Button
+              variant="outline"
+              loading={begin.isPending}
+              disabled={Boolean(started) || begin.isPending || poll.isPending}
+              onClick={startAuthorization}
+            >
+              {started
+                ? 'Authorization in progress'
+                : api?.connection_state === 'reauthorization_required'
+                  ? 'Reconnect'
+                  : compact
+                    ? 'Connect account'
+                    : 'Sign in or create account'}
             </Button>
             {unavailable && (
               <Button variant="subtle" onClick={() => refresh()}>
@@ -422,7 +480,7 @@ export function AccountConnectionCard({
               variant="subtle"
               disabled={expired || !pollReady}
               loading={poll.isPending}
-              onClick={() => poll.mutate()}
+              onClick={checkAuthorization}
             >
               Check approval
             </Button>
@@ -434,7 +492,8 @@ export function AccountConnectionCard({
                 size="xs"
                 variant="subtle"
                 loading={begin.isPending}
-                onClick={() => begin.mutate()}
+                disabled={begin.isPending || poll.isPending}
+                onClick={startAuthorization}
               >
                 Try again
               </Button>
@@ -507,7 +566,7 @@ function LocalNotaryRecord({
   const copyKey = async () => {
     await navigator.clipboard.writeText(record.key_id);
     notifications.show({
-      title: 'Notary key ID copied',
+      title: 'Sealing key ID copied',
       message: 'The complete key ID is on the clipboard.',
     });
   };
@@ -560,7 +619,7 @@ function SettingsNotaries({ api }: { api: LocalApi }) {
     <Paper className="settings-panel settings-notaries">
       <div className="settings-notaries-heading">
         <div>
-          <Text className="eyebrow">Notaries</Text>
+          <Text className="eyebrow">Sealing services</Text>
           <Title order={2}>Configured trust</Title>
         </div>
         {notaries.data?.generation != null && (
@@ -572,7 +631,11 @@ function SettingsNotaries({ api }: { api: LocalApi }) {
         work, not endpoint health or availability.
       </Text>
       {notaries.isLoading ? (
-        <div className="local-notary-loading" role="status" aria-label="Loading local notary trust">
+        <div
+          className="local-notary-loading"
+          role="status"
+          aria-label="Loading local sealing trust"
+        >
           <i />
           <i />
           <i />
@@ -582,11 +645,11 @@ function SettingsNotaries({ api }: { api: LocalApi }) {
           <b>
             {errorCode === 'registry_state_invalid'
               ? 'Pinned trust state is malformed'
-              : 'Local notary trust is unavailable'}
+              : 'Local sealing trust is unavailable'}
           </b>
           <span>
             {errorCode === 'registry_state_invalid'
-              ? 'The cached Registry could not be validated. No notary is presented as usable.'
+              ? 'The cached Registry could not be validated. No sealing service is presented as usable.'
               : 'The local service could not return its configured trust metadata. No endpoint status can be inferred.'}
           </span>
           <Button variant="outline" onClick={() => notaries.refetch()}>
@@ -595,10 +658,10 @@ function SettingsNotaries({ api }: { api: LocalApi }) {
         </div>
       ) : !records.length ? (
         <div className="local-notary-state-panel">
-          <b>No pinned notary records</b>
+          <b>No pinned sealing records</b>
           <span>
-            The local service has not retained a Registry generation. No notary is presented as
-            available.
+            The local service has not retained a Registry generation. No sealing service is
+            presented as available.
           </span>
         </div>
       ) : (
@@ -661,17 +724,25 @@ function EmbeddedNotaries({ api }: { api: LocalApi }) {
   const records = orderNotaries(notaries.data?.notaries ?? [], notaries.data?.active_key_id);
   const active =
     records.find((record) => record.key_id === notaries.data?.active_key_id) ?? records[0];
-  const usesExaltoSeal = notaries.data?.source !== 'explicit_configuration';
-  const displayName = (record: Notary) => (usesExaltoSeal ? 'Exalto Seal' : record.name);
+  const officialExaltoRegistry =
+    notaries.data?.source === 'registry' &&
+    ['https://notary.exalto.ai/api/registry', 'https://exalto.ai/api/registry'].includes(
+      notaries.data.registry_source ?? '',
+    );
+  const displayName = (record: Notary) => {
+    if (officialExaltoRegistry) return 'Exalto Seal';
+    if (notaries.data?.source === 'explicit_configuration') return 'Configured sealing service';
+    return record.name.trim() || 'Registry sealing service';
+  };
   return (
     <Paper className="settings-panel embedded-notaries">
-      <Text className="eyebrow">Notaries</Text>
+      <Text className="eyebrow">Sealing service</Text>
       {notaries.isLoading ? (
-        <LoadingState label="Loading Notaries" />
+        <LoadingState label="Loading sealing service" />
       ) : notaries.error ? (
-        <QueryError error={notaries.error} title="Notaries are unavailable" />
+        <QueryError error={notaries.error} title="Sealing service is unavailable" />
       ) : !active ? (
-        <Text>No notary is configured.</Text>
+        <Text>No sealing service is configured.</Text>
       ) : (
         <>
           <Group justify="space-between" align="flex-start">
@@ -939,7 +1010,7 @@ export function StandaloneSettingsView({ status, api }: { status: Status; api: L
       notifications.show({
         title: setting.enabled ? 'Capture requests on' : 'Capture requests off',
         message: setting.enabled
-          ? 'Later provider requests will use the remote notary and create private captures.'
+          ? 'Later provider requests will use the sealing service and create private captures.'
           : 'Later provider requests will go directly to the provider and create no evidence.',
       });
     },
@@ -977,7 +1048,7 @@ export function StandaloneSettingsView({ status, api }: { status: Status; api: L
               <Text fw={700}>Capture requests</Text>
               <Text>
                 {captureEnabled
-                  ? 'On, requests use the remote notary and create private captures.'
+                  ? 'On, requests use the sealing service and create private captures.'
                   : 'Off, requests still pass through the local daemon, go directly to the provider, and create no evidence.'}
               </Text>
             </div>

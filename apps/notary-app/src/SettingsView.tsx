@@ -6,7 +6,7 @@ import {
   type DesktopState,
   type DesktopUpdateState,
 } from './bridge';
-import { updateRestartBlockReason, vaultProtection } from './product';
+import { updateRestartBlockReason, vaultProtection, type View } from './product';
 import {
   type DesktopSettingsAction,
   type DesktopSettingsPayload,
@@ -21,6 +21,8 @@ export function SettingsView({
   onCheckUpdate,
   onRestartToUpdate,
   onStartService,
+  onNavigate,
+  allowLegacyWorkspace,
 }: {
   state: DesktopState;
   updateState: DesktopUpdateState | null;
@@ -29,6 +31,8 @@ export function SettingsView({
   onCheckUpdate: () => void;
   onRestartToUpdate: () => void;
   onStartService: () => void;
+  onNavigate: (view: View) => void;
+  allowLegacyWorkspace: boolean;
 }) {
   const [launch, setLaunch] = useState(false);
   const [launchReady, setLaunchReady] = useState(false);
@@ -103,8 +107,8 @@ export function SettingsView({
             </div>
             <div className="preference-row">
               <div>
-                <strong>Notaries</strong>
-                <span>Notary details are available after the local service starts.</span>
+                <strong>{state.sealing_service?.name ?? 'Sealing service'}</strong>
+                <span>Sealing-service details are available after the local service starts.</span>
               </div>
             </div>
             <p className="preference-note">Changing protection requires a guided migration of existing private traces.</p>
@@ -174,6 +178,8 @@ export function SettingsView({
         running={state.running}
         desktopSettings={desktopSettings}
         onDesktopSettingsAction={handleDesktopAction}
+        onRouteChange={onNavigate}
+        allowLegacyFrameLoadFallback={allowLegacyWorkspace}
       />
     </div>
   );

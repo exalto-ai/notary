@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { Download, RefreshCw } from 'lucide-react';
 import {
@@ -27,6 +27,9 @@ import {
 import { Sidebar, WorkspaceFrame } from './Shell';
 import { SettingsView } from './SettingsView';
 
+export const SENSITIVE_INPUT_RESET_EVENT = 'exalto:sensitive-input-reset';
+export const DISPOSABLE_TEST_STOPPED_MESSAGE = 'The disposable test stopped when setup closed. Prepare it again when you are ready.';
+
 function updateChipLabel(update: DesktopUpdateState) {
   if (update.phase === 'checking') return 'Checking for updates';
   if (update.phase === 'downloading') {
@@ -51,6 +54,10 @@ function App() {
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [setupOpen, setSetupOpen] = useState(false);
+  const [workspaceNavigationRevision, setWorkspaceNavigationRevision] = useState(0);
+  const [sensitiveInputGeneration, setSensitiveInputGeneration] = useState(0);
+  const [setupResumeError, setSetupResumeError] = useState<string | null>(null);
+  const disposableTestInProgress = useRef(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -65,6 +72,20 @@ function App() {
     const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, [refresh]);
+
+  useEffect(() => {
+    const resetSensitiveInputs = (event: Event) => {
+      const detail = (event as CustomEvent<{ resumeDisposableSetup?: boolean }>).detail;
+      setSetupResumeError(
+        detail?.resumeDisposableSetup ? DISPOSABLE_TEST_STOPPED_MESSAGE : null,
+      );
+      setSensitiveInputGeneration((current) => current + 1);
+    };
+    window.addEventListener(SENSITIVE_INPUT_RESET_EVENT, resetSensitiveInputs);
+    return () => {
+      window.removeEventListener(SENSITIVE_INPUT_RESET_EVENT, resetSensitiveInputs);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isTauri()) return;
@@ -84,6 +105,37 @@ function App() {
       unlisten?.();
     };
   }, [setupOpen, state?.onboarding_complete]);
+
+  useEffect(() => {
+    if (!isTauri()) return;
+    let disposed = false;
+    let unlisten: UnlistenFn | null = null;
+    void listen<{ window_generation: number; lease_id: string | null }>(
+      'exalto:temporary-capture-cancelled',
+      (event) => {
+        const resumeDisposableSetup = Boolean(event.payload.lease_id)
+          || disposableTestInProgress.current;
+        disposableTestInProgress.current = false;
+        window.dispatchEvent(new CustomEvent(SENSITIVE_INPUT_RESET_EVENT, {
+          detail: { resumeDisposableSetup },
+        }));
+        setState((current) => current ? {
+          ...current,
+          temporary_capture_generation: Math.max(
+            current.temporary_capture_generation,
+            event.payload.window_generation,
+          ),
+        } : current);
+      },
+    ).then((stopListening) => {
+      if (disposed) stopListening();
+      else unlisten = stopListening;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
 
   useEffect(() => {
     const refreshUpdate = async () => {
@@ -170,16 +222,25 @@ function App() {
 
   if (!state) return <LoadingWindow />;
   if (state.vault_locked) {
-    return <VaultUnlock refresh={refresh} />;
+    return <VaultUnlock key={`unlock-${sensitiveInputGeneration}`} refresh={refresh} />;
   }
   if (!state.onboarding_complete || setupOpen) {
     return <Onboarding
+      key={`onboarding-${sensitiveInputGeneration}`}
       state={state}
       refresh={refresh}
-      initialStep={setupOpen ? 'client' : 'welcome'}
-      onCancel={setupOpen ? () => setSetupOpen(false) : undefined}
+      initialStep={setupOpen || setupResumeError ? 'client' : 'welcome'}
+      initialError={setupResumeError}
+      onDisposableTestChange={(active) => {
+        disposableTestInProgress.current = active;
+      }}
+      onCancel={setupOpen ? () => {
+        setSetupOpen(false);
+        setSetupResumeError(null);
+      } : undefined}
       onFinish={(next) => {
         setSetupOpen(false);
+        setSetupResumeError(null);
         setView(next);
       }}
     />;
@@ -190,14 +251,26 @@ function App() {
   const navigate = (next: View) => {
     setTraceConstraint(null);
     setView(next);
+    if (workspaceRoutes[next]) {
+      setWorkspaceNavigationRevision((current) => current + 1);
+    }
+  };
+  const syncWorkspaceRoute = (next: View) => {
+    setTraceConstraint(null);
+    setView(next);
   };
   const openTraces = (constraint: TraceConstraint) => {
     setTraceConstraint(constraint);
     setView('traces');
   };
+  const allowLegacyWorkspace = Boolean(
+    !state.managed_by_desktop
+    && state.daemon_build_id
+    && state.daemon_build_id !== state.app_build_id,
+  );
 
   return (
-    <div className="native-window">
+    <div className="native-window" key={`shell-${sensitiveInputGeneration}`}>
       <Sidebar
         state={state}
         view={view}
@@ -272,14 +345,19 @@ function App() {
             onCheckUpdate={() => void checkForDesktopUpdate()}
             onRestartToUpdate={() => void restartToUpdate()}
             onStartService={() => void runAction('service-start', startLocalService, 'Local service is running. Capture remains off.')}
+            onNavigate={syncWorkspaceRoute}
+            allowLegacyWorkspace={allowLegacyWorkspace}
           />}
           {route && (
             <WorkspaceFrame
+              key={workspaceNavigationRevision}
               route={route}
               constraint={route === 'traces' ? traceConstraint : null}
               running={state.running}
               onStartService={() => void runAction('service-start', startLocalService, 'Local service is running. Capture remains off.')}
               serviceStarting={busy === 'service-start'}
+              onRouteChange={syncWorkspaceRoute}
+              allowLegacyFrameLoadFallback={allowLegacyWorkspace}
             />
           )}
         </main>

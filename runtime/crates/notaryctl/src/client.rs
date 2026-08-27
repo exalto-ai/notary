@@ -181,6 +181,20 @@ pub struct CaptureSetting {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct NotaryTrust {
+    pub source: String,
+    pub registry_source: Option<String>,
+    pub active_key_id: Option<String>,
+    pub notaries: Vec<NotaryTrustRecord>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct NotaryTrustRecord {
+    pub name: String,
+    pub key_id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UpdateStatus {
     pub enabled: bool,
     pub current_build_id: String,
@@ -451,6 +465,12 @@ impl NotarydClient {
         )
         .await
         .map(|setting| setting.enabled)
+    }
+
+    /// Fetch the local service's safe projection of pinned sealing trust.
+    pub async fn notary_trust(&self) -> Result<NotaryTrust, CliError> {
+        self.request_model(Method::GET, "/v1/notaries", &[], None)
+            .await
     }
 
     /// Fetch a bounded newest-first summary used to confirm one onboarding capture.

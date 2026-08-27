@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
-import { type LocalApi, LocalApiError, type TraceSummary } from './api';
+import { type AccountConnection, type LocalApi, LocalApiError, type TraceSummary } from './api';
 import { Dashboard, type DesktopSettingsAction, type DesktopSettingsState } from './Dashboard';
 import { createFixtureApi, fixtureCaptures, fixtureNotaries } from './fixtures';
 import '@mantine/core/styles.css';
@@ -242,12 +242,68 @@ describe('Notary admin dashboard', () => {
       .element(page.getByText(/Connecting an account does not upload or share local evidence/))
       .toBeVisible();
     await page.getByRole('button', { name: 'Connect account' }).click();
-    await expect.element(page.getByText('NOTARY-7K3')).toBeVisible();
+    await expect.element(page.getByText('7A3C-91F2')).toBeVisible();
     await page.getByRole('button', { name: 'Check approval' }).click();
     await expect
       .element(page.getByRole('heading', { name: 'Review and share this Trace' }))
       .toBeVisible();
     expect(window.location.hash).toBe('#/traces/trc-20260727-research-brief');
+  });
+
+  test('keeps a canceled account authorization canceled after an in-flight approval check', async () => {
+    const fixture = createFixtureApi();
+    const connectedAccount = await fixture.account();
+    await fixture.disconnectAccount();
+    let startCalls = 0;
+    let pollCalls = 0;
+    let pollReturned = false;
+    let resolvePoll: (account: AccountConnection) => void = () => {};
+    const deferredPoll = new Promise<AccountConnection>((resolve) => {
+      resolvePoll = resolve;
+    });
+    const api: LocalApi = {
+      ...fixture,
+      startAccountConnection: async () => {
+        startCalls += 1;
+        return fixture.startAccountConnection();
+      },
+      pollAccountConnection: async () => {
+        pollCalls += 1;
+        const account = await deferredPoll;
+        pollReturned = true;
+        return account;
+      },
+    };
+    renderDashboard('/settings', api);
+
+    await page.getByRole('button', { name: 'Sign in or create account' }).click();
+    await expect.element(page.getByText('7A3C-91F2')).toBeVisible();
+    const activeButton = page.getByRole('button', { name: 'Authorization in progress' });
+    await expect.element(activeButton).toBeDisabled();
+    const activeButtonElement = Array.from(document.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Authorization in progress'),
+    );
+    if (!(activeButtonElement instanceof HTMLButtonElement))
+      throw new Error('active authorization button was not rendered');
+    activeButtonElement.click();
+    expect(startCalls).toBe(1);
+
+    await page.getByRole('button', { name: 'Check approval' }).click();
+    await expect.poll(() => pollCalls).toBe(1);
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect.element(page.getByText('7A3C-91F2')).not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('button', { name: 'Sign in or create account' }))
+      .toBeEnabled();
+
+    resolvePoll(connectedAccount);
+    await expect.poll(() => pollReturned).toBe(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+    await expect.element(page.getByText('7A3C-91F2')).not.toBeInTheDocument();
+    await expect.element(page.getByText('Sample User', { exact: true })).not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('button', { name: 'Sign in or create account' }))
+      .toBeEnabled();
   });
 
   test('keeps every share progress stage inline on the originating Trace', async () => {
@@ -638,7 +694,12 @@ describe('Notary admin dashboard', () => {
         throw new LocalApiError(401, 'unauthorized', 'Unauthorized');
       },
     };
-    renderDashboard('/overview', api);
+    renderDashboard('/overview', api, true);
+    await expect.element(page.getByText('Exalto Capture', { exact: true })).toBeVisible();
+    await expect
+      .element(page.getByText('Exalto Capture administration', { exact: true }))
+      .toBeVisible();
+    await expect.element(page.getByText('Notary', { exact: true })).not.toBeInTheDocument();
     await expect.element(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
     await expect
       .element(page.getByText('credentials configured under admin.auth', { exact: false }))
@@ -662,6 +723,7 @@ describe('Notary admin dashboard', () => {
   });
 
   test('uses the same route content in embedded mode without standalone navigation', async () => {
+    const postMessage = vi.spyOn(window.parent, 'postMessage');
     renderDashboard('/providers', createFixtureApi(), true);
     await expect.element(page.getByRole('heading', { name: 'OpenAI', exact: true })).toBeVisible();
     await expect
@@ -670,6 +732,39 @@ describe('Notary admin dashboard', () => {
     await expect
       .element(page.getByRole('navigation', { name: 'Admin dashboard' }))
       .not.toBeInTheDocument();
+    await expect
+      .poll(() =>
+        postMessage.mock.calls.some(
+          ([message]) =>
+            typeof message === 'object' &&
+            message !== null &&
+            'type' in message &&
+            message.type === 'notary:desktop-route-change' &&
+            'payload' in message &&
+            (message.payload as { view?: unknown }).view === 'providers',
+        ),
+      )
+      .toBe(true);
+    postMessage.mockClear();
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        source: window.parent,
+        data: { type: 'notary:desktop-ready-request' },
+      }),
+    );
+    await expect
+      .poll(() =>
+        postMessage.mock.calls.some(
+          ([message]) =>
+            typeof message === 'object' &&
+            message !== null &&
+            'type' in message &&
+            message.type === 'notary:desktop-route-change' &&
+            'payload' in message &&
+            (message.payload as { view?: unknown }).view === 'providers',
+        ),
+      )
+      .toBe(true);
   });
 
   test('uses exactly four Settings groups in embedded desktop mode', async () => {
@@ -703,7 +798,7 @@ describe('Notary admin dashboard', () => {
     ]);
   });
 
-  test('shows embedded account, local-data, Notaries, update, and Advanced consequences', async () => {
+  test('shows embedded account, local data, sealing service, updates, and advanced consequences', async () => {
     renderDashboard('/settings', createFixtureApi(), true, desktopSettings);
     await expect.element(page.getByText('Sample User', { exact: true })).toBeVisible();
     await expect.element(page.getByText(/does not upload or share local traces/)).toBeVisible();
@@ -726,6 +821,46 @@ describe('Notary admin dashboard', () => {
     await expect.element(page.getByText('Service', { exact: true })).toBeVisible();
     await expect.element(page.getByText('Developer', { exact: true })).toBeVisible();
     await expect.element(page.getByText('Provider routes')).not.toBeInTheDocument();
+  });
+
+  test('does not brand third-party or explicit sealing trust as Exalto Seal', async () => {
+    const thirdParty: LocalApi = {
+      ...createFixtureApi(),
+      notaries: async () => ({
+        ...fixtureNotaries,
+        registry_source: 'https://seal.example/api/registry',
+        notaries: fixtureNotaries.notaries.map((record, index) => ({
+          ...record,
+          name: index === 0 ? 'Northstar Seal' : record.name,
+        })),
+      }),
+    };
+    renderDashboard('/settings', thirdParty, true, desktopSettings);
+    await expect.element(page.getByRole('heading', { name: 'Northstar Seal' })).toBeVisible();
+    await expect.element(page.getByText('Exalto Seal', { exact: true })).not.toBeInTheDocument();
+
+    cleanup();
+    const explicit: LocalApi = {
+      ...createFixtureApi(),
+      notaries: async () => ({
+        ...fixtureNotaries,
+        source: 'explicit_configuration',
+        registry_source: null,
+        active_key_id: null,
+        notaries: [
+          {
+            ...fixtureNotaries.notaries[0],
+            name: 'Configured notary',
+            lifecycle: 'configured',
+          },
+        ],
+      }),
+    };
+    renderDashboard('/settings', explicit, true, desktopSettings);
+    await expect
+      .element(page.getByRole('heading', { name: 'Configured sealing service' }))
+      .toBeVisible();
+    await expect.element(page.getByText('Exalto Seal', { exact: true })).not.toBeInTheDocument();
   });
 
   test('renders reconnect and blocked-update states without implying local upload', async () => {

@@ -103,12 +103,13 @@ where
     Fut: Future<Output = Arc<dyn MetadataStore>>,
 {
     let store = store.await;
-    assert!(store.capture_enabled().await.unwrap());
-    assert!(!store.set_capture_enabled(false, 1).await.unwrap());
     assert!(!store.capture_enabled().await.unwrap());
-    assert!(!store.set_capture_enabled(false, 2).await.unwrap());
-    assert!(store.set_capture_enabled(true, 3).await.unwrap());
+    assert!(!store.set_capture_enabled(false, 1).await.unwrap());
+    assert!(store.set_capture_enabled(true, 2).await.unwrap());
     assert!(store.capture_enabled().await.unwrap());
+    assert!(store.set_capture_enabled(true, 3).await.unwrap());
+    assert!(!store.set_capture_enabled(false, 4).await.unwrap());
+    assert!(!store.capture_enabled().await.unwrap());
     let events = store
         .events_snapshot(EventFilters {
             limit: 20,
@@ -125,8 +126,16 @@ where
         1,
         "an idempotent write must not emit a duplicate activity event"
     );
-    assert_eq!(events[0].event_type, "capture_enabled");
-    assert_eq!(events[0].message, "Capture requests enabled");
+    assert_eq!(
+        events
+            .iter()
+            .filter(|event| event.event_type == "capture_enabled")
+            .count(),
+        1,
+        "an idempotent write must not emit a duplicate activity event"
+    );
+    assert_eq!(events[0].event_type, "capture_disabled");
+    assert_eq!(events[0].message, "Capture requests disabled");
 }
 
 pub(crate) fn new_capture(id: &str, created_at_unix_ms: u64) -> NewTrace {
