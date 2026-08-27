@@ -152,6 +152,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/notaries/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Probe trusted Notary reachability
+         * @description Resolves the endpoint selected by current Registry or explicit key trust, then performs a bounded TCP connection and configured TLS validation. It sends no admission credential and starts no capture, sealing, or billable operation. Ready means the transport is reachable; final admission is still checked when sealing starts.
+         */
+        get: operations["notary_readiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/operations/{operation_id}": {
         parameters: {
             query?: never;
@@ -294,7 +314,11 @@ export interface paths {
         get: operations["trace"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete a local Trace
+         * @description Idempotently removes one terminal Trace and its private local artifacts. Active capture, sealing, share verification, or enabled public sharing must finish or be stopped first. An expired share whose hosted access is already disabled can be removed safely. This action does not delete a separately retained hosted Trace.
+         */
+        delete: operations["delete_trace"];
         options?: never;
         head?: never;
         patch?: never;
@@ -399,7 +423,7 @@ export interface paths {
         put?: never;
         /**
          * Verify a retained Trace
-         * @description Verifies the retained package evidence, disclosure, hashes, provider mapping, and canonical content against configured Notary trust.
+         * @description Verifies the retained package evidence, disclosure, hashes, provider mapping, and canonical content against configured Notary trust. Local deletion waits until this retained-package read and verification finishes.
          */
         post: operations["verify_trace"];
         delete?: never;
@@ -579,6 +603,24 @@ export interface components {
             /** Format: int64 */
             valid_until_unix_ms?: number | null;
             verification_key: string;
+        };
+        /** @enum {string} */
+        NotaryReadinessPhase: "trust_unavailable" | "unreachable" | "ready";
+        NotaryReadinessResponse: {
+            /** Format: int64 */
+            checked_at_unix_ms: number;
+            /** @description A trust source is selected in local configuration. */
+            configured: boolean;
+            message: string;
+            phase: components["schemas"]["NotaryReadinessPhase"];
+            /** @description The endpoint completed TCP connection and, when configured, TLS validation. */
+            reachable: boolean;
+            /** @description `registry` or `explicit_configuration`. */
+            source: string;
+            /** @description `tcp` or `tls` after trusted endpoint resolution. */
+            transport?: string | null;
+            /** @description The current trust source resolved a validated endpoint and key selection. */
+            trusted: boolean;
         };
         OperationProgressResponse: {
             /**
@@ -1118,6 +1160,52 @@ export interface operations {
             };
         };
     };
+    notary_readiness: {
+        parameters: {
+            query?: {
+                /** @description Ignore the short-lived probe cache and check the trusted endpoint now. */
+                refresh?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaryReadinessResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     operation: {
         parameters: {
             query?: never;
@@ -1451,6 +1539,58 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    delete_trace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Local Trace and owned artifacts deleted, or already absent */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

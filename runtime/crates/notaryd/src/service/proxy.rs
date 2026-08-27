@@ -236,6 +236,12 @@ impl CaptureMode {
         Ok(notary)
     }
 
+    /// Resolve the same trusted endpoint used by capture and sealing without
+    /// changing the durable capture setting.
+    pub(crate) async fn trusted_notary(&self) -> Result<NotaryEndpoint> {
+        self.ensure_notary().await
+    }
+
     pub(crate) async fn set_enabled(&self, enabled: bool) -> Result<bool> {
         let _transition = self.transition.lock().await;
         let persisted = self.persistence.metadata.capture_enabled().await?;

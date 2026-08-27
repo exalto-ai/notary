@@ -1,6 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { TRACE_CATALOGUE_URL } from './product';
 
+let browserOnboardingFinishFailureConsumed = false;
+
 export type TraceCounts = {
   captured: number;
   notarizing: number;
@@ -35,6 +37,7 @@ export type DesktopState = {
   proxy_listener: string;
   admin_listener: string;
   sealing_service: SealingServiceIdentity | null;
+  sealing_service_readiness: SealingServiceReadiness;
   capture_enabled: boolean;
   temporary_capture_generation: number;
   counts: TraceCounts;
@@ -44,6 +47,22 @@ export type DesktopState = {
 export type SealingServiceIdentity = {
   name: string;
   kind: 'exalto_seal' | 'registry' | 'configured';
+};
+
+export type SealingServiceReadinessPhase =
+  | 'off'
+  | 'starting'
+  | 'trust_unavailable'
+  | 'unreachable'
+  | 'ready';
+
+export type SealingServiceReadiness = {
+  phase: SealingServiceReadinessPhase;
+  configured: boolean;
+  trusted: boolean;
+  reachable: boolean;
+  checked_at_unix_ms: number | null;
+  message: string | null;
 };
 
 export type DesktopUpdateState = {
@@ -115,6 +134,33 @@ export const isTauri = () => '__TAURI_INTERNALS__' in window;
 
 export const errorMessage = (error: unknown) => error instanceof Error ? error.message : String(error);
 
+function checkedSealingReadiness(value: unknown): SealingServiceReadiness | null {
+  if (!value || typeof value !== 'object') return null;
+  const probe = value as Record<string, unknown>;
+  const configured = probe.configured === true;
+  const trusted = probe.trusted === true;
+  const reachable = probe.reachable === true;
+  const ready = probe.phase === 'ready' && configured && trusted && reachable;
+  const unreachable = probe.phase === 'unreachable' && configured && trusted && !reachable;
+  const phase: SealingServiceReadinessPhase = ready
+    ? 'ready'
+    : unreachable
+      ? 'unreachable'
+      : 'trust_unavailable';
+  return {
+    phase,
+    configured,
+    trusted: ready || unreachable,
+    reachable: ready,
+    checked_at_unix_ms: typeof probe.checked_at_unix_ms === 'number'
+      && Number.isSafeInteger(probe.checked_at_unix_ms)
+      && probe.checked_at_unix_ms >= 0
+      ? probe.checked_at_unix_ms
+      : null,
+    message: typeof probe.message === 'string' ? probe.message.slice(0, 320) : null,
+  };
+}
+
 function fallbackState(overrides: Partial<DesktopState> = {}): DesktopState {
   return {
     running: false,
@@ -131,6 +177,14 @@ function fallbackState(overrides: Partial<DesktopState> = {}): DesktopState {
     proxy_listener: '127.0.0.1:8787',
     admin_listener: '127.0.0.1:8788',
     sealing_service: null,
+    sealing_service_readiness: {
+      phase: 'off',
+      configured: false,
+      trusted: false,
+      reachable: false,
+      checked_at_unix_ms: null,
+      message: null,
+    },
     capture_enabled: false,
     temporary_capture_generation: 1,
     counts: emptyCounts,
@@ -140,14 +194,33 @@ function fallbackState(overrides: Partial<DesktopState> = {}): DesktopState {
 }
 
 function forcedState(): DesktopState | null {
-  const screen = new URLSearchParams(window.location.search).get('screen');
+  const parameters = new URLSearchParams(window.location.search);
+  const screen = parameters.get('screen');
   if (screen === 'onboarding') {
+    const transport = parameters.get('capture-transport');
+    const sealingServiceReadiness: SealingServiceReadiness = transport === 'starting'
+      ? {
+          phase: 'starting', configured: true, trusted: false, reachable: false, checked_at_unix_ms: null, message: null,
+        }
+      : transport === 'unreachable'
+        ? {
+            phase: 'unreachable', configured: true, trusted: true, reachable: false, checked_at_unix_ms: Date.now(), message: 'A trusted sealing endpoint is configured, but its transport handshake did not complete.',
+          }
+        : transport === 'trust-unavailable'
+          ? {
+              phase: 'trust_unavailable', configured: true, trusted: false, reachable: false, checked_at_unix_ms: Date.now(), message: 'The configured trust source could not resolve a trusted sealing endpoint.',
+            }
+          : {
+              phase: 'ready', configured: true, trusted: true, reachable: true, checked_at_unix_ms: Date.now(), message: null,
+            };
     return fallbackState({
       vault_configured: false,
       agent_configured: false,
       onboarding_complete: false,
       vault_mode: 'not configured',
       vault_locked: false,
+      sealing_service: { name: 'Exalto Seal', kind: 'exalto_seal' },
+      sealing_service_readiness: sealingServiceReadiness,
     });
   }
   if (screen === 'onboarding-third-party') {
@@ -158,6 +231,9 @@ function forcedState(): DesktopState | null {
       agent_configured: true,
       onboarding_complete: false,
       sealing_service: { name: 'Northstar Seal', kind: 'registry' },
+      sealing_service_readiness: {
+        phase: 'ready', configured: true, trusted: true, reachable: true, checked_at_unix_ms: Date.now(), message: null,
+      },
     });
   }
   if (screen === 'onboarding-external') {
@@ -169,6 +245,9 @@ function forcedState(): DesktopState | null {
       agent_configured: true,
       onboarding_complete: false,
       sealing_service: { name: 'Exalto Seal', kind: 'exalto_seal' },
+      sealing_service_readiness: {
+        phase: 'ready', configured: true, trusted: true, reachable: true, checked_at_unix_ms: Date.now(), message: null,
+      },
     });
   }
   if (screen === 'unlock') {
@@ -183,6 +262,33 @@ function forcedState(): DesktopState | null {
       message: 'The local service is not responding.',
     });
   }
+  if (screen === 'service-off') return fallbackState();
+  if (screen === 'service-starting') {
+    return fallbackState({
+      sealing_service_readiness: {
+        phase: 'starting', configured: true, trusted: false, reachable: false, checked_at_unix_ms: null, message: null,
+      },
+    });
+  }
+  if (screen === 'seal-unreachable') {
+    return fallbackState({
+      running: true,
+      managed_by_desktop: true,
+      sealing_service: { name: 'Exalto Seal', kind: 'exalto_seal' },
+      sealing_service_readiness: {
+        phase: 'unreachable', configured: true, trusted: true, reachable: false, checked_at_unix_ms: Date.now(), message: 'A trusted sealing endpoint is configured, but its transport handshake did not complete.',
+      },
+    });
+  }
+  if (screen === 'seal-trust-unavailable') {
+    return fallbackState({
+      running: true,
+      managed_by_desktop: true,
+      sealing_service_readiness: {
+        phase: 'trust_unavailable', configured: true, trusted: false, reachable: false, checked_at_unix_ms: Date.now(), message: 'The configured trust source could not resolve a trusted sealing endpoint.',
+      },
+    });
+  }
   if (screen === 'capture-off' || screen === 'capture-on') {
     return fallbackState({
       running: true,
@@ -191,6 +297,9 @@ function forcedState(): DesktopState | null {
       version: '0.1.0',
       daemon_build_id: 'dev',
       sealing_service: { name: 'Exalto Seal', kind: 'exalto_seal' },
+      sealing_service_readiness: {
+        phase: 'ready', configured: true, trusted: true, reachable: true, checked_at_unix_ms: Date.now(), message: null,
+      },
       counts: { ...emptyCounts, captured: 3, notarizing: 1, notarized: 8, needs_attention: 2 },
     });
   }
@@ -202,21 +311,43 @@ function forcedState(): DesktopState | null {
       version: '0.1.0',
       daemon_build_id: 'dev',
       sealing_service: { name: 'Northstar Seal', kind: 'registry' },
+      sealing_service_readiness: {
+        phase: 'ready', configured: true, trusted: true, reachable: true, checked_at_unix_ms: Date.now(), message: null,
+      },
       counts: { ...emptyCounts, captured: 1 },
     });
   }
   return null;
 }
 
-export async function getDesktopState(): Promise<DesktopState> {
+export async function getDesktopState(refreshSealingService = false): Promise<DesktopState> {
   const forced = forcedState();
   if (forced) return forced;
-  if (isTauri()) return invoke<DesktopState>('get_desktop_state');
+  if (isTauri()) {
+    return invoke<DesktopState>('get_desktop_state', { refreshSealingService });
+  }
 
   try {
     const response = await fetch('/admin-api/v1/status');
     if (!response.ok) throw new Error(`Local service returned ${response.status}`);
     const status = await response.json();
+    let sealingServiceReadiness: SealingServiceReadiness = {
+      phase: 'trust_unavailable',
+      configured: true,
+      trusted: false,
+      reachable: false,
+      checked_at_unix_ms: null,
+      message: 'The local service could not check its trusted sealing endpoint.',
+    };
+    try {
+      const readinessResponse = await fetch(`/admin-api/v1/notaries/readiness?refresh=${refreshSealingService}`);
+      if (readinessResponse.ok) {
+        sealingServiceReadiness = checkedSealingReadiness(await readinessResponse.json())
+          ?? sealingServiceReadiness;
+      }
+    } catch {
+      // Status remains useful even when the bounded remote probe is unavailable.
+    }
     return {
       running: true,
       managed_by_desktop: false,
@@ -232,6 +363,7 @@ export async function getDesktopState(): Promise<DesktopState> {
       proxy_listener: status.proxy_listener,
       admin_listener: status.admin_listener,
       sealing_service: null,
+      sealing_service_readiness: sealingServiceReadiness,
       capture_enabled: status.capture_enabled,
       temporary_capture_generation: 1,
       counts: status.counts,
@@ -253,7 +385,17 @@ export async function unlockVault(passphrase: string): Promise<void> {
 }
 
 export async function completeOnboarding(): Promise<void> {
-  if (!isTauri()) return;
+  if (!isTauri()) {
+    const parameters = new URLSearchParams(window.location.search);
+    if (
+      parameters.get('onboarding-finish') === 'fail-once'
+      && !browserOnboardingFinishFailureConsumed
+    ) {
+      browserOnboardingFinishFailureConsumed = true;
+      throw new Error('Setup completion failed');
+    }
+    return;
+  }
   await invoke('complete_onboarding');
 }
 

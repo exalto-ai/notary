@@ -5,6 +5,7 @@ import notaryMark from './notary-mark.svg';
 import {
   DISPLAY_NAME,
   viewMeta,
+  type TraceTarget,
   type TraceConstraint,
   type View,
   type WorkspaceView,
@@ -62,10 +63,12 @@ export function Sidebar({ state, view, onNavigate, onOpenCatalogue }: {
 export function WorkspaceFrame({
   route,
   constraint = null,
+  traceTarget = null,
   running,
   desktopSettings,
   onDesktopSettingsAction,
   onRouteChange,
+  onTraceActionConsumed,
   onStartService,
   serviceStarting = false,
   loadTimeoutMs = 7000,
@@ -74,10 +77,12 @@ export function WorkspaceFrame({
 }: {
   route: WorkspaceView;
   constraint?: TraceConstraint | null;
+  traceTarget?: TraceTarget | null;
   running: boolean;
   desktopSettings?: DesktopSettingsPayload;
   onDesktopSettingsAction?: (action: DesktopSettingsAction) => void;
   onRouteChange?: (view: View) => void;
+  onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
   onStartService?: () => void;
   serviceStarting?: boolean;
   loadTimeoutMs?: number;
@@ -90,8 +95,11 @@ export function WorkspaceFrame({
   const frame = useRef<HTMLIFrameElement>(null);
   const embeddedRoute = useRef<View | null>(null);
   const workspaceOrigin = 'http://127.0.0.1:8788';
+  const traceDestination = route === 'traces' && traceTarget
+    ? `${route}/${encodeURIComponent(traceTarget.traceId)}${traceTarget.action ? `?action=${traceTarget.action}` : ''}`
+    : `${route}${constraint ? `?${constraint}` : ''}`;
   const requestedSource = workspaceSource
-    ?? `${workspaceOrigin}/dashboard?embedded=desktop#/${route}${constraint ? `?${constraint}` : ''}`;
+    ?? `${workspaceOrigin}/dashboard?embedded=desktop#/${traceDestination}`;
   const lastParentRequest = useRef({ route, source: requestedSource });
   const [navigation, setNavigation] = useState({ source: requestedSource, revision: 0 });
 
@@ -163,10 +171,18 @@ export function WorkspaceFrame({
         embeddedRoute.current = nextView;
         onRouteChange(nextView);
       }
+      if (
+        event.data?.type === 'notary:desktop-trace-action-consumed'
+        && isConsumedTraceAction(event.data.payload)
+        && onTraceActionConsumed
+      ) {
+        embeddedRoute.current = route;
+        onTraceActionConsumed(event.data.payload.traceId, event.data.payload.action);
+      }
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [desktopSettings, onDesktopSettingsAction, onRouteChange, route]);
+  }, [desktopSettings, onDesktopSettingsAction, onRouteChange, onTraceActionConsumed, route]);
 
   if (!running) {
     return <EmptyPanel
@@ -258,6 +274,17 @@ function desktopViewFromDashboardRoute(value: unknown): View | null {
     return view;
   }
   return null;
+}
+
+function isConsumedTraceAction(
+  value: unknown,
+): value is { traceId: string; action: 'first-proof' } {
+  if (!value || typeof value !== 'object') return false;
+  const payload = value as { traceId?: unknown; action?: unknown };
+  return typeof payload.traceId === 'string'
+    && payload.traceId.startsWith('trc-')
+    && payload.traceId.length <= 256
+    && payload.action === 'first-proof';
 }
 
 function EmptyPanel({ icon, title, copy, action }: { icon: ReactNode; title: string; copy: string; action?: ReactNode }) {

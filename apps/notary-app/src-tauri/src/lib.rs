@@ -22,8 +22,9 @@ use service_client::{
     SealingServiceIdentity, TemporaryCaptureState, begin_temporary_capture,
     confirm_disposable_trace, daemon_is_healthy, disconnect_account, end_temporary_capture,
     get_account_connection, get_recent_trace_probes, open_account_link, open_product_link,
-    poll_account_connection, read_admin_status, read_sealing_service, recover_temporary_capture,
-    restore_temporary_capture, set_capture_enabled, start_account_connection,
+    poll_account_connection, read_admin_status, read_sealing_service,
+    read_sealing_service_readiness, recover_temporary_capture, restore_temporary_capture,
+    set_capture_enabled, start_account_connection,
 };
 use tray::{
     AppMenuAction, app_menu_action, create_app_menu, create_tray, schedule_capture_menu_updates,
@@ -75,10 +76,84 @@ struct DesktopState {
     proxy_listener: String,
     admin_listener: String,
     sealing_service: Option<SealingServiceIdentity>,
+    sealing_service_readiness: SealingServiceReadiness,
     capture_enabled: bool,
     temporary_capture_generation: u64,
     counts: TraceCounts,
     message: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum SealingServiceReadinessPhase {
+    Off,
+    Starting,
+    TrustUnavailable,
+    Unreachable,
+    Ready,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct SealingServiceReadiness {
+    phase: SealingServiceReadinessPhase,
+    configured: bool,
+    trusted: bool,
+    reachable: bool,
+    checked_at_unix_ms: Option<u64>,
+    message: Option<String>,
+}
+
+impl SealingServiceReadiness {
+    fn off() -> Self {
+        Self {
+            phase: SealingServiceReadinessPhase::Off,
+            configured: false,
+            trusted: false,
+            reachable: false,
+            checked_at_unix_ms: None,
+            message: None,
+        }
+    }
+
+    fn starting() -> Self {
+        Self {
+            phase: SealingServiceReadinessPhase::Starting,
+            configured: true,
+            ..Self::off()
+        }
+    }
+
+    fn from_probe(probe: notaryctl::client::NotaryReadiness) -> Self {
+        let phase = match probe.phase.as_str() {
+            "ready" if probe.configured && probe.trusted && probe.reachable => {
+                SealingServiceReadinessPhase::Ready
+            }
+            "unreachable" if probe.configured && probe.trusted && !probe.reachable => {
+                SealingServiceReadinessPhase::Unreachable
+            }
+            _ => SealingServiceReadinessPhase::TrustUnavailable,
+        };
+        Self {
+            phase,
+            configured: probe.configured,
+            trusted: matches!(
+                phase,
+                SealingServiceReadinessPhase::Ready | SealingServiceReadinessPhase::Unreachable
+            ),
+            reachable: phase == SealingServiceReadinessPhase::Ready,
+            checked_at_unix_ms: Some(probe.checked_at_unix_ms),
+            message: Some(probe.message),
+        }
+    }
+
+    fn trust_unavailable(message: impl Into<String>) -> Self {
+        Self {
+            phase: SealingServiceReadinessPhase::TrustUnavailable,
+            configured: true,
+            message: Some(message.into()),
+            ..Self::off()
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -273,11 +348,13 @@ async fn get_desktop_state(
     process: tauri::State<'_, DaemonProcess>,
     vault_session: tauri::State<'_, VaultSession>,
     temporary_capture: tauri::State<'_, TemporaryCaptureState>,
+    refresh_sealing_service: Option<bool>,
 ) -> Result<DesktopState, String> {
     let (vault_configured, local_mode) = local_vault_mode();
     let agent_configured = agent_config_path().is_ok_and(|path| path.exists());
     let onboarding_complete = onboarding_marker_path().is_ok_and(|path| path.exists());
     let managed_by_desktop = managed_daemon_is_healthy(&process).await;
+    let managed_child_present = owned_child_present(&process).unwrap_or(false);
 
     match read_admin_status().await {
         Ok(status) => {
@@ -286,16 +363,16 @@ async fn get_desktop_state(
                 "The app and running local service are different builds. Update or restart the separately installed service before relying on new client behavior."
                     .into()
             });
-            let (sealing_service, trust_message) = match read_sealing_service().await {
-                Ok(identity) => (identity, None),
-                Err(_) => (
-                    None,
-                    Some(
-                        "The local service could not return its sealing trust. Do not rely on a new trace until the sealing service is available."
-                            .into(),
-                    ),
-                ),
-            };
+            let sealing_service_readiness =
+                read_sealing_service_readiness(refresh_sealing_service.unwrap_or(false))
+                    .await
+                    .map(SealingServiceReadiness::from_probe)
+                    .unwrap_or_else(|_| {
+                        SealingServiceReadiness::trust_unavailable(
+                            "The local service could not check its trusted sealing endpoint.",
+                        )
+                    });
+            let sealing_service = read_sealing_service().await.unwrap_or(None);
             Ok(DesktopState {
                 running: true,
                 managed_by_desktop,
@@ -315,14 +392,20 @@ async fn get_desktop_state(
                 proxy_listener: status.proxy_listener,
                 admin_listener: status.admin_listener,
                 sealing_service,
+                sealing_service_readiness,
                 capture_enabled: status.capture_enabled,
                 temporary_capture_generation: temporary_capture.window_generation(),
                 counts: status.counts,
-                message: build_message.or(trust_message),
+                message: build_message,
             })
         }
         Err(error) => {
             let running = daemon_is_healthy().await;
+            let sealing_service_readiness = if managed_child_present || running {
+                SealingServiceReadiness::starting()
+            } else {
+                SealingServiceReadiness::off()
+            };
             Ok(DesktopState {
                 running,
                 managed_by_desktop,
@@ -338,10 +421,15 @@ async fn get_desktop_state(
                 proxy_listener: "127.0.0.1:8787".into(),
                 admin_listener: "127.0.0.1:8788".into(),
                 sealing_service: None,
+                sealing_service_readiness,
                 capture_enabled: false,
                 temporary_capture_generation: temporary_capture.window_generation(),
                 counts: TraceCounts::default(),
-                message: if running { Some(error) } else { None },
+                message: if running && !managed_child_present {
+                    Some(error)
+                } else {
+                    None
+                },
             })
         }
     }
@@ -749,6 +837,38 @@ mod tests {
                 "capture_failed": 1
             })
         );
+    }
+
+    #[test]
+    fn desktop_sealing_readiness_rejects_inconsistent_ready_claims() {
+        let probe = |phase: &str, configured: bool, trusted: bool, reachable: bool| {
+            notaryctl::client::NotaryReadiness {
+                phase: phase.into(),
+                source: "registry".into(),
+                configured,
+                trusted,
+                reachable,
+                transport: Some("tls".into()),
+                checked_at_unix_ms: 42,
+                message: "bounded fixture".into(),
+            }
+        };
+
+        let ready = SealingServiceReadiness::from_probe(probe("ready", true, true, true));
+        assert_eq!(ready.phase, SealingServiceReadinessPhase::Ready);
+        assert!(ready.configured && ready.trusted && ready.reachable);
+
+        let unreachable =
+            SealingServiceReadiness::from_probe(probe("unreachable", true, true, false));
+        assert_eq!(unreachable.phase, SealingServiceReadinessPhase::Unreachable);
+        assert!(unreachable.configured && unreachable.trusted && !unreachable.reachable);
+
+        let inconsistent = SealingServiceReadiness::from_probe(probe("ready", true, false, true));
+        assert_eq!(
+            inconsistent.phase,
+            SealingServiceReadinessPhase::TrustUnavailable
+        );
+        assert!(!inconsistent.trusted && !inconsistent.reachable);
     }
 
     #[test]

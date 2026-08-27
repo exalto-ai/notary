@@ -948,6 +948,51 @@
   font-size: 11px;
 }
 
+.exalto-onboarding .first-proof-ready {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 13px;
+  border: 1px solid var(--capture-green);
+  border-radius: 3px;
+  background: var(--capture-green-soft);
+}
+
+.exalto-onboarding .first-proof-ready > span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  color: var(--capture-green);
+}
+
+.exalto-onboarding .first-proof-ready strong,
+.exalto-onboarding .first-proof-ready small {
+  display: block;
+}
+
+.exalto-onboarding .first-proof-ready strong {
+  font-size: 11.5px;
+}
+
+.exalto-onboarding .first-proof-ready small {
+  margin-top: 3px;
+  color: var(--capture-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.exalto-onboarding .first-proof-ready.is-blocked {
+  border-color: #bb8a3b;
+  background: #fff4dd;
+}
+
+.exalto-onboarding .first-proof-ready.is-blocked > span {
+  color: #785116;
+}
+
 .exalto-onboarding .account-step .native-account-card {
   gap: 12px;
   margin-top: 16px;

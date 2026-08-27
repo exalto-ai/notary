@@ -6,7 +6,7 @@ import App, {
   SENSITIVE_INPUT_RESET_EVENT,
 } from './App';
 import { createDisposableTestMarker } from './Onboarding';
-import { formatBytes } from './product';
+import { formatBytes, pendingFirstProofTarget, persistPendingFirstProof } from './product';
 import { WorkspaceFrame } from './Shell';
 
 function renderApp(query: string) {
@@ -65,6 +65,42 @@ describe('Exalto Capture desktop shell', () => {
         .toContain(`#/traces?${constraint}`);
       await userEvent.click(page.getByRole('button', { name: 'Capture' }));
     }
+  });
+
+  test('opens an exact sealed Trace action inside the desktop shell', async () => {
+    render(
+      <WorkspaceFrame
+        route="traces"
+        traceTarget={{ traceId: 'trc-browser-first-proof', action: 'first-proof' }}
+        running
+        workspaceSource={undefined}
+      />,
+    );
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')?.src)
+      .toContain('#/traces/trc-browser-first-proof?action=first-proof');
+  });
+
+  test('resumes and consumes a pending first-proof handoff across app restarts', async () => {
+    persistPendingFirstProof({ traceId: 'trc-browser-resume-proof', action: 'first-proof' });
+    renderApp('?screen=capture-off');
+    await expect
+      .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')?.src)
+      .toContain('#/traces/trc-browser-resume-proof?action=first-proof');
+    const frame = document.querySelector<HTMLIFrameElement>('.workspace-frame iframe');
+    if (!frame?.contentWindow) throw new Error('Workspace frame is missing');
+
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: 'http://127.0.0.1:8788',
+      source: frame.contentWindow,
+      data: {
+        type: 'notary:desktop-trace-action-consumed',
+        payload: { traceId: 'trc-browser-resume-proof', action: 'first-proof' },
+      },
+    }));
+
+    await expect.poll(pendingFirstProofTarget).toBeNull();
+    expect(document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')).toBe(frame);
   });
 
   test('keeps service-backed workspaces inside the desktop shell', async () => {
@@ -245,6 +281,84 @@ describe('Exalto Capture desktop shell', () => {
     await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeVisible();
   });
 
+  test('shows a neutral startup state instead of a false sealing failure', async () => {
+    renderApp('?screen=service-off');
+    await expect.element(page.getByRole('heading', { name: 'Capture is off' })).toBeVisible();
+    await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeEnabled();
+    await expect.element(page.getByRole('button', { name: 'Start capturing' })).toHaveAttribute(
+      'title',
+      'Start the local service and connect its trusted capture transport.',
+    );
+    await expect.element(page.getByText('Exalto Seal · Service off')).toBeVisible();
+    await expect.element(page.getByText(/is starting|needs attention|cannot be reached/)).not.toBeInTheDocument();
+
+    cleanup();
+    renderApp('?screen=service-starting');
+    await expect.element(page.getByText('Exalto Seal is starting')).toBeVisible();
+    await expect.element(page.getByText(/Checking the trusted capture transport/)).toBeVisible();
+    await expect.element(page.getByText('Sealing service is unavailable')).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeDisabled();
+    await expect.element(page.getByText(/Capture will be available when this check succeeds/)).toBeVisible();
+    await expect.element(page.getByText(/Exalto Seal account is not required/)).toBeVisible();
+  });
+
+  test('distinguishes trusted but unreachable Seal from unavailable trust', async () => {
+    renderApp('?screen=seal-unreachable');
+    await expect.element(page.getByText('Exalto Seal cannot be reached')).toBeVisible();
+    await expect.element(page.getByText(/transport handshake did not complete/)).toBeVisible();
+    await expect.element(page.getByText('Exalto Seal · Unreachable')).toBeVisible();
+    await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeDisabled();
+    await expect.element(page.getByText(/Capture needs this trusted transport/)).toBeVisible();
+    await expect.element(page.getByText(/does not require an Exalto Seal account/)).toBeVisible();
+
+    cleanup();
+    renderApp('?screen=seal-trust-unavailable');
+    await expect.element(page.getByText('Sealing trust needs attention')).toBeVisible();
+    await expect.element(page.getByText(/could not resolve a trusted sealing endpoint/)).toBeVisible();
+    await expect.element(page.getByText('Exalto Seal · Trust unavailable')).toBeVisible();
+    await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeDisabled();
+  });
+
+  test('reports Seal ready only after trust and transport checks succeed', async () => {
+    renderApp('?screen=capture-off');
+    await expect.element(page.getByText('Exalto Seal · Ready')).toBeVisible();
+    await expect.element(page.getByText(/Exalto Seal is ready to receive ciphertext/)).toBeVisible();
+    await expect.element(page.getByText(/cannot be reached/)).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeEnabled();
+  });
+
+  test('blocks manual disposable capture until the trusted transport is ready', async () => {
+    renderApp('?screen=onboarding&capture-transport=starting');
+
+    await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
+    await userEvent.click(page.getByRole('button', { name: /Protect traces/ }));
+    await userEvent.click(page.getByRole('button', { name: /Continue with Exalto Seal/ }));
+    await userEvent.click(page.getByRole('button', { name: /Start service and prepare test/ }));
+
+    await expect.element(page.getByRole('heading', { name: 'Which local tool will you use first?' })).toBeVisible();
+    await expect.element(page.getByText(/trusted capture transport is not ready/)).toBeVisible();
+    await expect.element(page.getByText(/No Exalto Seal account is required/)).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Capture one disposable trace' })).not.toBeInTheDocument();
+  });
+
+  test('blocks the in-app disposable capture when the trusted transport is unreachable', async () => {
+    renderApp('?screen=onboarding&capture-transport=unreachable');
+
+    await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
+    await userEvent.click(page.getByRole('button', { name: /Protect traces/ }));
+    await userEvent.click(page.getByRole('button', { name: /Continue with Exalto Seal/ }));
+    await userEvent.click(page.getByRole('radio', { name: /API or SDK/ }));
+    await userEvent.fill(
+      page.getByLabelText('Optional temporary key for the onboarding test'),
+      'sk-browser-test-unreachable',
+    );
+    await userEvent.click(page.getByRole('button', { name: /Start service and prepare test/ }));
+
+    await expect.element(page.getByText(/trusted capture transport is not ready/)).toBeVisible();
+    await expect.element(page.getByText(/No Exalto Seal account is required/)).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Capture one disposable trace' })).not.toBeInTheDocument();
+  });
+
   test('guides a developer through the six-step Exalto Capture setup', async () => {
     renderApp('?screen=onboarding');
     await expect.element(page.getByRole('heading', { name: 'Set up Exalto Capture' })).toBeVisible();
@@ -300,10 +414,39 @@ describe('Exalto Capture desktop shell', () => {
 
     await expect.element(page.getByRole('heading', { name: 'Exalto Capture is ready' })).toBeVisible();
     await expect.element(page.getByText(/Local capture does not require an Exalto account/)).toBeVisible();
-    await expect.element(page.getByRole('button', { name: /Open Capture/ })).toBeVisible();
-    await userEvent.click(page.getByRole('button', { name: 'Back' }));
-    await expect.element(page.getByRole('heading', { name: 'Which local tool will you use first?' })).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'Capture one disposable trace' })).not.toBeInTheDocument();
+    await expect.element(page.getByRole('button', { name: /Seal and verify test Trace/ })).toBeVisible();
+    await expect.element(page.getByText(/stay private unless you explicitly share it/)).toBeVisible();
+    await expect.element(page.getByRole('button', { name: /Keep it local for now/ })).toBeVisible();
+    await userEvent.click(page.getByRole('button', { name: /Seal and verify test Trace/ }));
+    await expect.poll(pendingFirstProofTarget).toEqual({
+      traceId: 'trc-browser-disposable-test',
+      action: 'first-proof',
+    });
+  });
+
+  test('does not retain a failed first-proof choice when the user keeps the Trace local', async () => {
+    renderApp('?screen=onboarding&onboarding-finish=fail-once');
+
+    await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
+    await userEvent.click(page.getByRole('button', { name: /Protect traces/ }));
+    await userEvent.click(page.getByRole('button', { name: /Continue with Exalto Seal/ }));
+    await userEvent.click(page.getByRole('radio', { name: /API or SDK/ }));
+    await userEvent.fill(
+      page.getByLabelText('Optional temporary key for the onboarding test'),
+      'sk-browser-test-failure-path',
+    );
+    await userEvent.click(page.getByRole('button', { name: /Start service and prepare test/ }));
+    await userEvent.fill(page.getByLabelText('OpenAI model ID'), 'gpt-4.1-mini');
+    await userEvent.click(page.getByRole('button', { name: 'Run in-app test' }));
+    await expect.element(page.getByText('Test trace captured')).toBeVisible();
+    await userEvent.click(page.getByRole('button', { name: 'Continue' }));
+
+    await userEvent.click(page.getByRole('button', { name: /Seal and verify test Trace/ }));
+    await expect.element(page.getByText('Setup completion failed', { exact: true })).toBeVisible();
+    expect(pendingFirstProofTarget()).toBeNull();
+
+    await userEvent.click(page.getByRole('button', { name: /Keep it local for now/ }));
+    await expect.poll(pendingFirstProofTarget).toBeNull();
   });
 
   test('does not misreport a successful provider request when previews prevent confirmation', async () => {

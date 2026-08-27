@@ -81,6 +81,23 @@ type TraceStateFilter = NonNullable<TraceFilters['state']>;
 type TraceStatusFilter = NonNullable<TraceFilters['status']>;
 type ShareDialogMode = 'create' | 'manage' | 'resume' | 'retry';
 
+function invalidateAfterTraceDeletion(
+  queryClient: ReturnType<typeof useQueryClient>,
+  deletedTraceIds: string[],
+) {
+  for (const traceId of deletedTraceIds) {
+    queryClient.removeQueries({ queryKey: ['capture', traceId], exact: true });
+    queryClient.removeQueries({ queryKey: ['trace', traceId], exact: true });
+    queryClient.removeQueries({ queryKey: ['share', traceId], exact: true });
+  }
+  void Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['traces'] }),
+    queryClient.invalidateQueries({ queryKey: ['status'] }),
+    queryClient.invalidateQueries({ queryKey: ['events'] }),
+    queryClient.invalidateQueries({ queryKey: ['capture'], refetchType: 'none' }),
+  ]);
+}
+
 function shareProgressLabel(progress: string) {
   switch (progress) {
     case 'verifying':
@@ -373,13 +390,17 @@ function ResizableSplit({
 export function TracesView({
   api,
   selectedId,
+  initialAction,
   initialFilters,
   navigate,
+  onTraceActionConsumed,
 }: {
   api: LocalApi;
   selectedId?: string;
+  initialAction?: Route['action'];
   initialFilters?: Route['filters'];
   navigate: (route: Route) => void;
+  onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
 }) {
   const [query, setQuery] = useState('');
   const [model, setModel] = useState('');
@@ -393,6 +414,7 @@ export function TracesView({
   const [streaming, setStreaming] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(Boolean(initialFilters?.status));
+  const consumedMissingFirstProof = useRef<string | null>(null);
   const mobile = useMediaQuery('(max-width: 820px)');
   const createdAfter = useMemo(() => timeRangeStart(time), [time]);
   const traces = useInfiniteQuery({
@@ -427,6 +449,24 @@ export function TracesView({
     queryFn: () => api.trace(requiredValue(selectedId, 'selected capture')),
     enabled: Boolean(selectedId),
   });
+  useEffect(() => {
+    if (
+      initialAction !== 'first-proof' ||
+      !selectedId ||
+      !(selectedDetail.error instanceof LocalApiError) ||
+      selectedDetail.error.status !== 404 ||
+      consumedMissingFirstProof.current === selectedId
+    )
+      return;
+    consumedMissingFirstProof.current = selectedId;
+    notifications.show({
+      color: 'orange',
+      title: 'First proof Trace not found',
+      message: 'The saved onboarding handoff was cleared. Capture another test Trace to try again.',
+    });
+    onTraceActionConsumed?.(selectedId, 'first-proof');
+    navigate({ view: 'traces' });
+  }, [initialAction, navigate, onTraceActionConsumed, selectedDetail.error, selectedId]);
   const visible = useMemo(
     () => traces.data?.pages.flatMap((page) => page.items) ?? [],
     [traces.data],
@@ -580,9 +620,11 @@ export function TracesView({
               <TraceInspector
                 api={api}
                 capture={active}
+                initialAction={active.trace_id === selectedId ? initialAction : undefined}
                 mobile={Boolean(mobile)}
                 onBack={() => navigate({ view: 'traces' })}
                 navigate={navigate}
+                onTraceActionConsumed={onTraceActionConsumed}
               />
             ) : null}
           </div>
@@ -627,37 +669,128 @@ function CaptureRow({
 function TraceInspector(props: {
   api: LocalApi;
   capture: TraceSummary;
+  initialAction?: Route['action'];
   mobile: boolean;
   onBack: () => void;
   navigate: (route: Route) => void;
+  onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
 }) {
   return props.capture.state === 'notarized' ? (
     <NotarizedTraceInspector
       api={props.api}
       capture={props.capture}
+      initialAction={props.initialAction}
       mobile={props.mobile}
       onBack={props.onBack}
       navigate={props.navigate}
+      onTraceActionConsumed={props.onTraceActionConsumed}
     />
   ) : (
     <CapturedTraceInspector {...props} />
   );
 }
 
-function CapturedTraceInspector({
+function DeleteTraceAction({
   api,
   capture,
-  mobile,
-  onBack,
   navigate,
+  blockedBy,
 }: {
   api: LocalApi;
   capture: TraceSummary;
+  navigate: (route: Route) => void;
+  blockedBy?: string | null;
+}) {
+  const queryClient = useQueryClient();
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const blockReason =
+    capture.status === 'capturing'
+      ? 'Wait for capture to finish before deleting this Trace.'
+      : capture.status === 'notarizing'
+        ? 'Wait for sealing to finish before deleting this Trace.'
+        : (blockedBy ?? null);
+  const deleteTrace = useMutation({
+    mutationFn: () => api.deleteTrace(capture.trace_id),
+    onSuccess: () => {
+      setConfirmationOpen(false);
+      navigate({ view: 'traces' });
+      invalidateAfterTraceDeletion(queryClient, [capture.trace_id]);
+      notifications.show({
+        title: 'Trace deleted',
+        message: 'The Trace and its private local artifacts were permanently removed.',
+      });
+    },
+    onError: (error) => mutationError('Could not delete Trace', error),
+  });
+  return (
+    <>
+      <Button
+        variant="subtle"
+        color="red"
+        leftSection={<Trash2 size={15} />}
+        disabled={Boolean(blockReason)}
+        title={blockReason ?? 'Delete this local Trace'}
+        onClick={() => setConfirmationOpen(true)}
+      >
+        Delete
+      </Button>
+      <AlertDialog
+        open={confirmationOpen}
+        onOpenChange={(open) => {
+          if (!deleteTrace.isPending) setConfirmationOpen(open);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this Trace?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the private local Trace and its artifacts from this Mac. A
+              separately retained hosted Trace is not deleted. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteTrace.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteTrace.isPending}
+              onClick={() => deleteTrace.mutate()}
+            >
+              {deleteTrace.isPending ? 'Deleting…' : 'Delete Trace'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function CapturedTraceInspector({
+  api,
+  capture,
+  initialAction,
+  mobile,
+  onBack,
+  navigate,
+  onTraceActionConsumed,
+}: {
+  api: LocalApi;
+  capture: TraceSummary;
+  initialAction?: Route['action'];
   mobile: boolean;
   onBack: () => void;
   navigate: (route: Route) => void;
+  onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
 }) {
   const queryClient = useQueryClient();
+  const handledInitialAction = useRef<string | null>(null);
+  const consumedFirstProofAction = useRef<string | null>(null);
+  const [firstProofStartError, setFirstProofStartError] = useState<string | null>(null);
+  const consumeFirstProofAction = () => {
+    if (initialAction !== 'first-proof') return;
+    if (consumedFirstProofAction.current === capture.trace_id) return;
+    consumedFirstProofAction.current = capture.trace_id;
+    if (onTraceActionConsumed) onTraceActionConsumed(capture.trace_id, 'first-proof');
+    else navigate({ view: 'traces', id: capture.trace_id });
+  };
   const detail = useQuery({
     queryKey: ['capture', capture.trace_id],
     queryFn: () => api.trace(capture.trace_id),
@@ -665,6 +798,7 @@ function CapturedTraceInspector({
   });
   const notarize = useMutation({
     mutationFn: () => api.startNotarization(capture.trace_id),
+    onMutate: () => setFirstProofStartError(null),
     onSuccess: (result) => {
       notifications.show({
         title: result.deduplicated ? 'Already in the queue' : 'Sealing queued',
@@ -677,10 +811,68 @@ function CapturedTraceInspector({
       queryClient.invalidateQueries({ queryKey: ['operations'] });
       queryClient.invalidateQueries({ queryKey: ['status'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      navigate({ view: 'traces', id: capture.trace_id });
+      navigate({
+        view: 'traces',
+        id: capture.trace_id,
+        action: initialAction === 'first-proof' ? initialAction : undefined,
+      });
     },
-    onError: (error) => mutationError('Could not seal trace', error),
+    onError: (error) => {
+      mutationError('Could not seal trace', error);
+      if (initialAction === 'first-proof') {
+        setFirstProofStartError(
+          'Automatic sealing could not start. Review the error, then choose Seal trace when you are ready to retry.',
+        );
+        consumeFirstProofAction();
+      }
+    },
   });
+  useEffect(() => {
+    if (initialAction !== 'first-proof' || !detail.data) return;
+    const actionKey = `${capture.trace_id}:${initialAction}`;
+    const operationState = detail.data.notarization?.state;
+    if (!capture.notarization_eligible) {
+      setFirstProofStartError(
+        'This provider response is not eligible for sealing. Keep it local or delete the disposable test.',
+      );
+      consumeFirstProofAction();
+      return;
+    }
+    if (operationState === 'failed' || operationState === 'interrupted') {
+      setFirstProofStartError(
+        'A previous sealing attempt needs attention. Review it, then choose Retry sealing explicitly.',
+      );
+      consumeFirstProofAction();
+      return;
+    }
+    if (operationState === 'succeeded') return;
+    if (operationState === 'queued' || operationState === 'running') return;
+    if (capture.status === 'notarization_failed' || capture.status === 'notarization_interrupted') {
+      setFirstProofStartError(
+        'A previous sealing attempt needs attention. Review it, then choose Retry sealing explicitly.',
+      );
+      consumeFirstProofAction();
+      return;
+    }
+    if (capture.status === 'notarizing') return;
+    if (capture.state === 'captured' && capture.status == null && !detail.data.notarization) {
+      if (handledInitialAction.current === actionKey) return;
+      handledInitialAction.current = actionKey;
+      notarize.mutate();
+      return;
+    }
+    setFirstProofStartError(
+      'Automatic sealing did not start because this Trace changed state. Review it before continuing.',
+    );
+    consumeFirstProofAction();
+  }, [
+    capture.notarization_eligible,
+    capture.state,
+    capture.status,
+    capture.trace_id,
+    detail.data,
+    initialAction,
+  ]);
   if (detail.isLoading) return <LoadingState />;
   if (detail.error) return <QueryError error={detail.error} title="Trace detail is unavailable" />;
   const value = detail.data;
@@ -692,7 +884,8 @@ function CapturedTraceInspector({
   const canNotarize =
     captureStatus(capture) === 'captured' &&
     notarizationStatus(capture) === 'not_requested' &&
-    capture.notarization_eligible;
+    capture.notarization_eligible &&
+    !value.notarization;
   const canRetry = Boolean(value.notarization?.retryable);
   return (
     <article className="inspector capture-inspector">
@@ -734,8 +927,23 @@ function CapturedTraceInspector({
               {canRetry ? 'Retry sealing' : 'Seal trace'}
             </Button>
           )}
+          <DeleteTraceAction api={api} capture={capture} navigate={navigate} />
         </Group>
       </div>
+      {initialAction === 'first-proof' && !firstProofStartError && (
+        <Paper withBorder p="md" role="status" aria-live="polite">
+          <Text className="eyebrow">Creating your first proof</Text>
+          <Text fw={600}>Exalto Seal is sealing this disposable test Trace.</Text>
+          <Text>You can leave this screen. Verification will begin when sealing finishes.</Text>
+        </Paper>
+      )}
+      {firstProofStartError && (
+        <Paper withBorder p="md" role="alert" aria-live="assertive">
+          <Text className="eyebrow">First proof needs attention</Text>
+          <Text fw={600}>{firstProofStartError}</Text>
+          <Text>Nothing will retry automatically.</Text>
+        </Paper>
+      )}
       {capture.status === 'capture_failed' && (
         <div className="notarization-ineligible-note" role="status">
           <XCircle size={18} aria-hidden="true" />
@@ -758,7 +966,10 @@ function CapturedTraceInspector({
           </div>
         </div>
       )}
-      <Tabs defaultValue="summary" keepMounted={false}>
+      <Tabs
+        defaultValue={initialAction === 'first-proof' ? 'notarization' : 'summary'}
+        keepMounted={false}
+      >
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
           <Tabs.Tab value="notarization">Sealing</Tabs.Tab>
@@ -975,15 +1186,19 @@ function OperationInspector({
 function NotarizedTraceInspector({
   api,
   capture,
+  initialAction,
   mobile,
   onBack,
   navigate,
+  onTraceActionConsumed,
 }: {
   api: LocalApi;
   capture: TraceSummary;
+  initialAction?: Route['action'];
   mobile: boolean;
   onBack: () => void;
   navigate: (route: Route) => void;
+  onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
 }) {
   const queryClient = useQueryClient();
   const captureId = capture.trace_id;
@@ -997,6 +1212,8 @@ function NotarizedTraceInspector({
   });
   const accountConnection = useAccountConnection(api);
   const [verification, setVerification] = useState<Verification | null>(null);
+  const [verificationFailure, setVerificationFailure] = useState<string | null>(null);
+  const [guidedFirstProof, setGuidedFirstProof] = useState(initialAction === 'first-proof');
   const [activeTab, setActiveTab] = useState<string | null>('summary');
   const [shareDialogMode, setShareDialogMode] = useState<ShareDialogMode | null>(null);
   const [shareVisibility, setShareVisibility] = useState<ShareVisibility>('unlisted');
@@ -1007,9 +1224,21 @@ function NotarizedTraceInspector({
   const [stopConfirmation, setStopConfirmation] = useState(false);
   const [shareRequested, setShareRequested] = useState(false);
   const currentCapture = useRef(captureId);
+  const handledInitialAction = useRef<string | null>(null);
+  const guidedFirstProofRequested = useRef(initialAction === 'first-proof');
+  const consumedFirstProofAction = useRef<string | null>(null);
+  const consumeFirstProofAction = () => {
+    if (!guidedFirstProofRequested.current) return;
+    if (consumedFirstProofAction.current === captureId) return;
+    consumedFirstProofAction.current = captureId;
+    if (onTraceActionConsumed) onTraceActionConsumed(captureId, 'first-proof');
+    else navigate({ view: 'traces', id: captureId });
+  };
   useEffect(() => {
     currentCapture.current = captureId;
     setVerification(null);
+    setVerificationFailure(null);
+    setGuidedFirstProof(false);
     setActiveTab('summary');
     setShareDialogMode(null);
     setShareVisibility('unlisted');
@@ -1019,19 +1248,72 @@ function NotarizedTraceInspector({
     setShareHighEntropyReview(false);
     setStopConfirmation(false);
     setShareRequested(false);
+    handledInitialAction.current = null;
+    guidedFirstProofRequested.current = false;
+    consumedFirstProofAction.current = null;
   }, [captureId]);
+  useEffect(() => {
+    if (initialAction !== 'first-proof') return;
+    guidedFirstProofRequested.current = true;
+    setGuidedFirstProof(true);
+  }, [initialAction]);
   const verify = useMutation({
     mutationFn: () => api.verify(captureId),
+    onMutate: () => {
+      setVerification(null);
+      setVerificationFailure(null);
+    },
     onSuccess: (result) => {
-      if (currentCapture.current !== result.trace_id) return;
+      if (currentCapture.current !== captureId) return;
+      if (result.trace_id !== captureId) {
+        setVerification(null);
+        setVerificationFailure(
+          'The verification result did not identify this exact Trace. It has not been accepted as proof.',
+        );
+        notifications.show({
+          color: 'red',
+          title: 'Trace identity did not match',
+          message: 'The returned verification result was not for this exact Trace.',
+        });
+        consumeFirstProofAction();
+        return;
+      }
+      if (result.outcome !== 'passed') {
+        setVerification(null);
+        setVerificationFailure(
+          result.outcome === 'unsupported'
+            ? 'Local verification does not support this sealed package yet. It has not been accepted as proof.'
+            : 'The sealed package did not pass local verification. It has not been accepted as proof.',
+        );
+        notifications.show({
+          color: 'red',
+          title:
+            result.outcome === 'unsupported' ? 'Verification unsupported' : 'Verification failed',
+          message: result.failure_code
+            ? `Safe failure code: ${result.failure_code}`
+            : 'Review the Trace before exporting or sharing it.',
+        });
+        consumeFirstProofAction();
+        return;
+      }
       setVerification(result);
+      setVerificationFailure(null);
       setActiveTab('evidence');
       notifications.show({
         title: 'Trace verified',
         message: 'The package passed every local verification check.',
       });
+      consumeFirstProofAction();
     },
-    onError: (error) => mutationError('Trace verification failed', error),
+    onError: (error) => {
+      if (currentCapture.current !== captureId) return;
+      setVerification(null);
+      setVerificationFailure(
+        'Local verification could not complete. Run Verify locally again before treating this Trace as proof.',
+      );
+      mutationError('Trace verification failed', error);
+      consumeFirstProofAction();
+    },
   });
   const exportTrace = useMutation({
     mutationFn: () => api.downloadPackage(captureId),
@@ -1110,6 +1392,19 @@ function NotarizedTraceInspector({
     },
     onError: (error) => mutationError('Could not stop sharing', error),
   });
+  useEffect(() => {
+    if (!initialAction || !trace.data || !detail.data) return;
+    const actionKey = `${captureId}:${initialAction}`;
+    if (handledInitialAction.current === actionKey) return;
+    handledInitialAction.current = actionKey;
+    if (initialAction === 'export') exportTrace.mutate();
+    else if (initialAction === 'share') setShareDialogMode('create');
+    else {
+      guidedFirstProofRequested.current = true;
+      setGuidedFirstProof(true);
+      verify.mutate();
+    }
+  }, [captureId, detail.data, initialAction, trace.data]);
   if (trace.isLoading || detail.isLoading) return <LoadingState />;
   if (trace.error) return <QueryError error={trace.error} title="Trace package is unavailable" />;
   if (!trace.data || !detail.data)
@@ -1126,6 +1421,9 @@ function NotarizedTraceInspector({
   const activeShare = shareStatus.isSuccess
     ? shareStatus.data
     : (shareStatus.data ?? detail.data.share);
+  const sharingBlocksDeletion = Boolean(
+    activeShare && (activeShare.progress === 'verifying' || activeShare.access_enabled),
+  );
   const account = accountConnection.account.data;
   const accountConnected = Boolean(account?.signed_in || account?.connection_state === 'connected');
   const openShareDialog = (mode: ShareDialogMode) => {
@@ -1218,8 +1516,43 @@ function NotarizedTraceInspector({
               Share
             </Button>
           )}
+          <DeleteTraceAction
+            api={api}
+            capture={capture}
+            navigate={navigate}
+            blockedBy={
+              sharingBlocksDeletion ? 'Stop sharing before deleting this local Trace.' : null
+            }
+          />
         </Group>
       </Group>
+      {guidedFirstProof && (
+        <Paper withBorder p="md" role="status" aria-live="polite">
+          {verify.isPending ? (
+            <div>
+              <Text className="eyebrow">Checking your first proof</Text>
+              <Text>The sealed package is being verified locally on this device.</Text>
+            </div>
+          ) : verification ? (
+            <div>
+              <Text className="eyebrow">First proof complete</Text>
+              <Text fw={600}>Your first proof is sealed and verified.</Text>
+              <Text>You can now export the portable package or share its disclosed evidence.</Text>
+            </div>
+          ) : verificationFailure ? (
+            <div>
+              <Text className="eyebrow">Verification needs attention</Text>
+              <Text fw={600}>Your first proof was sealed, but local verification failed.</Text>
+              <Text>{verificationFailure}</Text>
+            </div>
+          ) : (
+            <div>
+              <Text className="eyebrow">Checking your first proof</Text>
+              <Text>Local verification will begin when the sealed package is ready.</Text>
+            </div>
+          )}
+        </Paper>
+      )}
       {activeShare && (
         <Paper className="trace-share-status">
           <div>
@@ -1295,7 +1628,7 @@ function NotarizedTraceInspector({
                 Retry status
               </Button>
             )}
-            {activeShare.access_enabled && (
+            {(activeShare.progress === 'verifying' || activeShare.access_enabled) && (
               <Button
                 variant="subtle"
                 color="red"
@@ -1394,8 +1727,14 @@ function NotarizedTraceInspector({
             ) : (
               <EmptyState
                 icon={ShieldCheck}
-                title="Run an independent check"
-                copy="Verification replays the provider adapter and checks every authenticated artifact."
+                title={
+                  verificationFailure ? 'Verification needs attention' : 'Run an independent check'
+                }
+                copy={
+                  verificationFailure
+                    ? verificationFailure
+                    : 'Verification replays the provider adapter and checks every authenticated artifact.'
+                }
               />
             )}
           </div>
