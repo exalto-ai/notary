@@ -1,5 +1,7 @@
 # Notary agent guide
 
+This file is the source of truth for agent instructions. `CLAUDE.md` is a symlink to it.
+
 ## Project map
 
 - `runtime/` is the self-contained public workspace. It owns core protocol/evidence contracts, the local daemon, thin REST CLI, generic remote notary, updater, local dashboard, runtime docs, and pinned TLSNotary sources.
