@@ -301,8 +301,8 @@ jobs:
     name: macOS desktop bundle
     needs: changes
     if: >-
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'pull_request' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')) &&
       needs.changes.outputs.desktop == 'true'
     runs-on: macos-14
     defaults:
@@ -321,9 +321,13 @@ jobs:
           cache: npm
           cache-dependency-path: apps/notary-app/package-lock.json
       - run: npm ci
+      - name: Install browser test runtime
+        run: npm exec -- playwright install chromium
       - name: Prepare bundled daemon
         run: npm run prepare:sidecar:debug
       - run: cargo clippy -p notary-app --all-targets -- -D warnings
+      - run: cargo test -p notary-app --lib
+      - run: npm run test:browser
       - name: Build debug application bundle with bundled daemon
         run: npm exec -- tauri build --debug --bundles app
       - name: Verify signed updater artifact packaging
