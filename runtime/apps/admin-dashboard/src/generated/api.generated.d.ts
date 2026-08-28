@@ -72,18 +72,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get the Notary account connection
+         * Get the Exalto account connection
          * @description Reports whether this local service has an account connection used for hosted admission, credits, and sharing.
          */
         get: operations["account_status"];
         put?: never;
         /**
-         * Connect a Notary account
+         * Connect an Exalto account
          * @description Starts browser approval for an account connection used for hosted admission, credits, and sharing. Browser approval is unavailable while the daemon uses an injected API key.
          */
         post: operations["start_account_connection"];
         /**
-         * Disconnect the Notary account
+         * Disconnect the Exalto account
          * @description Removes the local account credentials. Future hosted sessions use public access until a new browser approval is completed. Injected API keys must instead be revoked in the hosted dashboard.
          */
         delete: operations["end_account_connection"];
@@ -101,7 +101,7 @@ export interface paths {
         };
         /**
          * Poll account authorization
-         * @description Checks a pending Notary account approval after its required polling interval.
+         * @description Checks a pending Exalto account approval after its required polling interval.
          */
         get: operations["poll_account_connection"];
         put?: never;
