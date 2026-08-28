@@ -123,7 +123,7 @@ function notarizationPhaseLabel(phase: string) {
     case 'proving':
       return 'Generating private proof';
     case 'signing':
-      return 'Requesting notary signature';
+      return 'Requesting seal';
     case 'packaging':
       return 'Building portable package';
     case 'complete':
@@ -161,10 +161,10 @@ function traceTitle(trace: TraceSummary) {
 function traceLifecycleLabel(trace: TraceSummary) {
   if (trace.status === 'capturing') return 'Capturing';
   if (trace.status === 'capture_failed') return 'Capture failed';
-  if (trace.state === 'notarized') return 'Notarized';
-  if (trace.status === 'notarizing') return 'Captured · Notarizing';
-  if (trace.status === 'notarization_failed') return 'Captured · Notarization failed';
-  if (trace.status === 'notarization_interrupted') return 'Captured · Notarization interrupted';
+  if (trace.state === 'notarized') return 'Sealed';
+  if (trace.status === 'notarizing') return 'Captured · Sealing';
+  if (trace.status === 'notarization_failed') return 'Captured · Sealing failed';
+  if (trace.status === 'notarization_interrupted') return 'Captured · Sealing interrupted';
   if (trace.state === 'captured') return 'Captured';
   return 'Trace pending';
 }
@@ -278,7 +278,7 @@ function traceTranscripts(value: unknown): TraceTranscript[] {
 }
 
 const splitStorageKey = 'notary-admin-dashboard-split-width';
-const splitDefault = 320;
+const splitDefault = 380;
 const splitMinimum = 272;
 const splitMaximum = 460;
 const splitDetailMinimum = 360;
@@ -442,7 +442,7 @@ export function TracesView({
     : traceState === 'captured'
       ? 'No traces are currently in the Captured state.'
       : traceState === 'notarized'
-        ? 'No traces have been notarized yet.'
+        ? 'No traces have been sealed yet.'
         : 'No traces have been captured yet.';
   return (
     <div className="view-page capture-page">
@@ -460,7 +460,7 @@ export function TracesView({
               {[
                 [null, 'All'],
                 ['captured', 'Captured'],
-                ['notarized', 'Notarized'],
+                ['notarized', 'Sealed'],
               ].map(([value, label]) => (
                 <button
                   key={label}
@@ -517,9 +517,9 @@ export function TracesView({
                   { value: 'needs_attention', label: 'Needs attention' },
                   'capturing',
                   'capture_failed',
-                  'notarizing',
-                  'notarization_failed',
-                  'notarization_interrupted',
+                  { value: 'notarizing', label: 'Sealing' },
+                  { value: 'notarization_failed', label: 'Sealing failed' },
+                  { value: 'notarization_interrupted', label: 'Sealing interrupted' },
                 ]}
                 value={operationalStatus}
                 onChange={(value) => setOperationalStatus(value as TraceStatusFilter | null)}
@@ -667,7 +667,7 @@ function CapturedTraceInspector({
     mutationFn: () => api.startNotarization(capture.trace_id),
     onSuccess: (result) => {
       notifications.show({
-        title: result.deduplicated ? 'Already in the queue' : 'Notarization queued',
+        title: result.deduplicated ? 'Already in the queue' : 'Sealing queued',
         message: result.deduplicated
           ? 'The existing operation remains active.'
           : 'Proof generation will run in the background.',
@@ -679,7 +679,7 @@ function CapturedTraceInspector({
       queryClient.invalidateQueries({ queryKey: ['events'] });
       navigate({ view: 'traces', id: capture.trace_id });
     },
-    onError: (error) => mutationError('Could not notarize', error),
+    onError: (error) => mutationError('Could not seal trace', error),
   });
   if (detail.isLoading) return <LoadingState />;
   if (detail.error) return <QueryError error={detail.error} title="Trace detail is unavailable" />;
@@ -731,7 +731,7 @@ function CapturedTraceInspector({
               leftSection={canRetry ? <RefreshCw size={15} /> : <Play size={15} />}
               onClick={() => notarize.mutate()}
             >
-              {canRetry ? 'Retry notarization' : 'Notarize'}
+              {canRetry ? 'Retry sealing' : 'Seal trace'}
             </Button>
           )}
         </Group>
@@ -741,9 +741,7 @@ function CapturedTraceInspector({
           <XCircle size={18} aria-hidden="true" />
           <div>
             <b>The original request cannot be replayed</b>
-            <Text>
-              Capture did not complete, so this Trace has no private evidence to notarize.
-            </Text>
+            <Text>Capture did not complete, so this Trace has no private evidence to seal.</Text>
           </div>
         </div>
       )}
@@ -751,9 +749,9 @@ function CapturedTraceInspector({
         <div className="notarization-ineligible-note" role="status">
           <XCircle size={18} aria-hidden="true" />
           <div>
-            <b>Provider response cannot be notarized</b>
+            <b>Provider response cannot be sealed</b>
             <Text>
-              The provider returned HTTP {capture.http_status}. Notarization currently supports
+              The provider returned HTTP {capture.http_status}. Sealing currently supports
               successful provider responses only.
             </Text>
             <code>{capture.notarization_ineligibility_code}</code>
@@ -763,7 +761,7 @@ function CapturedTraceInspector({
       <Tabs defaultValue="summary" keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
-          <Tabs.Tab value="notarization">Notarization</Tabs.Tab>
+          <Tabs.Tab value="notarization">Sealing</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="summary">
           <InspectorSection title="Private on this device">
@@ -800,10 +798,10 @@ function CapturedTraceInspector({
           </InspectorSection>
         </Tabs.Panel>
         <Tabs.Panel value="notarization">
-          <InspectorSection title="Notarization">
+          <InspectorSection title="Sealing">
             {!capture.notarization_eligible && capture.notarization_ineligibility_code && (
               <Text className="empty-copy">
-                Cannot be notarized · {capture.notarization_ineligibility_code}
+                Cannot be sealed · {capture.notarization_ineligibility_code}
               </Text>
             )}
             {value.notarization ? (
@@ -815,7 +813,7 @@ function CapturedTraceInspector({
                 }
               />
             ) : (
-              <Text className="empty-copy">No notarization has been requested for this Trace.</Text>
+              <Text className="empty-copy">No sealing has been requested for this Trace.</Text>
             )}
           </InspectorSection>
         </Tabs.Panel>
@@ -908,7 +906,7 @@ function OperationInspector({
 }) {
   return (
     <Paper className="operation-inspector">
-      <Text className="eyebrow">Notarization attempt</Text>
+      <Text className="eyebrow">Sealing attempt</Text>
       <Group justify="space-between" align="flex-start">
         <div>
           <Title order={2}>
@@ -1046,7 +1044,7 @@ function NotarizedTraceInspector({
       URL.revokeObjectURL(url);
       notifications.show({
         title: 'Trace exported',
-        message: 'The portable notarized package was exported without modification.',
+        message: 'The portable sealed package was exported without modification.',
       });
     },
     onError: (error) => mutationError('Could not export Trace', error),
@@ -1177,7 +1175,7 @@ function NotarizedTraceInspector({
           <Text className="eyebrow">Trace</Text>
           <Title order={2}>{traceTitle(capture)}</Title>
           <Group gap="xs" className="trace-head-facts">
-            <span className="trace-lifecycle-label">Notarized</span>
+            <span className="trace-lifecycle-label">Sealed</span>
             <ProviderIdentity
               provider={capture.provider}
               detail={capture.requested_model ?? 'Model not reported'}
@@ -1314,7 +1312,7 @@ function NotarizedTraceInspector({
       <Tabs value={activeTab} onChange={setActiveTab} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
-          <Tabs.Tab value="notarization">Notarization</Tabs.Tab>
+          <Tabs.Tab value="notarization">Sealing</Tabs.Tab>
           <Tabs.Tab value="evidence">Evidence</Tabs.Tab>
           <Tabs.Tab value="technical">Technical</Tabs.Tab>
         </Tabs.List>
@@ -1346,7 +1344,7 @@ function NotarizedTraceInspector({
         </Tabs.Panel>
         <Tabs.Panel value="notarization">
           <div className="document-panel">
-            <Title order={3}>Notarization</Title>
+            <Title order={3}>Sealing</Title>
             {detail.data.notarization ? (
               <OperationInspector
                 operation={detail.data.notarization}
@@ -1356,7 +1354,7 @@ function NotarizedTraceInspector({
                 }
               />
             ) : (
-              <Text className="empty-copy">No notarization history is available.</Text>
+              <Text className="empty-copy">No sealing history is available.</Text>
             )}
           </div>
         </Tabs.Panel>
@@ -1389,7 +1387,7 @@ function NotarizedTraceInspector({
                 fields={[
                   ['Trace', verification.trace_id ?? 'Not reported'],
                   ['Verified at', formatDate(verification.verified_at_unix_ms)],
-                  ['Notary key', verification.notary_key_id ?? 'Not reported'],
+                  ['Sealing key', verification.notary_key_id ?? 'Not reported'],
                   ['Trust source', verification.trust_source ?? 'Not reported'],
                 ]}
               />
@@ -1455,7 +1453,7 @@ function NotarizedTraceInspector({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {!accountConnected
-                ? 'Connecting an account does not upload or share local evidence. After approval, this review will remain on the same Notarized Trace.'
+                ? 'Connecting an account does not upload or share local evidence. After approval, this review will remain on the same Sealed Trace.'
                 : 'Review the exact conversation and tool content disclosed by the portable package, then choose access settings.'}
             </AlertDialogDescription>
             {accountConnected &&
@@ -1477,10 +1475,10 @@ function NotarizedTraceInspector({
               </section>
               <aside className="trace-share-settings">
                 <dl className="sharing-facts">
-                  <Fact label="Evidence state" value="Notarized" />
+                  <Fact label="Evidence state" value="Sealed" />
                   <Fact
                     label="Publishing account"
-                    value={account ? accountDisplayName(account) : 'Notary Account'}
+                    value={account ? accountDisplayName(account) : 'Exalto account'}
                   />
                   <Fact label="Hosted artifact" value="Exact portable .llmtrace package" />
                   <Fact label="Visible" value="Prompts, responses, and disclosed tool data" />
@@ -1503,7 +1501,7 @@ function NotarizedTraceInspector({
                 <Text className="share-access-warning">
                   {shareVisibility === 'unlisted'
                     ? 'Unlisted is not private. Anyone with the URL can access an unprotected, unexpired Trace.'
-                    : 'Listed traces can appear in public Traces after verification.'}
+                    : 'Listed traces can appear in the Trace Catalogue after verification.'}
                 </Text>
                 {shareDialogMode !== 'create' && (
                   <AxisSelect
@@ -1603,8 +1601,8 @@ function NotarizedTraceInspector({
           <AlertDialogHeader>
             <AlertDialogTitle>Stop sharing this Trace?</AlertDialogTitle>
             <AlertDialogDescription>
-              The canonical public URL will become unavailable. The local Trace and its Notarized
-              state will not change or be deleted.
+              The canonical public URL will become unavailable. The local Trace and its Sealed state
+              will not change or be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1664,8 +1662,15 @@ function TraceTranscriptView({ transcripts }: { transcripts: TraceTranscript[] }
 }
 
 function TraceMessageView({ flow, message }: { flow: string; message: TraceMessage }) {
+  const normalizedRole = message.role.toLowerCase();
+  const attribution =
+    normalizedRole === 'user'
+      ? 'human'
+      : normalizedRole === 'assistant' || normalizedRole === 'model'
+        ? 'model'
+        : 'context';
   return (
-    <article className="trace-message">
+    <article className={`trace-message trace-message--${attribution}`}>
       <header>
         <span>{flow}</span>
         <b>{message.role}</b>

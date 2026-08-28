@@ -27,6 +27,9 @@ import { initialThemePreference } from './theme';
 
 afterEach(async () => {
   cleanup();
+  document.querySelectorAll('[data-test-metadata]').forEach((element) => {
+    element.remove();
+  });
   window.history.replaceState({}, '', '/');
   window.localStorage.removeItem('notary-theme');
   await page.viewport(1280, 900);
@@ -158,13 +161,13 @@ describe('hosted site', () => {
     await expect
       .element(download)
       .toHaveAttribute('href', '/downloads/releases/builds/build-123/Notary-macos-arm64.dmg');
-    await expect.element(download).toHaveAttribute('download', 'Notary-macos-arm64.dmg');
+    await expect.element(download).toHaveAttribute('download', 'Exalto-Capture-macos-arm64.dmg');
     await expect.element(page.getByText('Apple silicon · macOS 12+')).not.toBeInTheDocument();
     await expect
-      .element(page.getByRole('link', { name: 'build on the Notary stack' }))
+      .element(page.getByRole('link', { name: 'build on the Exalto Notary Protocol' }))
       .toHaveAttribute('href', '/docs/getting-started');
     expect(document.querySelector('.hero-developer-path')?.textContent).toBe(
-      'or, build on the Notary stack',
+      'or, build on the Exalto Notary Protocol',
     );
     await expect.element(page.getByRole('link', { name: 'Get started' })).not.toBeInTheDocument();
     await expect
@@ -183,9 +186,10 @@ describe('hosted site', () => {
 
     const productNav = document.querySelector('.product-nav');
     await expect
-      .element(page.getByRole('link', { name: 'Notary home' }))
+      .element(page.getByRole('link', { name: 'Exalto Seal home' }))
       .toHaveAttribute('href', '/');
-    await expect.element(page.getByText('Notary by Exalto')).toBeVisible();
+    expect(document.querySelector('.brand > span:last-child')?.textContent).toBe('Exalto Seal');
+    expect(document.querySelector('.footer-copyright b')?.textContent).toBe('Exalto Seal');
     expect(Array.from(productNav.querySelectorAll('a'), (link) => link.textContent)).toEqual([
       'Docs',
       'Pricing',
@@ -213,7 +217,7 @@ describe('hosted site', () => {
     await expect.element(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
     expect(window.location.pathname).toBe('/privacy');
     expect(window.location.hash).toBe('');
-    expect(document.title).toBe('Privacy · Notary by Exalto');
+    expect(document.title).toBe('Privacy · Exalto Seal');
   });
 
   test('explains hosted pricing in plain language on the landing page', async () => {
@@ -300,7 +304,7 @@ describe('hosted site', () => {
     await expect
       .element(page.getByRole('heading', { name: 'Settings', exact: true }))
       .toBeVisible();
-    expect(document.title).toBe('Settings · Notary by Exalto');
+    expect(document.title).toBe('Settings · Exalto Seal');
   });
 
   test('offers Google first and preserves a local-service return route', async () => {
@@ -332,7 +336,7 @@ describe('hosted site', () => {
     window.location.hash = '#/signin';
     render(<App loadCurrentUser={async () => null} />);
     await expect.element(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-    expect(document.title).toBe('Sign in · Notary by Exalto');
+    expect(document.title).toBe('Sign in · Exalto Seal');
 
     cleanup();
     window.location.hash = '#/dashboard/settings';
@@ -393,7 +397,7 @@ describe('hosted site', () => {
     await expect
       .element(page.getByRole('status').getByText('Loading sign-in options'))
       .toBeVisible();
-    await expect.element(page.getByText('Continue to Notary', { exact: true })).toBeVisible();
+    await expect.element(page.getByText('Continue to Exalto Seal', { exact: true })).toBeVisible();
 
     cleanup();
     render(
@@ -977,7 +981,7 @@ describe('hosted site', () => {
   test('shows the device, account, and code before approval', async () => {
     const loadApproval = async () => ({
       device_name: 'Research MacBook',
-      user_code: 'NOTARY-7K3',
+      user_code: '7A3C-91F2',
       expires_at: 1_786_000_000,
       capabilities: ['hosted_notarization', 'consume_credits', 'share_notarized_traces'],
     });
@@ -996,10 +1000,10 @@ describe('hosted site', () => {
     await expect.element(page.getByRole('heading', { name: 'Connect this device?' })).toBeVisible();
     await expect.element(page.getByText('Research MacBook')).toBeVisible();
     await expect.element(page.getByText('fixture-user')).toBeVisible();
-    await expect.element(page.getByText('NOTARY-7K3')).toBeVisible();
+    await expect.element(page.getByText('7A3C-91F2')).toBeVisible();
     await expect.element(page.getByText('Use hosted notarization')).toBeVisible();
     await expect.element(page.getByText('Consume account credits')).toBeVisible();
-    await expect.element(page.getByText('Share Notarized traces')).toBeVisible();
+    await expect.element(page.getByText('Share sealed traces')).toBeVisible();
     await expect
       .element(page.getByText(/Connecting does not upload existing local traces/))
       .toBeVisible();
@@ -1033,7 +1037,9 @@ describe('hosted site', () => {
     await expect
       .element(page.getByRole('heading', { name: 'Invalid authorization link' }))
       .toBeVisible();
-    await expect.element(page.getByText('Restart from the local Notary app')).toBeVisible();
+    await expect
+      .element(page.getByText('Restart the connection from Exalto Capture'))
+      .toBeVisible();
 
     cleanup();
     render(
@@ -1529,6 +1535,10 @@ describe('hosted site', () => {
   });
 
   test('puts the disclosed conversation before collapsible evidence and tools', async () => {
+    const descriptionMetadata = document.createElement('meta');
+    descriptionMetadata.name = 'description';
+    descriptionMetadata.dataset.testMetadata = 'true';
+    document.head.appendChild(descriptionMetadata);
     const loadShare = async () => ({
       trace_id: 'share-12',
       title: 'Compare these two evidence trails.',
@@ -1639,7 +1649,10 @@ describe('hosted site', () => {
     await page.getByText('Hashes and notary').click();
     await expect.element(page.getByText('4,096 bytes')).toBeVisible();
     await expect.element(page.getByText('c'.repeat(64))).toBeVisible();
-    expect(document.title).toBe('Compare these two evidence trails. · Notary by Exalto');
+    expect(document.title).toBe('Compare these two evidence trails. · Exalto Seal');
+    expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(
+      'Compare these two evidence trails. · anthropic claude-sonnet-4-6 · shared by fixture-user',
+    );
     expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toContain(
       'noindex',
     );
@@ -1664,7 +1677,10 @@ describe('hosted site', () => {
     await expect
       .element(page.getByRole('heading', { name: 'Compare these two evidence trails.' }))
       .toBeVisible();
-    expect(document.title).toBe('Shared trace · Notary by Exalto');
+    expect(document.title).toBe('Shared trace · Exalto Seal');
+    expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(
+      'A shared sealed trace from Exalto Seal.',
+    );
     expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toContain(
       'noindex',
     );
@@ -1743,7 +1759,7 @@ describe('hosted site', () => {
         page.getByRole('region', { name: 'Conversation' }).getByText('Prompt for protected-share'),
       )
       .toBeVisible();
-    expect(document.title).toBe('Shared trace · Notary by Exalto');
+    expect(document.title).toBe('Shared trace · Exalto Seal');
     expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toContain(
       'noindex',
     );
@@ -1789,7 +1805,7 @@ describe('hosted site', () => {
     expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toContain(
       'noindex',
     );
-    expect(document.title).toBe('Shared trace · Notary by Exalto');
+    expect(document.title).toBe('Shared trace · Exalto Seal');
   });
 
   test('manages access and unpublishes an admitted trace from the account', async () => {
@@ -1858,7 +1874,7 @@ describe('hosted site', () => {
     );
 
     await expect
-      .element(page.getByText('Notarized traces you’ve shared through Notary.'))
+      .element(page.getByText('Sealed traces you’ve shared through Exalto Seal.'))
       .toBeVisible();
     await expect.element(page.getByRole('link', { name: 'Open' })).toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Copy link' })).toBeVisible();

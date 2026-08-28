@@ -105,8 +105,8 @@ export function ListedTracesPreview({
         <span className="eyebrow">Public traces</span>
         <h2>Traces from the community.</h2>
         <p>
-          Notarized traces their publishers chose to list. Each one carries the notary evidence
-          needed to verify it independently.
+          Sealed traces their publishers chose to list. Each one carries the notary evidence needed
+          to verify it independently.
         </p>
       </div>
       {shares === null && !loadError ? (
@@ -148,7 +148,7 @@ export function ListedTracesPreview({
       ) : (
         <div className="collection-pending">
           <b>No traces have been shared publicly yet.</b>
-          <span>Listed Notarized traces will appear here after they’re shared.</span>
+          <span>Listed sealed traces will appear here after they’re shared.</span>
         </div>
       )}
       <a className="button button-dark" href="/traces">
@@ -1072,7 +1072,7 @@ export function PublicTraces({
       ) : (
         <section className="collection-empty">
           <b>No traces have been shared publicly yet.</b>
-          <p>Listed Notarized traces will appear here after they’re shared.</p>
+          <p>Listed sealed traces will appear here after they’re shared.</p>
           <a href="/docs/share">Learn how sharing works</a>
         </section>
       )}
@@ -1298,11 +1298,11 @@ export function PublicTracePage({
     if (!share && !passwordRequired && !loadError) return undefined;
     const indexable = share?.visibility === 'listed' && !share.password_protected;
     const title = indexable
-      ? `${share.title || share.model} · Notary by Exalto`
-      : 'Shared trace · Notary by Exalto';
+      ? `${share.title || share.model} · Exalto Seal`
+      : 'Shared trace · Exalto Seal';
     const description = indexable
-      ? `${share.title || 'A shared Notarized trace'} · ${share.provider} ${share.model} · shared by ${share.publisher}`
-      : 'A shared Notarized trace from Notary by Exalto.';
+      ? `${share.title || 'A shared sealed trace'} · ${share.provider} ${share.model} · shared by ${share.publisher}`
+      : 'A shared sealed trace from Exalto Seal.';
     document.title = title;
     const metadata = [
       document.head.querySelector('meta[name="description"]'),
@@ -1367,7 +1367,7 @@ export function PublicTracePage({
       metadata.forEach((element, index) => {
         element.content = previousMetadata[index];
       });
-      document.title = 'Notary by Exalto';
+      document.title = 'Exalto Seal';
     };
   }, [loadError, passwordRequired, share, traceId]);
   const unlock = async (event: FormEvent<HTMLFormElement>) => {
@@ -1428,7 +1428,7 @@ export function PublicTracePage({
           <h1>Open shared trace</h1>
           <p>
             This trace may require a password, or it may be expired, stopped, missing, or
-            unavailable. To protect access details, Notary does not distinguish these states.
+            unavailable. To protect access details, Exalto Seal does not distinguish these states.
           </p>
           <label htmlFor="share-password">Password</label>
           <Input
@@ -1526,7 +1526,7 @@ export function PublicTracePage({
     <main className="share-page">
       <header className="share-page-header">
         <div>
-          <h1>{share.title || 'Shared Notarized trace'}</h1>
+          <h1>{share.title || 'Shared sealed trace'}</h1>
           <p>
             <b>{share.publisher}</b>
             <span>

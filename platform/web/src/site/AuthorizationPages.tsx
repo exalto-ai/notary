@@ -34,7 +34,7 @@ function messageFrom(reason: unknown, fallback: string) {
 const deviceCapabilityLabels: Record<DeviceCapability, string> = {
   hosted_notarization: 'Use hosted notarization',
   consume_credits: 'Consume account credits',
-  share_notarized_traces: 'Share Notarized traces',
+  share_notarized_traces: 'Share sealed traces',
 };
 
 function AuthorizationPage({
@@ -65,7 +65,7 @@ function AuthorizationPage({
             <div
               className="cli-approval-path"
               role="img"
-              aria-label="Device connects to a Notary account"
+              aria-label="Device connects to an Exalto account"
             >
               <span>
                 <i aria-hidden="true" />
@@ -74,7 +74,7 @@ function AuthorizationPage({
               <b aria-hidden="true" />
               <span>
                 <i aria-hidden="true" />
-                Notary account
+                Exalto account
               </span>
             </div>
           </header>
@@ -138,10 +138,10 @@ export function DeviceAuthorizationApproval({
       <AuthorizationPage
         tone="attention"
         title="Invalid authorization link"
-        description={<p>Restart the connection from the local Notary app.</p>}
+        description={<p>Restart the connection from Exalto Capture.</p>}
         facts={[
           ['Request', 'Invalid or incomplete'],
-          ['Next step', 'Restart from the local Notary app'],
+          ['Next step', 'Restart from Exalto Capture'],
         ]}
       />
     );
@@ -175,12 +175,10 @@ export function DeviceAuthorizationApproval({
         tone="success"
         title="Device connected"
         description={
-          <p>
-            The local Notary app will finish connecting to this account. You can close this page.
-          </p>
+          <p>Exalto Capture will finish connecting to this account. You can close this page.</p>
         }
         facts={[
-          ['Device', details?.device_name || 'Local Notary device'],
+          ['Device', details?.device_name || 'Exalto Capture on this Mac'],
           ['Account', accountName(user)],
           ['Status', 'Connected'],
         ]}
@@ -191,11 +189,11 @@ export function DeviceAuthorizationApproval({
       <AuthorizationPage
         tone="attention"
         title="Connection unavailable"
-        description={<p role="alert">{error} Restart the connection from the local Notary app.</p>}
+        description={<p role="alert">{error} Restart the connection from Exalto Capture.</p>}
         facts={[
           ['Request', 'Needs attention'],
           ['Account', accountName(user)],
-          ['Next step', 'Restart from the local Notary app'],
+          ['Next step', 'Restart from Exalto Capture'],
         ]}
       />
     );

@@ -1,13 +1,14 @@
 const latestDownloadsRoot = '/downloads/releases';
 
-export const macosDmgName = 'Notary-macos-arm64.dmg';
+const macosReleaseObjectName = 'Notary-macos-arm64.dmg';
+export const macosDownloadName = 'Exalto-Capture-macos-arm64.dmg';
 
 export function latestMacosDownloadHref(pointer: string): string {
   const fields = String(pointer).trim().split(/\s+/);
   if (fields.length !== 2 || fields.some((field) => !/^[a-zA-Z0-9._-]+$/.test(field))) {
     throw new Error('The latest download pointer is invalid.');
   }
-  return `${latestDownloadsRoot}/builds/${fields[0]}/${macosDmgName}`;
+  return `${latestDownloadsRoot}/builds/${fields[0]}/${macosReleaseObjectName}`;
 }
 
 export async function loadLatestPointer(): Promise<string> {
