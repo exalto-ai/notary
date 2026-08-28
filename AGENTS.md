@@ -70,4 +70,6 @@ gh stack view --json
 - Treat generated OpenAPI as the exact HTTP contract. Regenerate clients and update every affected guide when a route, status, field, or authentication rule changes.
 - Use the settled product model: Notary (formally Notary by Exalto), a Trace as the evidence primitive, Captured and Notarized as its states, and notarization as an operation on a trace. `node scripts/check-terminology.mjs` enforces this repository-wide. When a retired name must stay — a negative test, an anti-regression rule, historical material — classify it in that script with the reason rather than weakening the rule.
 - Keep `README.md` short; put task and reference depth under `docs/`, and keep public-site copy and `platform/web/public/llms.txt` aligned with the same trust boundaries.
-- Prefer small, task-focused diffs. Update README or docs when CLI behavior, capture artifacts, trust assumptions, or deployment steps change.
+- Keep every PR narrow: address one specific bug, feature, or issue. Split unrelated changes into separate PRs.
+- Prefer the simplest solution that meets current requirements. Avoid speculative abstractions, infrastructure, and product features; push back when proposed code or product design adds complexity without clear, present value.
+- Update README or docs when CLI behavior, capture artifacts, trust assumptions, or deployment steps change.
