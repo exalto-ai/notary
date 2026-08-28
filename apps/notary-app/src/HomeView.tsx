@@ -33,7 +33,22 @@ export function HomeView({
     + state.counts.capture_failed;
   const hasCapturedTrace = traceTotal > 0;
   const hasSealedTrace = state.counts.notarized > 0;
-  const sealingServiceName = state.sealing_service?.name ?? 'Sealing service';
+  const sealingServiceName = state.sealing_service?.name ?? 'Exalto Seal';
+  const sealingPhase = state.sealing_service_readiness.phase;
+  const sealingReady = sealingPhase === 'ready';
+  const captureCanStart = sealingReady || (!state.running && sealingPhase === 'off');
+  const sealingStarting = sealingPhase === 'starting';
+  const sealingNeedsAttention = sealingPhase === 'unreachable'
+    || sealingPhase === 'trust_unavailable';
+  const sealingStatus = sealingReady
+    ? 'Ready'
+    : sealingStarting
+      ? 'Starting'
+      : sealingPhase === 'unreachable'
+        ? 'Unreachable'
+        : sealingPhase === 'trust_unavailable'
+          ? 'Trust unavailable'
+          : 'Service off';
 
   return <div className="native-page capture-page">
     <section className={`capture-console ${recording ? 'is-recording' : ''}`}>
@@ -51,17 +66,38 @@ export function HomeView({
         ? <button className="mac-button capture-button is-stop" onClick={onStopCapture} disabled={busy !== null}>
           <Square size={12} /> {busy === 'capture-stop' ? 'Stopping…' : 'Stop capturing'}
         </button>
-        : <button className="mac-button capture-button is-primary" onClick={onStartCapture} disabled={busy !== null}>
+        : <button
+          className="mac-button capture-button is-primary"
+          onClick={onStartCapture}
+          disabled={busy !== null || !captureCanStart}
+          title={sealingReady
+            ? 'Start capturing'
+            : captureCanStart
+              ? 'Start the local service and connect its trusted capture transport.'
+            : 'Capture requires a reachable trusted transport. No Exalto Seal account is required.'}
+        >
           <Play size={14} /> {busy === 'capture-start' ? 'Starting…' : 'Start capturing'}
         </button>}
     </section>
 
     {(notice || state.message) && <div className="native-notice">{notice ?? state.message}</div>}
 
-    {state.running && !state.sealing_service && <div className="capture-warning" role="status">
-      <strong>Sealing service is unavailable</strong>
-      <span>Do not rely on a new trace until a sealing service is reachable.</span>
-      <div>
+    {sealingStarting && <div className="capture-warning is-starting" role="status">
+      <div className="capture-warning-copy">
+        <strong>{sealingServiceName} is starting</strong>
+        <span>Checking the trusted capture transport. Capture will be available when this check succeeds. An Exalto Seal account is not required.</span>
+      </div>
+    </div>}
+
+    {sealingNeedsAttention && <div className="capture-warning" role="status">
+      <div className="capture-warning-copy">
+        <strong>{sealingPhase === 'unreachable' ? `${sealingServiceName} cannot be reached` : 'Sealing trust needs attention'}</strong>
+        <span>{state.sealing_service_readiness.message ?? (sealingPhase === 'unreachable'
+          ? 'The trusted endpoint did not complete its transport handshake.'
+          : 'The configured trust source did not resolve a trusted sealing endpoint.')}</span>
+        <span>Capture needs this trusted transport, but it does not require an Exalto Seal account. Restore the connection, then start capturing.</span>
+      </div>
+      <div className="capture-warning-actions">
         <button type="button" onClick={onRetryConnections}>Try again</button>
         <button type="button" onClick={() => onNavigate('settings')}>Review sealing status</button>
       </div>
@@ -95,11 +131,11 @@ export function HomeView({
           </button>
         </div>
         <section className="capture-route-card">
-          <header><span className="section-label">What crosses each boundary</span><strong>{state.sealing_service ? `${sealingServiceName} receives ciphertext.` : 'A configured sealing service receives ciphertext.'} Plaintext stays between this Mac and the provider.</strong></header>
+          <header><span className="section-label">What crosses each boundary</span><strong>{sealingReady ? `${sealingServiceName} is ready to receive ciphertext.` : `${sealingServiceName} is not used until it is ready.`} Plaintext stays between this Mac and the provider.</strong></header>
           <div className="native-route">
             <RouteStop title="AI client" detail="Credential and plaintext" active={state.running} tone="local" />
             <RouteStop title="This Mac" detail="Private capture" active={recording} tone="local" />
-            <RouteStop title={sealingServiceName} detail={recording ? 'Ciphertext only' : 'Not used'} active={recording} tone="seal" />
+            <RouteStop title={sealingServiceName} detail={recording && sealingReady ? 'Ciphertext only' : 'Not used'} active={recording && sealingReady} tone="seal" />
             <RouteStop title="Provider" detail="Authenticated request" active={state.running} tone="seal" />
           </div>
         </section>
@@ -115,7 +151,7 @@ export function HomeView({
           <header><div><span className="section-label">Privacy and storage</span><h2>{vault.label}</h2></div><ShieldCheck size={18} aria-hidden="true" /></header>
           <p>{vault.detail}</p>
           <dl>
-            <div><dt>Sealing service</dt><dd>{state.sealing_service?.name ?? 'Unavailable'}</dd></div>
+            <div><dt>Sealing service</dt><dd>{`${sealingServiceName} · ${sealingStatus}`}</dd></div>
             <div><dt>Local route</dt><dd><code>{state.proxy_listener}</code></dd></div>
           </dl>
         </section>

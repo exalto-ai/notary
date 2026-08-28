@@ -548,16 +548,23 @@ h1, h2, p { margin: 0; }
 }
 .native-window .capture-warning {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 18px;
+  padding: 13px 14px;
   border-color: rgba(168, 101, 38, .28);
   background: rgba(168, 101, 38, .08);
   color: var(--secondary);
 }
-.native-window .capture-warning strong { color: var(--orange); font-size: 11px; }
-.native-window .capture-warning > div { display: flex; align-items: center; justify-content: flex-end; gap: 11px; }
+.native-window .capture-warning-copy { display: grid; gap: 3px; line-height: 1.4; }
+.native-window .capture-warning strong { color: var(--orange); font-size: 12px; }
+.native-window .capture-warning.is-starting {
+  grid-template-columns: minmax(0, 1fr);
+  border-color: rgba(30, 74, 115, .24);
+  background: var(--blue-soft);
+}
+.native-window .capture-warning.is-starting strong { color: var(--blue); }
+.native-window .capture-warning-actions { display: flex; align-items: center; justify-content: flex-end; gap: 11px; padding-top: 2px; }
 .native-window .capture-warning button { padding: 0 0 2px; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--text); font-size: 11px; white-space: nowrap; }
 
 .native-window .capture-workflow {
@@ -789,7 +796,7 @@ h1, h2, p { margin: 0; }
   .native-window .workflow-step:nth-child(4) { border-top: 1px solid var(--separator-soft); }
   .native-window .capture-side-stack { grid-template-columns: 1fr; }
   .native-window .capture-warning { grid-template-columns: 1fr; }
-  .native-window .capture-warning > div { justify-content: flex-start; }
+  .native-window .capture-warning-actions { justify-content: flex-start; }
 }
 
 @media (prefers-color-scheme: dark) {

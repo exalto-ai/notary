@@ -971,6 +971,47 @@ export function createFixtureApi({
     return Number.isFinite(position) ? position : undefined;
   };
   const cursor = (kind: string, position: number) => `fixture:${kind}:${position}`;
+  const traceDeletionSkipReason = (
+    capture: TraceSummary,
+  ): 'capture_active' | 'sealing_active' | 'share_active' | null => {
+    if (capture.status === 'capturing') return 'capture_active';
+    if (
+      capture.status === 'notarizing' ||
+      operations.some(
+        (operation) =>
+          operation.trace_id === capture.trace_id &&
+          (operation.state === 'queued' || operation.state === 'running'),
+      )
+    ) {
+      return 'sealing_active';
+    }
+    if (
+      [...shares.values()].some(
+        (share) =>
+          share.captureId === capture.trace_id &&
+          (share.progress === 'verifying' || share.accessEnabled),
+      )
+    ) {
+      return 'share_active';
+    }
+    return null;
+  };
+  const removeTrace = (captureId: string) => {
+    const operationIds = new Set(
+      operations
+        .filter((operation) => operation.trace_id === captureId)
+        .map((operation) => operation.operation_id),
+    );
+    captures = captures.filter((capture) => capture.trace_id !== captureId);
+    operations = operations.filter((operation) => operation.trace_id !== captureId);
+    events = events.filter(
+      (event) => event.trace_id !== captureId && !operationIds.has(event.operation_id ?? ''),
+    );
+    traces.delete(captureId);
+    for (const [shareId, share] of shares) {
+      if (share.captureId === captureId) shares.delete(shareId);
+    }
+  };
   return {
     session: async () => undefined,
     endSession: async () => undefined,
@@ -1060,6 +1101,21 @@ export function createFixtureApi({
         operations,
         share ? fixtureShare(share[0], share[1]) : null,
       );
+    },
+    deleteTrace: async (captureId) => {
+      const capture = captures.find((item) => item.trace_id === captureId);
+      if (!capture) return;
+      const reason = traceDeletionSkipReason(capture);
+      if (reason) {
+        const code =
+          reason === 'capture_active'
+            ? 'trace_capture_active'
+            : reason === 'sealing_active'
+              ? 'trace_sealing_active'
+              : 'trace_share_active';
+        throw new LocalApiError(409, code, 'Trace cannot be deleted while work is active');
+      }
+      removeTrace(captureId);
     },
     startNotarization: async (captureId) => {
       const capture = captures.find((item) => item.trace_id === captureId);

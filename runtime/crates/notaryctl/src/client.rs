@@ -195,6 +195,18 @@ pub struct NotaryTrustRecord {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct NotaryReadiness {
+    pub phase: String,
+    pub source: String,
+    pub configured: bool,
+    pub trusted: bool,
+    pub reachable: bool,
+    pub transport: Option<String>,
+    pub checked_at_unix_ms: u64,
+    pub message: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UpdateStatus {
     pub enabled: bool,
     pub current_build_id: String,
@@ -471,6 +483,18 @@ impl NotarydClient {
     pub async fn notary_trust(&self) -> Result<NotaryTrust, CliError> {
         self.request_model(Method::GET, "/v1/notaries", &[], None)
             .await
+    }
+
+    /// Probe the trusted Notary's TCP/TLS transport without starting an
+    /// admission, capture, sealing, or billable operation.
+    pub async fn notary_readiness(&self, refresh: bool) -> Result<NotaryReadiness, CliError> {
+        self.request_model(
+            Method::GET,
+            "/v1/notaries/readiness",
+            &[("refresh".into(), refresh.to_string())],
+            None,
+        )
+        .await
     }
 
     /// Fetch a bounded newest-first summary used to confirm one onboarding capture.

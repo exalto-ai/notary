@@ -19,9 +19,12 @@ import { LoadingWindow, VaultUnlock } from './LockedState';
 import { Onboarding } from './Onboarding';
 import {
   StatusDot,
+  pendingFirstProofTarget,
+  persistPendingFirstProof,
   viewMeta,
   workspaceRoutes,
   type TraceConstraint,
+  type TraceTarget,
   type View,
 } from './product';
 import { Sidebar, WorkspaceFrame } from './Shell';
@@ -49,6 +52,7 @@ function App() {
   const requestedView = query.get('view') as View | null;
   const [view, setView] = useState<View>(requestedView && requestedView in viewMeta ? requestedView : 'home');
   const [traceConstraint, setTraceConstraint] = useState<TraceConstraint | null>(null);
+  const [traceTarget, setTraceTarget] = useState<TraceTarget | null>(pendingFirstProofTarget);
   const [state, setState] = useState<DesktopState | null>(null);
   const [updateState, setUpdateState] = useState<DesktopUpdateState | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -58,10 +62,11 @@ function App() {
   const [sensitiveInputGeneration, setSensitiveInputGeneration] = useState(0);
   const [setupResumeError, setSetupResumeError] = useState<string | null>(null);
   const disposableTestInProgress = useRef(false);
+  const pendingFirstProofApplied = useRef(false);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (refreshSealingService = false) => {
     try {
-      setState(await getDesktopState());
+      setState(await getDesktopState(refreshSealingService));
     } catch (error) {
       setNotice(errorMessage(error));
     }
@@ -72,6 +77,17 @@ function App() {
     const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, [refresh]);
+
+  useEffect(() => {
+    if (!state?.onboarding_complete || setupOpen || pendingFirstProofApplied.current) return;
+    pendingFirstProofApplied.current = true;
+    const target = pendingFirstProofTarget();
+    if (!target) return;
+    setTraceConstraint(null);
+    setTraceTarget(target);
+    setView('traces');
+    setWorkspaceNavigationRevision((current) => current + 1);
+  }, [setupOpen, state?.onboarding_complete]);
 
   useEffect(() => {
     const resetSensitiveInputs = (event: Event) => {
@@ -192,6 +208,28 @@ function App() {
 
   const startCapturing = async () => {
     if (!state?.running) await startDaemon();
+    let currentState: DesktopState | null = null;
+    let readinessError: unknown = null;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      try {
+        currentState = await getDesktopState(true);
+        setState(currentState);
+        readinessError = null;
+        if (currentState.sealing_service_readiness.phase === 'ready') break;
+        if (
+          currentState.sealing_service_readiness.phase === 'unreachable'
+          || currentState.sealing_service_readiness.phase === 'trust_unavailable'
+        ) break;
+      } catch (error) {
+        readinessError = error;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 250));
+    }
+    if (currentState?.sealing_service_readiness.phase !== 'ready') {
+      throw readinessError ?? new Error(
+        'Capture needs a reachable trusted transport. No Exalto Seal account is required. Try the connection again before capturing.',
+      );
+    }
     let lastError: unknown = null;
     for (let attempt = 0; attempt < 12; attempt += 1) {
       try {
@@ -238,9 +276,12 @@ function App() {
         setSetupOpen(false);
         setSetupResumeError(null);
       } : undefined}
-      onFinish={(next) => {
+      onFinish={(next, target) => {
         setSetupOpen(false);
         setSetupResumeError(null);
+        setTraceConstraint(null);
+        persistPendingFirstProof(target?.action === 'first-proof' ? target : null);
+        setTraceTarget(target ?? null);
         setView(next);
       }}
     />;
@@ -250,6 +291,7 @@ function App() {
   const meta = viewMeta[view];
   const navigate = (next: View) => {
     setTraceConstraint(null);
+    setTraceTarget(null);
     setView(next);
     if (workspaceRoutes[next]) {
       setWorkspaceNavigationRevision((current) => current + 1);
@@ -257,10 +299,12 @@ function App() {
   };
   const syncWorkspaceRoute = (next: View) => {
     setTraceConstraint(null);
+    setTraceTarget(null);
     setView(next);
   };
   const openTraces = (constraint: TraceConstraint) => {
     setTraceConstraint(constraint);
+    setTraceTarget(null);
     setView('traces');
   };
   const allowLegacyWorkspace = Boolean(
@@ -334,7 +378,7 @@ function App() {
               onOpenTraces={openTraces}
               onStartCapture={() => void runAction('capture-start', startCapturing, 'Capture is on.')}
               onStopCapture={() => void runAction('capture-stop', async () => { await setCaptureEnabled(false); }, 'Capture is off.')}
-              onRetryConnections={() => void refresh()}
+              onRetryConnections={() => void refresh(true)}
             />
           )}
           {view === 'settings' && <SettingsView
@@ -353,10 +397,20 @@ function App() {
               key={workspaceNavigationRevision}
               route={route}
               constraint={route === 'traces' ? traceConstraint : null}
+              traceTarget={route === 'traces' ? traceTarget : null}
               running={state.running}
               onStartService={() => void runAction('service-start', startLocalService, 'Local service is running. Capture remains off.')}
               serviceStarting={busy === 'service-start'}
               onRouteChange={syncWorkspaceRoute}
+              onTraceActionConsumed={(traceId, action) => {
+                if (
+                  action !== 'first-proof'
+                  || traceTarget?.action !== action
+                  || traceTarget.traceId !== traceId
+                ) return;
+                persistPendingFirstProof(null);
+                setTraceTarget(null);
+              }}
               allowLegacyFrameLoadFallback={allowLegacyWorkspace}
             />
           )}

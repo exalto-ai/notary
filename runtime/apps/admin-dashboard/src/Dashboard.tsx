@@ -278,6 +278,18 @@ export function Dashboard({
     closeNav();
     goTo(next);
   };
+  const consumeTraceAction = (traceId: string, action: 'first-proof') => {
+    if (embedded) {
+      window.parent.postMessage(
+        {
+          type: 'notary:desktop-trace-action-consumed',
+          payload: { traceId, action },
+        },
+        '*',
+      );
+    }
+    goTo({ view: 'traces', id: traceId });
+  };
 
   if (statusQuery.isLoading) return <LoadingState label="Connecting to the local service" />;
   if (statusQuery.error && (statusQuery.error as LocalApiError).status === 401) {
@@ -301,6 +313,7 @@ export function Dashboard({
           navigate={navigate}
           fixture={fixture}
           embedded
+          onTraceActionConsumed={consumeTraceAction}
           desktopBridge={desktopBridge}
         />
       </main>
@@ -335,6 +348,7 @@ export function Dashboard({
           navigate={navigate}
           fixture={fixture}
           embedded={false}
+          onTraceActionConsumed={consumeTraceAction}
           desktopBridge={desktopBridge}
         />
       </AppShell.Main>
@@ -348,6 +362,7 @@ function View({
   api,
   navigate,
   embedded,
+  onTraceActionConsumed,
   desktopBridge,
 }: {
   route: Route;
@@ -356,6 +371,7 @@ function View({
   navigate: (route: Route) => void;
   fixture: boolean;
   embedded: boolean;
+  onTraceActionConsumed: (traceId: string, action: 'first-proof') => void;
   desktopBridge: {
     state: DesktopSettingsState | null;
     send: (action: DesktopSettingsAction) => void;
@@ -367,8 +383,10 @@ function View({
         <TracesView
           api={api}
           selectedId={route.id}
+          initialAction={route.action}
           initialFilters={route.filters}
           navigate={navigate}
+          onTraceActionConsumed={onTraceActionConsumed}
         />
       );
     case 'activity':
