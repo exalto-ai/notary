@@ -36,10 +36,10 @@ const rules = [
   {
     label: 'retired brand or first-party identifier',
     // Separator-optional and case-insensitive: LLMNotary, LLM NOTARY, and
-    // llm-notary are all the retired brand.
-    pattern: /llm[\s_-]*notary/gi,
+    // llm-notary are all the retired brand. The exact temporary public host is
+    // a routing identifier, not product copy.
+    pattern: /llm[\s_-]*notary(?!\.exalto\.ai)/gi,
   },
-  { label: 'retired public origin', pattern: /llm-notary\.exalto\.ai/gi },
   {
     label: 'retired release namespace',
     // Matches the release prefix with or without the /downloads/ mount point,
