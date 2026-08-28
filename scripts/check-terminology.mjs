@@ -1,11 +1,12 @@
-// Repository-wide brand and terminology audit for the Notary product model.
+// Repository-wide brand and terminology audit for the Exalto product model.
 //
 // The check is semantic, not a blind ban. "Capture" stays valid wherever it
 // names a real capture operation, checkpoint, capture-specific storage, or
 // usage meter, so it is not scanned at all. What is scanned is the vocabulary
-// the product deliberately retired: the old brand, the old public origin, the
-// old release namespace, retired executable names, and Finalize/Finalization
-// as product terminology.
+// the product deliberately retired: the old brand, old release namespace,
+// retired executable names, and Finalize/Finalization as product terminology.
+// The temporary llm-notary.exalto.ai hostname remains valid while hosted
+// Exalto Seal routes move to their permanent origin.
 //
 // Text that must keep naming a retired identifier — negative tests that assert
 // old formats fail, anti-regression rules, and historical material — is
@@ -34,6 +35,10 @@ const excludedPatterns = [
 
 const rules = [
   {
+    label: 'retired public product name',
+    pattern: /\bNotary by Exalto\b/g,
+  },
+  {
     label: 'retired brand or first-party identifier',
     // Separator-optional and case-insensitive: LLMNotary, LLM NOTARY, and
     // llm-notary are all the retired brand. The exact temporary public host is
@@ -61,6 +66,16 @@ const rules = [
 // A match is allowed only when the file is listed here and the matched line
 // contains the given text. Every entry states why the retired name must stay.
 const classified = [
+  {
+    file: 'DESIGN.md',
+    contains: 'Notary by Exalto',
+    reason: 'the latest design guide documents the current transitional Axis name',
+  },
+  {
+    file: 'platform/web/scripts/test-brand.mjs',
+    contains: "'Notary by Exalto'",
+    reason: 'asserts the retired public product name never reappears',
+  },
   {
     file: 'platform/crates/notary-api/src/config.rs',
     contains: 'LLM_NOTARY_',

@@ -3,7 +3,7 @@ name = "notary-api"
 version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-description = "Hosted Notary platform API"
+description = "Hosted Exalto Seal API"
 default-run = "notary-api"
 
 [features]

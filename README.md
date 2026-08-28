@@ -1,8 +1,8 @@
-# Notary
+# Exalto Capture and Exalto Seal
 
-**Notary by Exalto** creates selectively disclosed, independently verifiable evidence for model-provider HTTP exchanges. The local proxy handles provider plaintext and credentials; the remote notary witnesses the authenticated TLS session without receiving either, so a notarized `.llmtrace` package is verifiable against the notary's public key by anyone.
+**Exalto Capture** creates selectively disclosed evidence for model-provider HTTP exchanges on your Mac. **Exalto Seal**, or another compatible notary, witnesses the authenticated TLS session without receiving provider plaintext or credentials. The resulting `.llmtrace` package is independently verifiable against the notary's public key.
 
-A **Trace** is the evidence primitive. A trace is **Captured** while only its private `.llmcapture` checkpoint exists, and becomes **Notarized** once notarization commits a portable `.llmtrace` package. Sharing is a separate explicit action on a notarized trace.
+A **Trace** is the evidence primitive. A trace is **Captured** while only its private `.llmcapture` checkpoint exists, and becomes **Sealed** once a notary commits a portable `.llmtrace` package. Sharing is a separate explicit action. Runtime APIs retain the `notarized` state and notarization operation names for protocol compatibility.
 
 ## Components
 

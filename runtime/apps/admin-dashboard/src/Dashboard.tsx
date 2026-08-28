@@ -96,7 +96,7 @@ function AuthGate({ api, onAuthenticated }: { api: LocalApi; onAuthenticated: ()
     <main className="auth-shell">
       <section className="auth-document">
         <Brand />
-        <Text className="eyebrow">Notary administration</Text>
+        <Text className="eyebrow">Exalto Capture administration</Text>
         <Title order={1}>Sign in</Title>
         <Text className="auth-copy">
           This service requires the credentials configured under admin.auth.
@@ -145,7 +145,7 @@ function Brand() {
       <span className="local-mark" aria-hidden="true">
         <img src={logoUrl} alt="" width={30} height={30} />
       </span>
-      <span>Notary</span>
+      <span>Exalto Capture</span>
     </div>
   );
 }
@@ -251,6 +251,23 @@ export function Dashboard({
     desktopSettings,
     onDesktopSettingsAction,
   );
+  useEffect(() => {
+    if (!embedded) return;
+    const publishRoute = () => {
+      window.parent.postMessage(
+        { type: 'notary:desktop-route-change', payload: { view: route.view } },
+        '*',
+      );
+    };
+    const receiveReadyRequest = (event: MessageEvent) => {
+      if (event.source === window.parent && event.data?.type === 'notary:desktop-ready-request') {
+        publishRoute();
+      }
+    };
+    window.addEventListener('message', receiveReadyRequest);
+    publishRoute();
+    return () => window.removeEventListener('message', receiveReadyRequest);
+  }, [embedded, route.view]);
   const statusQuery = useQuery({
     queryKey: ['status'],
     queryFn: api.status,

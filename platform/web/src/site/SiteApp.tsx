@@ -28,7 +28,7 @@ import '../verification.css';
 import '../sharing.css';
 import { getAuthProviders, getCurrentUser, logoutBrowser } from '../platform-api/client';
 import { RelayAnimation } from '../RelayAnimation';
-import { latestMacosDownloadHref, loadLatestPointer, macosDmgName } from '../releaseDownloads';
+import { latestMacosDownloadHref, loadLatestPointer, macosDownloadName } from '../releaseDownloads';
 import { AccountSettings, ApiKeysPanel, Dashboard, DeleteAccountPanel } from './AccountDashboard';
 import {
   DeviceAuthorizationApproval,
@@ -80,7 +80,7 @@ export function MacosDownloadLink({
     <a
       className="button button-dark hero-download"
       href={downloadHref || '/docs/getting-started'}
-      download={downloadHref ? macosDmgName : undefined}
+      download={downloadHref ? macosDownloadName : undefined}
       aria-busy={!downloadHref && !unavailable}
     >
       <img src={appleLogoUrl} alt="" aria-hidden="true" />
@@ -341,8 +341,8 @@ export function Header({
 }) {
   return (
     <header className="nav-wrap">
-      <a className="brand" href="/" aria-label="Notary home">
-        <PenMark /> <span>Notary</span>
+      <a className="brand" href="/" aria-label="Exalto Seal home">
+        <PenMark /> <span>Exalto Seal</span>
       </a>
       <nav className="product-nav">
         <a href="/docs">Docs</a>
@@ -471,7 +471,7 @@ export function SignInPage({
     <main className="auth-page">
       <section className="auth-panel" aria-labelledby="sign-in-title">
         <h1 id="sign-in-title">Sign in</h1>
-        <p className="auth-intro">Continue to Notary</p>
+        <p className="auth-intro">Continue to Exalto Seal</p>
         {error ? (
           <div className="auth-state" role="alert">
             <b>Sign-in options are unavailable</b>
@@ -519,7 +519,7 @@ export function Footer() {
   return (
     <footer className="site-footer">
       <span className="footer-copyright">
-        <b>Notary</b> <small>by Exalto</small> <span>· © 2026</span>
+        <b>Exalto Seal</b> <span>· © 2026</span>
       </span>
       <nav aria-label="Footer">
         <a href="/verify">Verify</a>
@@ -537,7 +537,7 @@ const legalPages = {
     eyebrow: 'Legal · Privacy',
     title: 'Privacy Policy',
     intro:
-      'This policy explains the information handled by Notary by Exalto, its Trace-sharing service, and local tooling.',
+      'This policy explains the information handled by Exalto Seal and Exalto Capture, including the hosted Trace-sharing service and local tooling.',
     sections: [
       [
         'Local capture stays local',
@@ -577,7 +577,7 @@ const legalPages = {
       ],
       [
         'Your choices',
-        'You choose whether a shared Trace is Unlisted or Listed. Both start accessible to anyone with the link; Unlisted only keeps it out of public Traces. After admission, you can stop sharing, require a password, or set an expiry. Keep private capture checkpoints and credentials under your control. For privacy questions or requests, contact the Notary operator through the project’s support channel.',
+        'You choose whether a shared Trace is Unlisted or Listed. Both start accessible to anyone with the link; Unlisted only keeps it out of public Traces. After admission, you can stop sharing, require a password, or set an expiry. Keep private capture checkpoints and credentials under your control. For privacy questions or requests, contact the Exalto Seal operator through the project’s support channel.',
       ],
       [
         'Updates',
@@ -589,11 +589,11 @@ const legalPages = {
     eyebrow: 'Legal · Terms',
     title: 'Terms of Service',
     intro:
-      'These terms govern your use of Notary by Exalto, its local tooling, and Trace-sharing service.',
+      'These terms govern your use of Exalto Seal, Exalto Capture, the local tooling, and the Trace-sharing service.',
     sections: [
       [
         'Using the service',
-        'Use Notary lawfully and only with content, credentials, and provider accounts you are authorized to use. Do not interfere with the service, bypass access controls, or submit material that infringes the rights of others.',
+        'Use Exalto Seal and Exalto Capture lawfully and only with content, credentials, and provider accounts you are authorized to use. Do not interfere with the service, bypass access controls, or submit material that infringes the rights of others.',
       ],
       [
         'Your shared Traces',
@@ -782,7 +782,7 @@ export function Landing({ loadLatestPointer: loadPointer = loadLatestPointer }) 
         <div className="hero-actions">
           <MacosDownloadLink loadPointer={loadPointer} />
           <p className="hero-developer-path">
-            or, <a href="/docs/getting-started">build on the Notary stack</a>
+            or, <a href="/docs/getting-started">build on the Exalto Notary Protocol</a>
           </p>
         </div>
       </section>
@@ -1025,10 +1025,10 @@ export function App({
             : 'Account';
     const sectionTitle = section === 'account' ? accountTitle : titles[section];
     document.title = directTraceId
-      ? 'Shared trace · Notary by Exalto'
+      ? 'Shared trace · Exalto Seal'
       : sectionTitle
-        ? `${sectionTitle} · Notary by Exalto`
-        : 'Notary by Exalto';
+        ? `${sectionTitle} · Exalto Seal`
+        : 'Exalto Seal';
   }, [directTraceId, page, section]);
   return (
     <>

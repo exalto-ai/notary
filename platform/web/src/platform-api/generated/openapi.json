@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Notary platform API",
-    "description": "Account, Device, hosted Trace, public Trace, Registry, verification, admission, usage, credits, and billing API for Notary by Exalto. This contract is separate from the loopback local administration API.",
+    "title": "Exalto Seal API",
+    "description": "Account, Device, hosted Trace, public Trace, Registry, verification, admission, usage, credits, and billing API for Exalto Seal. This contract is separate from the loopback local administration API.",
     "license": {
       "name": "MIT OR Apache-2.0",
       "identifier": "MIT OR Apache-2.0"
@@ -12,7 +12,7 @@
   "servers": [
     {
       "url": "https://notary.exalto.ai",
-      "description": "Notary by Exalto"
+      "description": "Exalto Seal"
     }
   ],
   "paths": {
@@ -21,7 +21,7 @@
         "tags": [
           "account"
         ],
-        "summary": "Get the current Notary account",
+        "summary": "Get the current Exalto account",
         "operationId": "account",
         "responses": {
           "200": {
@@ -65,7 +65,7 @@
         "tags": [
           "account"
         ],
-        "summary": "Delete the current Notary account and hosted data",
+        "summary": "Delete the current Exalto account and hosted data",
         "operationId": "delete_account",
         "requestBody": {
           "content": {
@@ -5948,7 +5948,7 @@
   "tags": [
     {
       "name": "health",
-      "description": "Notary platform health"
+      "description": "Exalto Seal platform health"
     },
     {
       "name": "browser-auth",

@@ -381,7 +381,7 @@ async fn list_public_traces(
                     trace.model
                 },
                 publisher: if protected {
-                    "Notary by Exalto".to_owned()
+                    "Exalto Seal".to_owned()
                 } else {
                     trace.publisher
                 },
@@ -1425,7 +1425,7 @@ mod tests {
             .unwrap();
         assert_eq!(protected.provider, "protected");
         assert_eq!(protected.model, "Shared trace");
-        assert_eq!(protected.publisher, "Notary by Exalto");
+        assert_eq!(protected.publisher, "Exalto Seal");
         assert!(protected.title.is_none());
         assert!(protected.shared_at.is_none());
         assert!(protected.authenticated_at_unix_ms.is_none());

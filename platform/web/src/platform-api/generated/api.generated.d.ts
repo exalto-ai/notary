@@ -11,11 +11,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the current Notary account */
+        /** Get the current Exalto account */
         get: operations["account"];
         put?: never;
         post?: never;
-        /** Delete the current Notary account and hosted data */
+        /** Delete the current Exalto account and hosted data */
         delete: operations["delete_account"];
         options?: never;
         head?: never;

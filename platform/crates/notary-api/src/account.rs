@@ -117,7 +117,7 @@ pub(super) fn router() -> OpenApiRouter<NotaryApiState> {
 #[utoipa::path(
     get,
     path = "/api/account",
-    summary = "Get the current Notary account",
+    summary = "Get the current Exalto account",
     responses(
         (status = 200, body = AccountResponse),
         (status = 401, body = ErrorResponse),
@@ -240,7 +240,7 @@ async fn usage(
 #[utoipa::path(
     delete,
     path = "/api/account",
-    summary = "Delete the current Notary account and hosted data",
+    summary = "Delete the current Exalto account and hosted data",
     request_body = DeleteAccountRequest,
     responses(
         (status = 204, description = "Account deleted", headers(("Set-Cookie" = String))),

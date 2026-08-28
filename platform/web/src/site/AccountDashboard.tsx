@@ -1852,7 +1852,7 @@ export function Dashboard({
               <header className="dashboard-page-header">
                 <span className="eyebrow">Account</span>
                 <h1>Traces</h1>
-                <p>Notarized traces you’ve shared through Notary.</p>
+                <p>Sealed traces you’ve shared through Exalto Seal.</p>
               </header>
               <section className="dashboard-traces" aria-label="Your traces">
                 {shareError && (
