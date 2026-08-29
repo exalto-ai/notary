@@ -237,7 +237,7 @@ type ApiResult<T> = std::result::Result<T, ApiError>;
         version = "1.0.0",
         description = "Account, Device, hosted Trace, public Trace, Registry, verification, admission, usage, credits, and billing API for Exalto Seal. This contract is separate from the loopback local administration API."
     ),
-    servers((url = "https://notary.exalto.ai", description = "Exalto Seal")),
+    servers((url = "https://seal.exalto.ai", description = "Exalto Seal")),
     modifiers(&SecurityAddon),
     tags(
         (name = "health", description = "Exalto Seal platform health"),
@@ -1146,7 +1146,7 @@ mod tests {
             500
         );
         assert_eq!(document["info"]["title"], "Exalto Seal API");
-        assert_eq!(document["servers"][0]["url"], "https://notary.exalto.ai");
+        assert_eq!(document["servers"][0]["url"], "https://seal.exalto.ai");
         for removed in [
             "/api/me",
             "/api/cli/authorizations",

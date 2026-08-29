@@ -5,7 +5,7 @@ API Machines and one 256 MB shared-CPU web Machine remain running continuously;
 the notary Machine keeps its suspend-on-idle behavior:
 
 ```text
-internet ── HTTPS ──> notary.exalto.ai
+internet ── HTTPS ──> seal.exalto.ai
                               │
                               └── Flycast HTTP ──> llm-notary-prod-api
 
@@ -77,10 +77,11 @@ The API also needs at least one browser OAuth client and the canonical Registry
 containing the notary signing-key history. Google is the primary sign-in path; stage
 `NOTARY_API_GOOGLE_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET_B64` on the API and set
 its Web application callback to
-`https://notary.exalto.ai/api/auth/google/callback`. The requested Google
-scopes are only `openid`, `email`, and `profile`. Keep the existing GitHub
-credentials and `https://notary.exalto.ai/api/auth/github/callback` while
-GitHub-backed accounts still need access.
+`https://seal.exalto.ai/api/auth/google/callback`. The requested Google scopes
+are only `openid`, `email`, and `profile`. Register the matching GitHub callback
+at `https://seal.exalto.ai/api/auth/github/callback`. Keep the retired
+`notary.exalto.ai` callbacks registered until its redirect has been live long
+enough for active sign-in attempts to complete.
 
 These are Fly runtime secrets, not GitHub Actions secrets. Stage them before
 merging so the current release is not restarted. When Google supplies a
@@ -98,8 +99,9 @@ Treat a client secret pasted into chat, logs, or shell arguments as compromised:
 delete it in Google Cloud, create a replacement, and import only the replacement.
 
 Create the Stripe webhook endpoint at
-`https://notary.exalto.ai/api/billing/stripe/webhook` and pin it to API
-version `2026-02-25.clover`. Subscribe only to these events:
+`https://seal.exalto.ai/api/billing/stripe/webhook` and pin it to API version
+`2026-02-25.clover`. Stage its new signing secret before the API uses the Seal
+origin. Subscribe only to these events:
 
 - `checkout.session.completed`
 - `checkout.session.async_payment_succeeded`
@@ -241,6 +243,33 @@ Keep the old app, volume, certificate, and DNS target intact for one rollback
 window. To roll back, drain the new server, restore the old CNAME, verify its
 certificate and admission path, then stop the new app. Do not destroy either
 volume until its outbox is empty and the rollback window has closed.
+
+## Seal hostname cutover
+
+`seal.exalto.ai` is the canonical browser origin for Exalto Seal. The web
+gateway keeps `notary.exalto.ai` only as a permanent path-preserving redirect;
+do not point the retired hostname at a separate site.
+
+Complete these steps before deploying a build that sets
+`NOTARY_PUBLIC_ORIGIN=https://seal.exalto.ai`:
+
+1. Run `flyctl certs add seal.exalto.ai -a llm-notary-prod-web`, then add the
+   A/AAAA records (or CNAME and ownership TXT record) reported by
+   `flyctl certs setup`. Wait for `flyctl certs check seal.exalto.ai` to report
+   the certificate as issued.
+2. Register both Google and GitHub callback URLs at
+   `https://seal.exalto.ai/api/auth/{provider}/callback`. Keep the old callbacks
+   registered through the redirect rollback window.
+3. Create the Seal Stripe webhook endpoint, subscribe it to the same events as
+   the retired endpoint, and stage its signing secret as
+   `STRIPE_WEBHOOK_SECRET_B64` before the API rollout.
+4. Deploy the reviewed API and web images. The existing gateway can serve Seal
+   as soon as the certificate and DNS are active; the new web image then
+   redirects `notary.exalto.ai` to the canonical origin.
+5. Smoke-test `https://seal.exalto.ai/api/readyz`, sign in with each configured
+   provider, open Account and Sealed Traces, and verify both a public Trace and
+   a release download. Test one old `notary.exalto.ai` link reaches the same
+   path at Seal.
 
 ## Production rollout
 

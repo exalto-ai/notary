@@ -62,7 +62,7 @@ jobs:
 
       - name: Install the published Runtime release
         env:
-          PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://notary.exalto.ai' }}
+          PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
         run: |
           set -euo pipefail
           release_root="$PUBLIC_ORIGIN/downloads/releases"

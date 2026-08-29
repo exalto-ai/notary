@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-ARG NOTARY_PUBLIC_ORIGIN=https://notary.exalto.ai
+ARG NOTARY_PUBLIC_ORIGIN=https://seal.exalto.ai
 ENV VITE_PUBLIC_ORIGIN=$NOTARY_PUBLIC_ORIGIN
 RUN npm run build:site
 

@@ -33,7 +33,7 @@ test('release manifest is deterministic and binds every installable payload', as
     publicSourceSha: 'b'.repeat(40),
     version,
     publishedAt: '2026-08-13T12:34:56Z',
-    publicOrigin: 'https://notary.exalto.ai',
+    publicOrigin: 'https://seal.exalto.ai',
   };
   const first = await createReleaseManifest(input);
   const second = await createReleaseManifest(input);
@@ -54,7 +54,7 @@ test('release manifest rejects incomplete releases and unsafe identities', async
     publicSourceSha: 'b'.repeat(40),
     version,
     publishedAt: '2026-08-13T12:34:56Z',
-    publicOrigin: 'https://notary.exalto.ai',
+    publicOrigin: 'https://seal.exalto.ai',
   }), /safe release identifier/);
   await writeFile(path.join(releaseDir, 'Notary-macos-arm64.app.tar.gz.sig'), 'bad');
   await assert.rejects(() => createReleaseManifest({
@@ -64,7 +64,7 @@ test('release manifest rejects incomplete releases and unsafe identities', async
     publicSourceSha: 'b'.repeat(40),
     version,
     publishedAt: '2026-08-13T12:34:56Z',
-    publicOrigin: 'https://notary.exalto.ai',
+    publicOrigin: 'https://seal.exalto.ai',
   }), /signature is malformed/);
 });
 
@@ -81,7 +81,7 @@ test('channel pointer binds the exact immutable manifest', async () => {
     channel: 'latest',
     channelRevision: 123001,
     manifestFile,
-    manifestUrl: 'https://notary.exalto.ai/downloads/releases/builds/build/release.json',
+    manifestUrl: 'https://seal.exalto.ai/downloads/releases/builds/build/release.json',
     manifestSignatureFile: signatureFile,
   });
   assert.equal(pointer.channel, 'latest');

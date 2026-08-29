@@ -38,7 +38,7 @@ type DocPage = { title: string; lead: string; blocks: DocBlock[] };
 type DocOutlineItem = { block: DocBlock; children: DocBlock[] };
 type DocNavigationGroup = { label: string; pages: Array<readonly [DocPageKey, string]> };
 
-const installCommand = 'curl -fsSL https://notary.exalto.ai/install.sh | sh';
+const installCommand = 'curl -fsSL https://seal.exalto.ai/install.sh | sh';
 const sourceInstallCommand = `git clone https://github.com/exalto-ai/notary-runtime.git
 cd notary-runtime
 cargo install --locked --path crates/notaryd --bin notaryd
@@ -531,7 +531,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       {
         heading: 'Script-friendly output',
         body: 'Poll the same Trace share singleton on the loopback administration API so the browser or agent never receives the vault-held hosted credential.',
-        code: '{"trace_id":"trc-…","progress":"shared","visibility":"unlisted","access_enabled":true,"password_protected":false,"expires_at_unix_ms":null,"failure_code":null,"share_url":"https://notary.exalto.ai/s/trc-…","package_url":"https://notary.exalto.ai/api/public/traces/trc-…/package.llmtrace","updated_at_unix_ms":1785294000000}',
+        code: '{"trace_id":"trc-…","progress":"shared","visibility":"unlisted","access_enabled":true,"password_protected":false,"expires_at_unix_ms":null,"failure_code":null,"share_url":"https://seal.exalto.ai/s/trc-…","package_url":"https://seal.exalto.ai/api/public/traces/trc-…/package.llmtrace","updated_at_unix_ms":1785294000000}',
       },
       {
         heading: 'The upload boundary',

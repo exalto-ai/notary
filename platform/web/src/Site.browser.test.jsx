@@ -176,7 +176,7 @@ describe('hosted site', () => {
     expect(document.querySelector('.receipt [data-provider-icon="openai"]')).not.toBeNull();
   });
 
-  test('puts Pricing in the header and product destinations in the footer', async () => {
+  test('uses the app navigation and keeps record tools in the footer', async () => {
     render(
       <>
         <Header user={null} onLogout={() => {}} />
@@ -184,21 +184,31 @@ describe('hosted site', () => {
       </>,
     );
 
-    const productNav = document.querySelector('.product-nav');
+    const productNav = document.querySelector('.app-nav-links');
     await expect
       .element(page.getByRole('link', { name: 'Exalto Seal home' }))
       .toHaveAttribute('href', '/');
-    expect(document.querySelector('.brand > span:last-child')?.textContent).toBe('Exalto Seal');
+    expect(document.querySelector('.app-brand > span')?.textContent).toBe('Exalto');
+    expect(document.querySelector('.app-brand > small')?.textContent).toBe('SEAL');
     expect(document.querySelector('.footer-copyright b')?.textContent).toBe('Exalto Seal');
     expect(Array.from(productNav.querySelectorAll('a'), (link) => link.textContent)).toEqual([
-      'Docs',
-      'Pricing',
-      'Sign in',
+      'Capture',
+      'Sealed Traces',
+      'Verify',
     ]);
     await expect
-      .element(page.getByRole('link', { name: 'Pricing' }))
-      .toHaveAttribute('href', '/pricing');
+      .element(page.getByRole('link', { name: 'Capture' }))
+      .toHaveAttribute('href', '/account');
+    await expect
+      .element(page.getByRole('link', { name: 'Sealed Traces' }))
+      .toHaveAttribute('href', '/account/traces');
+    await expect
+      .element(page.getByRole('link', { name: 'Sign in' }))
+      .toHaveAttribute('href', '/signin');
     const footer = page.getByRole('navigation', { name: 'Footer' });
+    await expect
+      .element(footer.getByRole('link', { name: 'About Exalto' }))
+      .toHaveAttribute('href', 'https://exalto.ai');
     await expect
       .element(footer.getByRole('link', { name: 'Verify' }))
       .toHaveAttribute('href', '/verify');
@@ -332,10 +342,12 @@ describe('hosted site', () => {
     await expect.element(page.getByText('Provider tokens')).not.toBeInTheDocument();
   });
 
-  test('uses the formal sign-in title and preserves legacy Dashboard deep links', async () => {
+  test('uses the app sign-in title and preserves legacy Dashboard deep links', async () => {
     window.location.hash = '#/signin';
     render(<App loadCurrentUser={async () => null} />);
-    await expect.element(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'Keep the record close.' }))
+      .toBeVisible();
     expect(document.title).toBe('Sign in · Exalto Seal');
 
     cleanup();
@@ -351,6 +363,38 @@ describe('hosted site', () => {
     await expect
       .element(page.getByRole('heading', { name: 'Settings', exact: true }))
       .toBeVisible();
+  });
+
+  test('makes the root an authenticated workspace for Capture and Sealed Traces', async () => {
+    render(
+      <App
+        loadCurrentUser={async () => ({
+          provider_display_name: 'fixture-user',
+          usage: usageFixture({ total: 3, shared: 1 }),
+        })}
+      />,
+    );
+
+    await expect
+      .element(page.getByRole('heading', { name: 'Welcome back, fixture-user.' }))
+      .toBeVisible();
+    await expect.element(page.getByText('EXALTO CAPTURE')).toBeVisible();
+    await expect.element(page.getByText('EXALTO SEAL', { exact: true })).toBeVisible();
+    await expect
+      .element(page.getByRole('link', { name: /Manage Capture/ }))
+      .toHaveAttribute('href', '/account');
+    await expect
+      .element(page.getByRole('link', { name: /Manage Traces/ }))
+      .toHaveAttribute('href', '/account/traces');
+  });
+
+  test('uses sign-in as the signed-out root experience', async () => {
+    render(<App loadCurrentUser={async () => null} />);
+
+    await expect
+      .element(page.getByRole('heading', { name: 'Keep the record close.' }))
+      .toBeVisible();
+    await expect.element(page.getByText('Verifiable intelligence')).not.toBeInTheDocument();
   });
 
   test('returns signed-out Account visitors to the requested Account route', async () => {
@@ -397,7 +441,9 @@ describe('hosted site', () => {
     await expect
       .element(page.getByRole('status').getByText('Loading sign-in options'))
       .toBeVisible();
-    await expect.element(page.getByText('Continue to Exalto Seal', { exact: true })).toBeVisible();
+    await expect
+      .element(page.getByText('Sign in to manage Capture, Sealed Traces, and your account.'))
+      .toBeVisible();
 
     cleanup();
     render(
@@ -419,10 +465,10 @@ describe('hosted site', () => {
         loadProviders={async () => ({ google: true, github: true })}
       />,
     );
-    await expect.element(page.getByRole('heading', { name: 'Already signed in' })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'You’re already here.' })).toBeVisible();
     await expect
-      .element(page.getByRole('link', { name: 'Open Account' }))
-      .toHaveAttribute('href', '/account');
+      .element(page.getByRole('link', { name: /Open workspace/ }))
+      .toHaveAttribute('href', '/');
   });
 
   test('offers Auto, Light, and Dark in Account appearance settings', async () => {

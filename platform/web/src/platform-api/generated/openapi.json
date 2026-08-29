@@ -11,7 +11,7 @@
   },
   "servers": [
     {
-      "url": "https://notary.exalto.ai",
+      "url": "https://seal.exalto.ai",
       "description": "Exalto Seal"
     }
   ],
