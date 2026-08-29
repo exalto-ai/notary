@@ -17,6 +17,32 @@
   --app-display: 'Fraunces Variable', Fraunces, Georgia, serif;
   --app-body: 'Newsreader Variable', Newsreader, Georgia, serif;
   --app-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* The account, verification, registry, docs, and legal views were built on the
+     older monochrome primitives. Retuning those primitives here adapts every one
+     of them to Ledger Phosphor instead of patching each component separately. */
+  --ink: #1a2233;
+  --paper: #f5f3ec;
+  --white: #fdfcf7;
+  --line: rgba(26, 34, 51, 0.16);
+  --line-soft: rgba(26, 34, 51, 0.09);
+  --muted: #6d7482;
+  --soft: rgba(26, 34, 51, 0.055);
+  --section-muted: #efebe0;
+  --body-copy: #465166;
+  --body-copy-soft: #465166;
+  --body-copy-muted: #6d7482;
+  --nav-surface: color-mix(in srgb, #f5f3ec 94%, transparent);
+  --inverse-surface: #141b26;
+  --inverse-text: #e2e7ee;
+  --inverse-muted: rgba(238, 242, 247, 0.75);
+  --inverse-accent: #7eb2eb;
+  --action: #1e4a73;
+  --action-ink: #16395a;
+  --action-soft: rgba(30, 74, 115, 0.14);
+  --action-fill: #10304e;
+  --action-fill-hover: #16395a;
+  --action-contrast: #eef2f7;
 }
 
 :root[data-theme='dark'] {
@@ -33,6 +59,29 @@
   --app-band: #070d14;
   --app-rule: rgba(238, 242, 247, 0.17);
   --app-rule-soft: rgba(238, 242, 247, 0.09);
+
+  --ink: #eef2f7;
+  --paper: #0c1622;
+  --white: #141f2d;
+  --line: rgba(238, 242, 247, 0.17);
+  --line-soft: rgba(238, 242, 247, 0.09);
+  --muted: #aab3c1;
+  --soft: rgba(238, 242, 247, 0.07);
+  --section-muted: #101b29;
+  --body-copy: #c3c9d2;
+  --body-copy-soft: #c3c9d2;
+  --body-copy-muted: #aab3c1;
+  --nav-surface: color-mix(in srgb, #0c1622 94%, transparent);
+  --inverse-surface: #070d14;
+  --inverse-text: #eef2f7;
+  --inverse-muted: rgba(238, 242, 247, 0.75);
+  --inverse-accent: #a8cef5;
+  --action: #7eb2eb;
+  --action-ink: #a8cef5;
+  --action-soft: rgba(126, 178, 235, 0.2);
+  --action-fill: #1e4a73;
+  --action-fill-hover: #2a5f8f;
+  --action-contrast: #eef2f7;
 }
 
 body {
@@ -598,10 +647,6 @@ body {
   font-family: var(--app-body);
 }
 
-.dashboard-shell .dashboard-layout {
-  gap: clamp(34px, 6vw, 94px);
-}
-
 .dashboard-shell .dashboard-sidebar {
   border-color: var(--app-rule);
 }
@@ -610,13 +655,24 @@ body {
   border-color: var(--app-rule);
   color: var(--app-ink-soft);
   font-family: var(--app-mono);
-  font-size: 10px;
+  font-size: 11.5px;
 }
 
+.dashboard-shell .dashboard-sidebar a {
+  border-left: 2px solid transparent;
+  padding-left: 10px;
+}
+
+/* Ledger Phosphor marks the current page with a hairline, not a filled chip. */
 .dashboard-shell .dashboard-sidebar a:hover,
 .dashboard-shell .dashboard-sidebar a.active {
   background: transparent;
+  box-shadow: none;
   color: var(--app-blue);
+}
+
+.dashboard-shell .dashboard-sidebar a.active {
+  border-left-color: var(--app-blue);
 }
 
 .dashboard-shell .dashboard-page-header .eyebrow,
@@ -642,14 +698,20 @@ body {
   font-size: 17px;
 }
 
+/* Only the grids that pad their own cells take a card fill. The remaining
+   sections stay rule-led, so a background never bleeds past the text it holds. */
 .dashboard-shell .dashboard-summary,
+.dashboard-shell .dashboard-usage-ledger {
+  border-color: var(--app-rule);
+  background: var(--app-card);
+}
+
 .dashboard-shell .dashboard-credits,
-.dashboard-shell .dashboard-usage-ledger,
 .dashboard-shell .dashboard-api-keys,
 .dashboard-shell .dashboard-account-settings,
 .dashboard-shell .dashboard-delete-account {
   border-color: var(--app-rule);
-  background: var(--app-card);
+  background: transparent;
 }
 
 .dashboard-shell .dashboard-summary div,
@@ -677,7 +739,12 @@ body {
 .dashboard-shell .dashboard-usage-ledger b,
 .dashboard-shell .dashboard-credits h2,
 .dashboard-shell .dashboard-traces h2,
-.dashboard-shell .dashboard-sessions h2 {
+.dashboard-shell .dashboard-sessions h2,
+.dashboard-shell .dashboard-utilization h2,
+.dashboard-shell .dashboard-api-keys h2,
+.dashboard-shell .dashboard-account-settings h2,
+.dashboard-shell .dashboard-delete-account h2,
+.dashboard-shell .dashboard-credit-purchase-copy h3 {
   color: var(--app-ink);
   font-family: var(--app-display);
   font-weight: 600;
@@ -708,20 +775,24 @@ body {
 .dashboard-shell .dashboard-session-list button:hover:not(:disabled),
 .dashboard-shell .dashboard-plan-actions button:hover:not(:disabled),
 .dashboard-shell .dashboard-api-key-list button:hover:not(:disabled) {
-  background: var(--app-blue);
-  color: #fff;
+  border-color: var(--action-fill);
+  background: var(--action-fill);
+  color: var(--action-contrast);
 }
 
+/* Phosphor is a hairline and a live-status accent, never a solid control fill:
+   as a fill it also left white label text below the AA contrast threshold. */
 .dashboard-shell .dashboard-credit-buy,
 .dashboard-shell .dashboard-credit-offer button {
-  border-color: var(--app-phosphor);
-  background: var(--app-phosphor);
-  color: #fff;
+  border-color: var(--action-fill);
+  background: var(--action-fill);
+  color: var(--action-contrast);
 }
 
 .dashboard-shell .dashboard-credit-buy:hover:not(:disabled),
 .dashboard-shell .dashboard-credit-offer button:hover:not(:disabled) {
-  background: var(--app-blue);
+  border-color: var(--action-fill-hover);
+  background: var(--action-fill-hover);
 }
 
 .dashboard-auth-loading {
@@ -734,6 +805,187 @@ body {
   background: var(--app-card);
   color: var(--app-ink);
   font-family: var(--app-mono);
+}
+
+/* Controls take the Ledger Phosphor button grammar: mono label, tracked, softly
+   rounded. The older square sans chip is the most visible carry-over tell. */
+.button,
+.dashboard-shell .dashboard-load-more,
+.dashboard-shell .dashboard-session-list button,
+.dashboard-shell .dashboard-plan-actions button,
+.dashboard-shell .dashboard-api-key-list article > button,
+.dashboard-api-keys > header > button,
+.dashboard-delete-account > button,
+.dashboard-credit-buy,
+.dashboard-credit-offer button,
+.api-key-primary,
+.api-key-secondary,
+.api-key-receipt > button,
+.notary-key-row button,
+.notary-page-state button {
+  border-radius: 5px;
+  font-family: var(--app-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.055em;
+}
+
+/* Inline record actions read as mono affordances beside the mono evidence rows. */
+.dashboard-trace-actions a,
+.dashboard-trace-actions button,
+.dashboard-traces > header > a,
+.dashboard-empty a {
+  font-family: var(--app-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.button {
+  border-color: var(--app-rule);
+  color: var(--app-ink);
+}
+
+.button:hover {
+  border-color: var(--app-ink);
+  color: var(--app-ink);
+}
+
+.button-dark,
+:root[data-theme='dark'] .button-dark {
+  border-color: var(--action-fill);
+  background: var(--action-fill);
+  color: var(--action-contrast);
+}
+
+.button-dark:hover,
+:root[data-theme='dark'] .button-dark:hover {
+  border-color: var(--action-fill-hover);
+  background: var(--action-fill-hover);
+  color: var(--action-contrast);
+}
+
+/* Verification, the registry, docs, and legal pages were the last surfaces still
+   set entirely in the interface sans; they are reading surfaces on this site. */
+.verification-shell,
+.notaries-shell,
+.legal-shell,
+.docs-shell,
+.cli-approval-shell {
+  background: var(--app-paper);
+  font-family: var(--app-body);
+}
+
+.verification-shell button,
+.verification-shell input,
+.notaries-shell button,
+.docs-shell button,
+.docs-shell input,
+.docs-shell .docs-sidebar a,
+.cli-approval-shell button {
+  font-family: var(--app-mono);
+}
+
+.docs-shell .docs-sidebar a {
+  border-left: 2px solid transparent;
+  font-size: 11.5px;
+}
+
+.docs-shell .docs-sidebar a.active {
+  border-left-color: var(--app-blue);
+  background: transparent;
+  box-shadow: none;
+  color: var(--app-blue);
+}
+
+.verification-intro h1,
+.verification-disclosure h2,
+.verification-drop strong,
+.verification-result--error h2,
+.verification-result--success h2,
+.notaries-intro h1,
+.notary-section-heading h2,
+.notary-record h3,
+.notary-page-state h2,
+.legal-shell h1,
+.legal-sections h2,
+.docs-content h1,
+.docs-content .docs-section h2,
+.docs-content .docs-section > .docs-heading-row > h3,
+.cli-approval-primary h1 {
+  color: var(--app-ink);
+  font-family: var(--app-display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+.verification-intro h1,
+.notaries-intro h1,
+.legal-shell h1,
+.docs-content h1,
+.cli-approval-primary h1 {
+  letter-spacing: -0.05em;
+}
+
+.verification-disclosure h2 {
+  color: var(--attention);
+}
+
+.verification-intro p,
+.verification-disclosure p,
+.notaries-intro > p,
+.legal-intro,
+.legal-sections p,
+.docs-lead,
+.docs-content .docs-section > p,
+.cli-approval-description {
+  color: var(--app-ink-soft);
+}
+
+.verification-intro p,
+.notaries-intro > p,
+.legal-intro,
+.docs-lead {
+  font-size: 17.5px;
+  line-height: 1.6;
+}
+
+/* Sticky offsets follow the 66px application navigation, not the retired 54px. */
+html {
+  scroll-padding-top: 66px;
+}
+
+.dashboard-shell .dashboard-sidebar,
+.docs-shell .docs-sidebar,
+.docs-shell .docs-toc {
+  top: calc(66px + var(--docs-top-offset, 0px));
+}
+
+.verification-outcome {
+  scroll-margin-top: 66px;
+}
+
+.verification-shell,
+.cli-approval-shell,
+.auth-page,
+.notaries-shell,
+.legal-shell {
+  min-height: calc(100dvh - 152px);
+}
+
+/* The page already sits inside a padded shell; the rail no longer pads twice and
+   the column stays left-aligned against it rather than re-centring itself. */
+.dashboard-shell .dashboard-layout {
+  gap: clamp(28px, 4vw, 56px);
+}
+
+.dashboard-shell .dashboard-sidebar {
+  padding: 0 20px 0 0;
+}
+
+.dashboard-shell .dashboard-page {
+  margin: 0;
+  padding: 0 0 40px;
 }
 
 @media (max-width: 820px) {
@@ -778,6 +1030,15 @@ body {
 
   .app-footer { align-items: flex-start; flex-direction: column; padding-block: 25px; }
   .app-footer nav { justify-content: flex-start; }
+
+  .dashboard-mobile-toolbar { top: 60px; }
+  .dashboard-shell .dashboard-page { padding: 0 0 32px; }
+
+  .verification-shell,
+  .cli-approval-shell,
+  .auth-page,
+  .notaries-shell,
+  .legal-shell { min-height: calc(100dvh - 200px); }
 }
 
 @media (max-width: 460px) {
