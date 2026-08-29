@@ -8,30 +8,21 @@ import '@fontsource/ibm-plex-mono/latin-ext-400.css';
 import '@fontsource/ibm-plex-mono/latin-500.css';
 import '@fontsource/ibm-plex-mono/latin-ext-500.css';
 import { AuthProviderIcon } from '../AuthProviderIcon';
-import { ProviderIdentity } from '../ProviderIdentity';
 import { initialThemePreference, resolvedTheme } from '../theme';
 import '../shadcn.css';
 import '../action-tokens.css';
 import '../styles.css';
-import '../hero-evidence.css';
-import '../trust-grid.css';
-import '../commons.css';
-import '../branding.css';
 import '../account.css';
 import '../auth.css';
 import '../trace.css';
 import '../docs.css';
 import '../legal.css';
-import '../relay-animation.css';
-import '../landing.css';
 import '../notaries.css';
 import '../axis.css';
 import '../verification.css';
 import '../sharing.css';
 import '../app-surface.css';
 import { getAuthProviders, getCurrentUser, logoutBrowser } from '../platform-api/client';
-import { RelayAnimation } from '../RelayAnimation';
-import { latestMacosDownloadHref, loadLatestPointer, macosDownloadName } from '../releaseDownloads';
 import { AccountSettings, ApiKeysPanel, Dashboard, DeleteAccountPanel } from './AccountDashboard';
 import {
   DeviceAuthorizationApproval,
@@ -40,16 +31,9 @@ import {
 } from './AuthorizationPages';
 import { currentRoute, migrateLegacyRoute, navigateTo } from './navigation';
 import { Docs } from './PublicDocs';
-import {
-  ListedTracesPreview,
-  PublicTracePage,
-  PublicTraces,
-  VerificationPage,
-} from './PublicTracePages';
+import { PublicTracePage, PublicTraces, VerificationPage } from './PublicTracePages';
 
 const loadCreditUtilizationChart = () => import('../CreditUtilizationChart');
-const appleLogoUrl = new URL('../assets/platforms/apple.svg', import.meta.url).href;
-const installCommand = 'curl -fsSL https://seal.exalto.ai/install.sh | sh';
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 type AccountIdentity = Pick<
   CurrentUser,
@@ -57,51 +41,6 @@ type AccountIdentity = Pick<
 >;
 type AuthProviders = Awaited<ReturnType<typeof getAuthProviders>>;
 type AuthProvider = 'github' | 'google';
-type Point = readonly [x: number, y: number];
-
-export function MacosDownloadLink({
-  loadPointer = loadLatestPointer,
-}: {
-  loadPointer?: typeof loadLatestPointer;
-}) {
-  const [downloadHref, setDownloadHref] = useState<string | null>(null);
-  const [unavailable, setUnavailable] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    loadPointer()
-      .then((pointer) => {
-        if (!cancelled) setDownloadHref(latestMacosDownloadHref(pointer));
-      })
-      .catch(() => {
-        if (!cancelled) setUnavailable(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [loadPointer]);
-  return (
-    <a
-      className="button button-dark hero-download"
-      href={downloadHref || '/docs/getting-started'}
-      download={downloadHref ? macosDownloadName : undefined}
-      aria-busy={!downloadHref && !unavailable}
-    >
-      <img src={appleLogoUrl} alt="" aria-hidden="true" />
-      <span>
-        <b>Download for macOS</b>
-        {unavailable && <small>View install options</small>}
-      </span>
-    </a>
-  );
-}
-function PenMark() {
-  return (
-    <span className="pen-mark" aria-hidden="true">
-      <img src="/notary-mark.svg" alt="" />
-    </span>
-  );
-}
-
 function accountName(user: AccountIdentity) {
   return user.display_name || user.provider_display_name;
 }
@@ -112,156 +51,6 @@ function accountIdentifier(user: AccountIdentity) {
 
 function authProviderName(user: AccountIdentity) {
   return user.auth_provider === 'google' ? 'Google' : 'GitHub';
-}
-
-function HeroSignalField() {
-  const xLines = Array.from({ length: 11 }, (_, index) => -80 + index * 160);
-  const yLines = Array.from({ length: 9 }, (_, index) => -30 + index * 120);
-  const routes: Point[][] = [
-    [
-      [-80, 210],
-      [400, 210],
-      [400, 330],
-      [720, 330],
-      [720, 570],
-      [1040, 570],
-      [1040, 690],
-      [1520, 690],
-    ],
-    [
-      [-80, 570],
-      [240, 570],
-      [240, 450],
-      [560, 450],
-      [560, 210],
-      [880, 210],
-      [880, 90],
-      [1520, 90],
-    ],
-    [
-      [-80, 330],
-      [240, 330],
-      [240, 90],
-      [720, 90],
-      [720, 210],
-      [1200, 210],
-      [1200, 450],
-      [1520, 450],
-    ],
-    [
-      [-80, 690],
-      [400, 690],
-      [400, 570],
-      [720, 570],
-      [720, 450],
-      [1040, 450],
-      [1040, 330],
-      [1520, 330],
-    ],
-    [
-      [-80, 90],
-      [240, 90],
-      [240, 210],
-      [400, 210],
-      [400, 450],
-      [880, 450],
-      [880, 570],
-      [1520, 570],
-    ],
-    [
-      [-80, 450],
-      [560, 450],
-      [560, 690],
-      [880, 690],
-      [880, 330],
-      [1200, 330],
-      [1200, 210],
-      [1520, 210],
-    ],
-  ];
-  const pathFor = (points: Point[]) =>
-    points
-      .map(([x, y], index) => {
-        if (!index) return `M${x} ${y}`;
-        const [previousX] = points[index - 1];
-        return previousX === x ? `V${y}` : `H${x}`;
-      })
-      .join(' ');
-  const tracePaths = routes.map(pathFor);
-  const cells: Point[] = [
-    [3, 2],
-    [5, 3],
-    [8, 5],
-    [2, 6],
-    [6, 1],
-    [9, 4],
-    [4, 5],
-    [7, 6],
-    [1, 3],
-    [10, 2],
-    [5, 6],
-    [8, 1],
-  ];
-  const particles: Array<readonly [routeIndex: number, duration: string, begin: string]> = [
-    [0, '3.8s', '-1.1s'],
-    [1, '4.4s', '-2.7s'],
-    [2, '3.3s', '-.5s'],
-    [3, '4.9s', '-3.5s'],
-    [4, '3.6s', '-2.1s'],
-    [5, '4.2s', '-.8s'],
-    [0, '5.1s', '-3.8s'],
-    [1, '3.5s', '-1.7s'],
-    [2, '4.6s', '-3.1s'],
-    [3, '3.9s', '-.2s'],
-    [4, '5.4s', '-4.4s'],
-    [5, '3.2s', '-2.4s'],
-  ];
-  return (
-    <div className="hero-signal-field" aria-hidden="true">
-      <svg viewBox="0 0 1440 840" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <g className="signal-grid">
-          {yLines.map((y) => (
-            <path key={`h-${y}`} d={`M-80 ${y}H1520`} />
-          ))}
-          {xLines.map((x) => (
-            <path key={`v-${x}`} d={`M${x} -30V930`} />
-          ))}
-        </g>
-        <g className="signal-traces">
-          {tracePaths.map((path, index) => (
-            <path key={path} className={`signal-trace signal-trace--${index + 1}`} d={path} />
-          ))}
-        </g>
-        <g className="signal-cells">
-          {cells.map(([xIndex, yIndex]) => (
-            <rect
-              key={`${xIndex}-${yIndex}`}
-              x={xLines[xIndex] - 11}
-              y={yLines[yIndex] - 11}
-              width="22"
-              height="22"
-            />
-          ))}
-        </g>
-        <g className="signal-marks">
-          {particles.map(([routeIndex, duration, begin], index) => (
-            <circle
-              key={`${routeIndex}-${begin}`}
-              className="signal-mark"
-              r={index % 3 === 0 ? 4 : 3.25}
-            >
-              <animateMotion
-                dur={duration}
-                begin={begin}
-                repeatCount="indefinite"
-                path={tracePaths[routeIndex]}
-              />
-            </circle>
-          ))}
-        </g>
-      </svg>
-    </div>
-  );
 }
 
 function AccountMenu({ user, onLogout }: { user: AccountIdentity; onLogout: () => void }) {
@@ -770,236 +559,6 @@ function LegalPage({ pageKey }: { pageKey: LegalPageKey }) {
   );
 }
 
-function TrustColumns() {
-  const boundaries = [
-    [
-      '01',
-      'Client',
-      'Holds the plaintext',
-      'The local proxy sees the request and response. A user cannot change authenticated bytes or invent a provider response and still produce valid notarized evidence.',
-    ],
-    [
-      '02',
-      'Notary',
-      'Witnesses ciphertext',
-      'The notary sees the provider hostname, encrypted traffic, sizes, timing, and protocol metadata—not the API key, prompt, or response plaintext. The provider serves a normal request; origin follows from the authenticated TLS session, not a special provider signature.',
-    ],
-    [
-      '03',
-      'Researcher',
-      'Checks independently',
-      'Researchers can verify the notary signature, provider identity, disclosed transcript, artifact hashes, and deterministic mapping using the trusted notary public key.',
-    ],
-  ];
-  return (
-    <div className="trust-columns">
-      {boundaries.map(([number, actor, title, copy]) => (
-        <article key={actor}>
-          <span>{number}</span>
-          <b>{actor}</b>
-          <h3>{title}</h3>
-          <p>{copy}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function VerificationArchitecture() {
-  return (
-    <section className="section architecture" id="how-it-works">
-      <div className="section-head">
-        <span className="eyebrow">How it works</span>
-        <h2>Don’t trust. Verify.</h2>
-      </div>
-      <TrustColumns />
-      <div className="section-link">
-        <a href="/docs/how-it-works">Learn more about the trust model</a>
-      </div>
-    </section>
-  );
-}
-
-function MotionStudies() {
-  return <RelayAnimation />;
-}
-
-function PricingSection() {
-  return (
-    <section className="section pricing" id="pricing" aria-labelledby="pricing-title">
-      <header className="pricing-intro">
-        <span className="eyebrow">Pricing</span>
-        <h2 id="pricing-title">A plan for every proof workload.</h2>
-        <p>
-          Every plan includes separate monthly allowances for private capture and notarization, plus
-          space for uploaded trace packages.
-        </p>
-      </header>
-      <div className="pricing-ledger">
-        <article>
-          <header>
-            <span>Free</span>
-            <div>
-              <b>$0</b>
-              <small>per month</small>
-            </div>
-          </header>
-          <h3>Explore verifiable traces.</h3>
-          <ul>
-            <li>50 MB capture each month</li>
-            <li>50 MB notarization each month</li>
-            <li>Store up to 1 GB of trace packages</li>
-          </ul>
-        </article>
-        <article>
-          <header>
-            <span>1 GB</span>
-            <div>
-              <b>$9.99</b>
-              <small>per month</small>
-            </div>
-          </header>
-          <h3>For regular research.</h3>
-          <ul>
-            <li>1 GB capture each month</li>
-            <li>1 GB notarization each month</li>
-            <li>Store up to 10 GB of trace packages</li>
-          </ul>
-        </article>
-        <article>
-          <header>
-            <span>10 GB</span>
-            <div>
-              <b>$49.99</b>
-              <small>per month</small>
-            </div>
-          </header>
-          <h3>For sustained workloads.</h3>
-          <ul>
-            <li>10 GB capture each month</li>
-            <li>10 GB notarization each month</li>
-            <li>Trace storage without a fixed plan limit*</li>
-          </ul>
-        </article>
-      </div>
-      <div className="pricing-addon">
-        <span>Need more notarization?</span>
-        <b>$10 per additional GB</b>
-        <small>Available on every plan · purchased credits do not expire</small>
-      </div>
-      <p className="pricing-fine-print">
-        *No fixed trace-storage limit. Fair-use and abuse controls still apply.
-      </p>
-      <a className="pricing-details-link" href="/docs/hosted-credits">
-        See plan and usage details
-      </a>
-    </section>
-  );
-}
-
-export function Landing({ loadLatestPointer: loadPointer = loadLatestPointer }) {
-  return (
-    <main id="top">
-      <section className="hero">
-        <HeroSignalField />
-        <h1>Verifiable intelligence</h1>
-        <p>Privacy-preserving LLM trace packages for open research and independent verification.</p>
-        <div className="hero-actions">
-          <MacosDownloadLink loadPointer={loadPointer} />
-          <p className="hero-developer-path">
-            or, <a href="/docs/getting-started">build on the Exalto Notary Protocol</a>
-          </p>
-        </div>
-      </section>
-      <MotionStudies />
-      <VerificationArchitecture />
-      <section className="section install capture">
-        <div>
-          <span className="eyebrow">Local capture</span>
-          <h2>Capture locally.</h2>
-          <p>
-            Point your existing tools at the local proxy. Provider calls keep streaming normally
-            while encrypted bundles stay on your machine.
-          </p>
-        </div>
-        <div className="terminal">
-          <div>
-            <i />
-            <i />
-            <i />
-          </div>
-          <pre>
-            <code>
-              <b>$</b> {installCommand}
-              {'\n\n'}
-              <b>$</b> notaryd{'\n\n'}proxy <em>127.0.0.1:8787</em>
-              {'\n'}admin <em>127.0.0.1:8788</em>
-            </code>
-          </pre>
-          <a href="/docs/getting-started">Installation and setup</a>
-        </div>
-      </section>
-      <PricingSection />
-      <ListedTracesPreview />
-      <section className="section verify" id="verify">
-        <div>
-          <span className="eyebrow">Independent verification</span>
-          <h2>Proof travels with the package.</h2>
-          <p>
-            A notarized .llmtrace contains the notary-signed TLS evidence, disclosed exchange,
-            canonical trace, and hashes needed for portable verification.
-          </p>
-          <div className="verify-points">
-            <span>Notary evidence</span>
-            <span>Canonical OTLP</span>
-            <span>Portable package</span>
-          </div>
-          <div className="button-row">
-            <a className="button button-dark" href="/verify">
-              Verify a package
-            </a>
-          </div>
-        </div>
-        <div className="receipt">
-          <header>
-            <PenMark />
-            <b>Portable package</b>
-          </header>
-          <h3>Verification passed</h3>
-          <dl>
-            <div>
-              <dt>Provider</dt>
-              <dd>
-                <ProviderIdentity provider="OpenAI" detail="api.openai.com" />
-              </dd>
-            </div>
-            <div>
-              <dt>Artifact</dt>
-              <dd>capture.llmtrace</dd>
-            </div>
-            <div>
-              <dt>Trace hash</dt>
-              <dd>9b44f8…c21d</dd>
-            </div>
-          </dl>
-          <div className="receipt-contents">
-            <span>
-              Notary evidence <i>•••</i>
-            </span>
-            <span>
-              Disclosed exchange <i>•••</i>
-            </span>
-            <span>
-              Canonical trace <i>•••</i>
-            </span>
-          </div>
-          <footer>VERIFIED FROM SOURCE PACKAGE</footer>
-        </div>
-      </section>
-    </main>
-  );
-}
-
 export {
   AccountSettings,
   ApiKeysPanel,
@@ -1007,7 +566,6 @@ export {
   DeleteAccountPanel,
   DeviceAuthorizationApproval,
   HostedNotaryRecord,
-  ListedTracesPreview,
   PublicTracePage,
   PublicTraces,
   RegistryPage,

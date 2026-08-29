@@ -127,11 +127,6 @@ const classified = [
     reason: 'asserts the retired crate path never reappears in documentation',
   },
   {
-    file: 'platform/web/scripts/test-brand.mjs',
-    contains: 'LLM NOTARY',
-    reason: 'asserts the retired relay label never reappears',
-  },
-  {
     file: 'platform/web/src/theme.ts',
     contains: 'llm-notary-theme',
     reason: 'reads the retired storage key so a visitor keeps their theme',
