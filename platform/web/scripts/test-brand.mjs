@@ -11,7 +11,6 @@ const preview = readFileSync(resolve(root, 'public/social-preview.png'));
 const siteCaddy = readFileSync(resolve(root, 'Caddyfile'), 'utf8');
 const flyCaddy = readFileSync(resolve(root, 'Caddyfile.fly'), 'utf8');
 const gatewayCaddy = readFileSync(resolve(root, '../../deploy/gateway.Caddyfile'), 'utf8');
-const relayAnimation = readFileSync(resolve(root, 'src/RelayAnimation.tsx'), 'utf8');
 const siteApp = readFileSync(resolve(root, 'src/site/SiteApp.tsx'), 'utf8');
 const publicTracePages = readFileSync(resolve(root, 'src/site/PublicTracePages.tsx'), 'utf8');
 const accountDashboard = readFileSync(resolve(root, 'src/site/AccountDashboard.tsx'), 'utf8');
@@ -60,10 +59,6 @@ for (const [label, source] of [
 }
 if (packageJson.name !== '@exalto/notary-web') {
   throw new Error('hosted frontend package identity is stale');
-}
-requireText(relayAnimation, '<b>REMOTE NOTARY</b>', 'relay notary identity');
-if (relayAnimation.includes('LLM NOTARY')) {
-  throw new Error('relay animation retains the retired LLM NOTARY label');
 }
 if (preview.readUInt32BE(16) !== 1200 || preview.readUInt32BE(20) !== 630) {
   throw new Error('social preview must be 1200x630');

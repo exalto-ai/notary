@@ -1,6 +1,0 @@
-.receipt header > b { font-weight: 500; }
-.product-nav { margin-left: auto; }
-.section-link { margin-top: 42px; font-size: 13px; font-weight: 700; }
-.section-link a { padding-bottom: 3px; border-bottom: 1px solid var(--ink); }
-
-.button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 15px; }

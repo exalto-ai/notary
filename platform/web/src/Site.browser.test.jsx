@@ -4,7 +4,6 @@ import { page } from 'vitest/browser';
 import CreditUtilizationChart from './CreditUtilizationChart';
 import { ProviderIdentity } from './ProviderIdentity';
 import { PlatformApiError } from './platform-api/client';
-import { latestMacosDownloadHref } from './releaseDownloads';
 import {
   AccountSettings,
   ApiKeysPanel,
@@ -15,8 +14,6 @@ import {
   Footer,
   Header,
   HostedNotaryRecord,
-  Landing,
-  ListedTracesPreview,
   PublicTracePage,
   PublicTraces,
   RegistryPage,
@@ -148,34 +145,6 @@ const usageFixture = ({
 });
 
 describe('hosted site', () => {
-  test('makes the current macOS app the primary landing action', async () => {
-    expect(latestMacosDownloadHref('build-123 0.1.0')).toBe(
-      '/downloads/releases/builds/build-123/Notary-macos-arm64.dmg',
-    );
-    expect(() => latestMacosDownloadHref('../build 0.1.0')).toThrow(
-      'latest download pointer is invalid',
-    );
-    render(<Landing loadLatestPointer={async () => 'build-123 0.1.0'} />);
-
-    const download = page.getByRole('link', { name: /Download for macOS/ });
-    await expect
-      .element(download)
-      .toHaveAttribute('href', '/downloads/releases/builds/build-123/Notary-macos-arm64.dmg');
-    await expect.element(download).toHaveAttribute('download', 'Exalto-Capture-macos-arm64.dmg');
-    await expect.element(page.getByText('Apple silicon · macOS 12+')).not.toBeInTheDocument();
-    await expect
-      .element(page.getByRole('link', { name: 'build on the Exalto Notary Protocol' }))
-      .toHaveAttribute('href', '/docs/getting-started');
-    expect(document.querySelector('.hero-developer-path')?.textContent).toBe(
-      'or, build on the Exalto Notary Protocol',
-    );
-    await expect.element(page.getByRole('link', { name: 'Get started' })).not.toBeInTheDocument();
-    await expect
-      .element(page.getByRole('link', { name: 'Browse Traces' }))
-      .toHaveAttribute('href', '/traces');
-    expect(document.querySelector('.receipt [data-provider-icon="openai"]')).not.toBeNull();
-  });
-
   test('uses the app navigation and keeps record tools in the footer', async () => {
     render(
       <>
@@ -228,37 +197,6 @@ describe('hosted site', () => {
     expect(window.location.pathname).toBe('/privacy');
     expect(window.location.hash).toBe('');
     expect(document.title).toBe('Privacy · Exalto Seal');
-  });
-
-  test('explains hosted pricing in plain language on the landing page', async () => {
-    render(<Landing loadLatestPointer={async () => 'build-123 0.1.0'} />);
-
-    const pricing = document.getElementById('pricing');
-    expect(pricing).not.toBeNull();
-    await expect
-      .element(page.getByRole('heading', { name: 'A plan for every proof workload.' }))
-      .toBeVisible();
-    await expect.element(page.getByText('50 MB capture each month')).toBeVisible();
-    await expect.element(page.getByText('1 GB notarization each month')).toBeVisible();
-    await expect.element(page.getByText('$10 per additional GB')).toBeVisible();
-    await expect.element(page.getByText('Credit boundary')).not.toBeInTheDocument();
-    await expect
-      .element(page.getByRole('link', { name: 'See plan and usage details' }))
-      .toHaveAttribute('href', '/docs/hosted-credits');
-  });
-
-  test('sends the macOS action to install options when the latest pointer is unavailable', async () => {
-    render(
-      <Landing
-        loadLatestPointer={async () => {
-          throw new Error('offline');
-        }}
-      />,
-    );
-
-    const download = page.getByRole('link', { name: /Download for macOS/ });
-    await expect.element(download).toHaveAttribute('href', '/docs/getting-started');
-    await expect.element(page.getByText('View install options')).toBeVisible();
   });
 
   test('defaults to light and keeps appearance choices out of the signed-in account menu', async () => {
@@ -1288,64 +1226,6 @@ describe('hosted site', () => {
     expect(document.body.textContent).not.toContain('Verified');
     expect(document.body.textContent).not.toContain('↗');
     expect(document.body.textContent).not.toContain('Listed shares');
-  });
-
-  test('shows provider marks in the landing public Traces preview', async () => {
-    let request;
-    render(
-      <ListedTracesPreview
-        loadShares={async (options) => {
-          request = options;
-          return { items: [libraryShares[0], libraryShares[11]], next_cursor: null };
-        }}
-      />,
-    );
-
-    const preview = page.getByLabelText('Public traces');
-    await expect.element(preview).toBeVisible();
-    expect(request).toEqual({ limit: 9 });
-    expect(preview.element().querySelectorAll('[data-provider-icon="openai"]')).toHaveLength(1);
-    expect(preview.element().querySelectorAll('[data-provider-icon="anthropic"]')).toHaveLength(1);
-  });
-
-  test('states each landing preview row once, without a title that repeats the prompt', async () => {
-    render(
-      <ListedTracesPreview
-        loadShares={async () => ({
-          items: [
-            { ...libraryShares[0], title: libraryShares[0].input_preview, output_preview: null },
-          ],
-          next_cursor: null,
-        })}
-      />,
-    );
-
-    const preview = page.getByLabelText('Public traces');
-    await expect.element(preview).toBeVisible();
-    const card = preview.element().querySelector('.listed-trace-card');
-    expect(card.textContent.match(/Prompt for share-1/g)).toHaveLength(1);
-    expect(card.textContent).not.toContain('No response preview.');
-    expect(card.querySelector('.listed-trace-card-response')).toBeNull();
-    expect(card.querySelector('.listed-trace-state').textContent).toBe('Notarized');
-    expect(card.querySelector('time')).toBeTruthy();
-  });
-
-  test('offers a retry when the landing preview listing fails', async () => {
-    let attempts = 0;
-    render(
-      <ListedTracesPreview
-        loadShares={async () => {
-          attempts += 1;
-          if (attempts === 1) throw new Error('Listing unavailable.');
-          return { items: [libraryShares[0]], next_cursor: null };
-        }}
-      />,
-    );
-
-    await expect.element(page.getByText('Public traces couldn’t load.')).toBeVisible();
-    await page.getByRole('button', { name: 'Try again' }).click();
-    await expect.element(page.getByLabelText('Public traces')).toBeVisible();
-    expect(attempts).toBe(2);
   });
 
   test('filters public Traces by their safe summaries', async () => {
