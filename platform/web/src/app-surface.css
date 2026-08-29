@@ -17,6 +17,10 @@
   --app-display: 'Fraunces Variable', Fraunces, Georgia, serif;
   --app-body: 'Newsreader Variable', Newsreader, Georgia, serif;
   --app-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* The app chrome has a 1,420px outer frame and a 1,228px working ledger.
+     Reuse that inner edge across operational pages instead of letting each
+     inherited surface pick an unrelated desktop width. */
+  --app-page-gutter: max(clamp(20px, 6.7vw, 96px), calc((100vw - 1228px) / 2));
 
   /* The account, verification, registry, docs, and legal views were built on the
      older monochrome primitives. Retuning those primitives here adapts every one
@@ -641,7 +645,8 @@ body {
    materials and type so moving between the workspace and account feels native. */
 .dashboard-shell {
   min-height: calc(100dvh - 66px);
-  max-width: 1320px;
+  max-width: 1420px;
+  margin: 0 auto;
   padding: 60px clamp(20px, 6.7vw, 96px) 100px;
   color: var(--app-ink);
   font-family: var(--app-body);
@@ -976,7 +981,8 @@ html {
 /* The page already sits inside a padded shell; the rail no longer pads twice and
    the column stays left-aligned against it rather than re-centring itself. */
 .dashboard-shell .dashboard-layout {
-  gap: clamp(28px, 4vw, 56px);
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: 32px;
 }
 
 .dashboard-shell .dashboard-sidebar {
@@ -986,6 +992,32 @@ html {
 .dashboard-shell .dashboard-page {
   margin: 0;
   padding: 0 0 40px;
+}
+
+/* Full-bleed evidence surfaces keep their rules, but their working columns now
+   share the same ledger edge as the workspace and account pages. */
+.verification-intro,
+.verification-workspace {
+  padding-inline: var(--app-page-gutter);
+}
+
+.notaries-shell {
+  padding-inline: var(--app-page-gutter);
+}
+
+.notary-section {
+  margin-inline: calc(var(--app-page-gutter) * -1);
+  padding-inline: var(--app-page-gutter);
+}
+
+.cli-approval-shell {
+  padding-inline: var(--app-page-gutter);
+}
+
+/* A public Trace is a record view, not a second extra-wide product surface. */
+.share-page {
+  width: min(1420px, 100%);
+  padding-inline: clamp(20px, 6.7vw, 96px);
 }
 
 @media (max-width: 820px) {
@@ -1032,7 +1064,15 @@ html {
   .app-footer nav { justify-content: flex-start; }
 
   .dashboard-mobile-toolbar { top: 60px; }
+  .dashboard-shell { padding: 32px 20px 64px; }
   .dashboard-shell .dashboard-page { padding: 0 0 32px; }
+
+  .verification-intro,
+  .verification-workspace,
+  .notaries-shell,
+  .cli-approval-shell { padding-inline: 20px; }
+
+  .notary-section { margin-inline: -20px; padding-inline: 20px; }
 
   .verification-shell,
   .cli-approval-shell,
