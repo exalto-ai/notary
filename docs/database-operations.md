@@ -71,7 +71,7 @@ reviewed, staged rollout and recovery procedure before it is merged.
 
    ```bash
    fly status -a notary-prod-api
-   curl --fail https://notary.exalto.ai/api/readyz
+   curl --fail https://seal.exalto.ai/api/readyz
    ```
 
 4. Exercise each configured sign-in provider, local-service refresh-token rotation, and one complete

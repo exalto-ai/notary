@@ -36,9 +36,9 @@ The repository must have:
 
 `NOTARY_PUBLIC_ORIGIN` is an optional repository variable, not a secret. It
 changes the public origin compiled into clients and written into signed
-manifests, and defaults to `https://notary.exalto.ai`. The workflow checks that
+manifests, and defaults to `https://seal.exalto.ai`. The workflow checks that
 the configured origin is reachable, but final publication verification always
-checks the production Tigris origin and `https://notary.exalto.ai`.
+checks the production Tigris origin and `https://seal.exalto.ai`.
 
 The release signing private key must also be backed up outside GitHub. Its
 matching public key is committed at
@@ -175,8 +175,8 @@ The workflow verifies publication before it reports success. An operator can
 also check the public state, substituting the released version:
 
 ```bash
-curl -fsSL https://notary.exalto.ai/downloads/releases/latest
-curl -fsSL https://notary.exalto.ai/downloads/releases/channels/latest.json \
+curl -fsSL https://seal.exalto.ai/downloads/releases/latest
+curl -fsSL https://seal.exalto.ai/downloads/releases/channels/latest.json \
   | jq -e '.schema_version == "notary/release-channel-envelope/v1"'
 gh release view vX.Y.Z --repo exalto-ai/notary-runtime
 ```
@@ -229,7 +229,7 @@ The published 0.1.0 client understands only release-manifest v1. The first v2
 release binds the public source SHA and requires a one-time manual upgrade:
 
 - macOS and Linux CLI users reinstall with
-  `curl -fsSL https://notary.exalto.ai/install.sh | sh`.
+  `curl -fsSL https://seal.exalto.ai/install.sh | sh`.
 - Windows users replace their binaries from the new ZIP.
 - Desktop users install the new signed DMG.
 

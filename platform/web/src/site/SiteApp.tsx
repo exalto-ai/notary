@@ -1,6 +1,8 @@
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import '@fontsource-variable/fraunces/opsz.css';
 import '@fontsource-variable/instrument-sans';
+import '@fontsource-variable/newsreader/opsz.css';
 import '@fontsource/ibm-plex-mono/latin-400.css';
 import '@fontsource/ibm-plex-mono/latin-ext-400.css';
 import '@fontsource/ibm-plex-mono/latin-500.css';
@@ -26,6 +28,7 @@ import '../notaries.css';
 import '../axis.css';
 import '../verification.css';
 import '../sharing.css';
+import '../app-surface.css';
 import { getAuthProviders, getCurrentUser, logoutBrowser } from '../platform-api/client';
 import { RelayAnimation } from '../RelayAnimation';
 import { latestMacosDownloadHref, loadLatestPointer, macosDownloadName } from '../releaseDownloads';
@@ -46,7 +49,7 @@ import {
 
 const loadCreditUtilizationChart = () => import('../CreditUtilizationChart');
 const appleLogoUrl = new URL('../assets/platforms/apple.svg', import.meta.url).href;
-const installCommand = 'curl -fsSL https://notary.exalto.ai/install.sh | sh';
+const installCommand = 'curl -fsSL https://seal.exalto.ai/install.sh | sh';
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 type AccountIdentity = Pick<
   CurrentUser,
@@ -340,13 +343,20 @@ export function Header({
   authPending?: boolean;
 }) {
   return (
-    <header className="nav-wrap">
-      <a className="brand" href="/" aria-label="Exalto Seal home">
-        <PenMark /> <span>Exalto Seal</span>
+    <header className="app-nav">
+      <a className="app-brand" href="/" aria-label="Exalto Seal home">
+        <span>Exalto</span>
+        <small>SEAL</small>
       </a>
-      <nav className="product-nav">
-        <a href="/docs">Docs</a>
-        <a href="/pricing">Pricing</a>
+      <nav className="app-nav-links" aria-label="Product">
+        <a href="/account">Capture</a>
+        <a href="/account/traces">Sealed Traces</a>
+        <a href="/verify">Verify</a>
+      </nav>
+      <div className="app-nav-actions">
+        <a className="app-site-link" href="https://exalto.ai">
+          exalto.ai <span aria-hidden="true">↗</span>
+        </a>
         {user ? (
           <AccountMenu user={user} onLogout={onLogout} />
         ) : !hideSignIn && authPending ? (
@@ -359,12 +369,12 @@ export function Header({
           </span>
         ) : (
           !hideSignIn && (
-            <a className="sign-in-link" href="/signin">
-              <span>Sign in</span>
+            <a className="app-sign-in-link" href="/signin">
+              Sign in
             </a>
           )
         )}
-      </nav>
+      </div>
     </header>
   );
 }
@@ -455,23 +465,25 @@ export function SignInPage({
     `/api/auth/${provider}${returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : ''}`;
   if (user)
     return (
-      <main className="auth-page">
-        <section className="auth-panel">
-          <h1>Already signed in</h1>
-          <p className="auth-intro">
+      <main className="app-sign-in">
+        <section className="app-sign-in-panel">
+          <span className="app-kicker">EXALTO SEAL</span>
+          <h1>You’re already here.</h1>
+          <p>
             You’re signed in as <b>{accountName(user)}</b>.
           </p>
-          <a className="button button-dark" href="/account">
-            Open Account
+          <a className="app-primary-action" href="/">
+            Open workspace <span aria-hidden="true">→</span>
           </a>
         </section>
       </main>
     );
   return (
-    <main className="auth-page">
-      <section className="auth-panel" aria-labelledby="sign-in-title">
-        <h1 id="sign-in-title">Sign in</h1>
-        <p className="auth-intro">Continue to Exalto Seal</p>
+    <main className="app-sign-in">
+      <section className="app-sign-in-panel" aria-labelledby="sign-in-title">
+        <span className="app-kicker">EXALTO SEAL · YOUR WORKSPACE</span>
+        <h1 id="sign-in-title">Keep the record close.</h1>
+        <p>Sign in to manage Capture, Sealed Traces, and your account.</p>
         {error ? (
           <div className="auth-state" role="alert">
             <b>Sign-in options are unavailable</b>
@@ -515,13 +527,126 @@ export function SignInPage({
   );
 }
 
+function WorkspaceLoading() {
+  return (
+    <main className="app-workspace app-workspace--loading" role="status" aria-live="polite">
+      <div className="app-loading-mark" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
+      <p>Opening your workspace…</p>
+    </main>
+  );
+}
+
+function AppWorkspace({ user }: { user: CurrentUser }) {
+  const sharedTraces = user.usage.hosted_traces.shared;
+  const totalTraces = user.usage.hosted_traces.total;
+  return (
+    <main className="app-workspace" id="main">
+      <section className="app-workspace-intro" aria-labelledby="workspace-title">
+        <div>
+          <span className="app-kicker">YOUR EXALTO SEAL WORKSPACE</span>
+          <h1 id="workspace-title">Welcome back, {accountName(user)}.</h1>
+          <p>
+            Capture records what happened on your machine. Seal the Traces you choose and keep
+            control of what you share.
+          </p>
+        </div>
+        <dl className="app-workspace-status" aria-label="Capture status">
+          <div>
+            <dt>Capture</dt>
+            <dd>Ready</dd>
+          </div>
+          <div>
+            <dt>Sealed Traces</dt>
+            <dd>{totalTraces}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section className="app-products" aria-label="Your Exalto Seal tools">
+        <article className="app-product app-product--capture">
+          <div className="app-product-heading">
+            <span className="app-product-index">01</span>
+            <span className="app-product-state">AVAILABLE NOW</span>
+          </div>
+          <div className="app-product-copy">
+            <span className="app-product-overline">EXALTO CAPTURE</span>
+            <h2>Keep an account of the exchange.</h2>
+            <p>
+              Capture AI interactions locally, seal the traces you choose, and control the records
+              you share.
+            </p>
+          </div>
+          <div className="app-product-footer">
+            <span>
+              {totalTraces} {totalTraces === 1 ? 'Trace' : 'Traces'} · {sharedTraces} shared
+            </span>
+            <a className="app-primary-action" href="/account">
+              Manage Capture <span aria-hidden="true">→</span>
+            </a>
+          </div>
+        </article>
+
+        <article className="app-product app-product--seal">
+          <div className="app-product-heading">
+            <span className="app-product-index">02</span>
+            <span className="app-product-state">YOUR RECORDS</span>
+          </div>
+          <div className="app-product-copy">
+            <span className="app-product-overline">EXALTO SEAL</span>
+            <h2>Ready when you are.</h2>
+            <p>
+              Review the Traces you have sealed. Share a precise record when it serves you, and
+              leave the rest private.
+            </p>
+          </div>
+          <div className="app-product-footer">
+            <span>
+              {sharedTraces} shared · {totalTraces - sharedTraces} private
+            </span>
+            <a className="app-secondary-action" href="/account/traces">
+              Manage Traces <span aria-hidden="true">→</span>
+            </a>
+          </div>
+        </article>
+      </section>
+
+      <section className="app-record-tools" aria-labelledby="record-tools-title">
+        <div>
+          <span className="app-kicker">THE RECORD</span>
+          <h2 id="record-tools-title">Work with the evidence, not around it.</h2>
+        </div>
+        <nav aria-label="Record tools">
+          <a href="/account">
+            <span>Account</span>
+            <small>Devices, plan, and settings</small>
+          </a>
+          <a href="/verify">
+            <span>Verify a Trace</span>
+            <small>Inspect a record independently</small>
+          </a>
+          <a href="/registry">
+            <span>Notary registry</span>
+            <small>See the public notaries</small>
+          </a>
+        </nav>
+      </section>
+    </main>
+  );
+}
+
 export function Footer() {
   return (
-    <footer className="site-footer">
+    <footer className="app-footer">
       <span className="footer-copyright">
-        <b>Exalto Seal</b> <span>· © 2026</span>
+        <b>Exalto Seal</b> <span>· Evidence stays yours</span>
       </span>
       <nav aria-label="Footer">
+        <a href="https://exalto.ai">About Exalto</a>
+        <a href="/docs">Docs</a>
         <a href="/verify">Verify</a>
         <a href="/traces">Traces</a>
         <a href="/registry">Registry</a>
@@ -1002,6 +1127,7 @@ export function App({
   const sectionAnchor = new URLSearchParams(path.split('?')[1] || '').get('section');
   const isPublicTraces = section === 'traces';
   const accountLoading = section === 'account' && authPending;
+  const workspaceLoading = !section && authPending;
   useEffect(() => {
     const titles: Record<string, string> = {
       authorize: 'Connect device',
@@ -1035,7 +1161,7 @@ export function App({
       <Header
         user={user}
         onLogout={logout}
-        hideSignIn={section === 'authorize' || section === 'signin'}
+        hideSignIn={section === 'authorize' || section === 'signin' || (!section && !user)}
         authPending={authPending}
       />
       {directTraceId ? (
@@ -1052,6 +1178,12 @@ export function App({
         <PublicTraces />
       ) : section === 'registry' ? (
         <RegistryPage />
+      ) : workspaceLoading ? (
+        <WorkspaceLoading />
+      ) : !section && user ? (
+        <AppWorkspace user={user} />
+      ) : !section ? (
+        <SignInPage route="signin" user={null} />
       ) : accountLoading ? (
         <DashboardAuthLoading />
       ) : section === 'account' && user ? (
@@ -1071,9 +1203,9 @@ export function App({
       ) : isLegalPage(section) ? (
         <LegalPage pageKey={section} />
       ) : (
-        <Landing />
+        <SignInPage route="signin" user={user} />
       )}
-      {!isPublicTraces && !accountLoading && <Footer />}
+      {!isPublicTraces && !accountLoading && !workspaceLoading && <Footer />}
     </>
   );
 }

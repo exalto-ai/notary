@@ -25,7 +25,7 @@ jobs:
     name: Validate release origin
     runs-on: ubuntu-24.04
     env:
-      PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://notary.exalto.ai' }}
+      PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
     steps:
       - name: Verify the compiled public origin
         run: |
@@ -291,7 +291,7 @@ jobs:
     needs: prepare
     timeout-minutes: 90
     env:
-      NOTARY_PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://notary.exalto.ai' }}
+      NOTARY_PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
       NOTARY_BUILD_ID: ${{ needs.prepare.outputs.build_id }}
       NOTARY_UPDATES_ENABLED: 1
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
@@ -392,7 +392,7 @@ jobs:
       sign: true
       source_ref: ${{ needs.prepare.outputs.private_tag }}
       build_id: ${{ needs.prepare.outputs.build_id }}
-      public_origin: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://notary.exalto.ai' }}
+      public_origin: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
       updates_enabled: true
     secrets: inherit
 
@@ -404,7 +404,7 @@ jobs:
     env:
       BUILD_ID: ${{ needs.prepare.outputs.build_id }}
       CHANNEL: latest
-      PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://notary.exalto.ai' }}
+      PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
       PUBLIC_SHA: ${{ needs.prepare.outputs.public_sha }}
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -703,11 +703,11 @@ jobs:
           cmp "$RUNNER_TEMP/channel.json" "$RUNNER_TEMP/published-channel.json"
           website="$(curl --fail --silent --show-error --location \
             --retry 30 --retry-all-errors --retry-delay 2 --retry-max-time 90 \
-            https://notary.exalto.ai/downloads/releases/latest)"
+            https://seal.exalto.ai/downloads/releases/latest)"
           test "$website" = "$expected"
           curl --fail --silent --show-error --location \
             --retry 30 --retry-all-errors --retry-delay 2 --retry-max-time 90 \
-            https://notary.exalto.ai/downloads/releases/channels/latest.json \
+            https://seal.exalto.ai/downloads/releases/channels/latest.json \
             -o "$RUNNER_TEMP/website-channel.json"
           cmp "$RUNNER_TEMP/channel.json" "$RUNNER_TEMP/website-channel.json"
       - name: Publish public source release

@@ -281,7 +281,7 @@ jobs:
       - name: Verify web to API compatibility
         run: >-
           curl --fail --retry 5 --retry-all-errors --retry-delay 2
-          --max-time 20 https://notary.exalto.ai/api/readyz
+          --max-time 20 https://seal.exalto.ai/api/readyz
       # Deliberately present a capture ticket as a notarization. The notary
       # must reach the authenticated platform API and return admission_denied,
       # but it must not admit the operation or consume the ticket.
@@ -295,7 +295,7 @@ jobs:
           import urllib.error
           import urllib.request
 
-          api_url = "https://notary.exalto.ai/api/notary/admissions"
+          api_url = "https://seal.exalto.ai/api/notary/admissions"
           hostname = "alice.notary.exalto.ai"
           target = (hostname, 443)
           last_error = None
@@ -354,7 +354,7 @@ jobs:
       - name: Verify new web to API readiness
         run: >-
           curl --fail --retry 5 --retry-all-errors --retry-delay 2
-          --max-time 20 https://notary.exalto.ai/api/readyz
+          --max-time 20 https://seal.exalto.ai/api/readyz
       - name: Verify website download proxy
         # Hosted promotion and Runtime publication are independent. Require the
         # existing public pointer to remain readable after the gateway change.
@@ -362,7 +362,7 @@ jobs:
           set -euo pipefail
           pointer="$(curl --fail --silent --show-error --location \
             --retry 15 --retry-all-errors --retry-delay 2 --retry-max-time 60 \
-            https://notary.exalto.ai/downloads/releases/latest)"
+            https://seal.exalto.ai/downloads/releases/latest)"
           case "$pointer" in
             *" "*) ;;
             *) echo "the website latest pointer is malformed" >&2; exit 1 ;;

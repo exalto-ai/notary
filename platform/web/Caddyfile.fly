@@ -1,4 +1,10 @@
 :80 {
+	# Seal is the canonical hosted product. Preserve public verification, share,
+	# download, and account links from the retired hostname without serving a
+	# second application surface.
+	@retired_notary host notary.exalto.ai
+	redir @retired_notary https://seal.exalto.ai{uri} permanent
+
 	route {
 		handle_path /downloads/* {
 			reverse_proxy https://notary-prod-downloads.t3.tigrisfiles.io {

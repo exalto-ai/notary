@@ -2,7 +2,7 @@
 set -euo pipefail
 
 app="${1:-llm-notary-prod-api}"
-public_origin="${NOTARY_API_PUBLIC_ORIGIN:-https://notary.exalto.ai}"
+public_origin="${NOTARY_API_PUBLIC_ORIGIN:-https://seal.exalto.ai}"
 
 status="$(flyctl status --app "$app" --json)"
 jq -e --arg app "$app" '

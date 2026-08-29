@@ -34,8 +34,13 @@ if (!llms.startsWith('# Exalto Seal\n')) {
 }
 requireText(mark, '<title id="title">Exalto Seal</title>', 'public mark title');
 requireText(favicon, '<title id="title">Exalto Seal</title>', 'favicon title');
-requireText(siteApp, '<PenMark /> <span>Exalto Seal</span>', 'site header identity');
-requireText(siteApp, '<b>Exalto Seal</b> <span>· © 2026</span>', 'site footer identity');
+requireText(siteApp, 'aria-label="Exalto Seal home"', 'site header identity');
+requireText(siteApp, '<small>SEAL</small>', 'site header product label');
+requireText(
+  siteApp,
+  '<b>Exalto Seal</b> <span>· Evidence stays yours</span>',
+  'site footer identity',
+);
 requireText(publicTracePages, "'Shared trace · Exalto Seal'", 'shared Trace title identity');
 requireText(
   accountDashboard,
@@ -71,5 +76,10 @@ for (const [label, caddy] of [
   requireText(caddy, '@shared path /s/*', label);
   requireText(caddy, 'X-Robots-Tag "noindex, nofollow, noarchive"', label);
 }
+requireText(
+  flyCaddy,
+  'redir @retired_notary https://seal.exalto.ai{uri} permanent',
+  'Seal hostname redirect',
+);
 
 process.stdout.write('Hosted identity metadata and assets are consistent.\n');
