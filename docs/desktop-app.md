@@ -356,36 +356,35 @@ the desktop app refuses to unlock them because it cannot safely reject a typo
 before starting capture. Vault migration remains a future workflow. Settings
 explains this instead of silently changing protection for existing captures.
 
-## Naming and compatibility identifiers
+## Naming and identity
 
-The visible product and macOS bundle are Exalto Capture. Compatibility-sensitive
-identifiers remain unchanged so the app can reuse existing data safely:
+The permanent installed macOS identity is Exalto Capture:
 
-- Tauri `productName`, macOS `bundleName`, `CFBundleDisplayName`, and visible
-  menu labels are Exalto Capture.
-- The application identifier remains `ai.exalto.notary`.
-- The `notary-app`, `notaryd`, and `notaryctl` executable and package names
-  remain unchanged.
-- Existing `notary` data paths, Keychain service names, updater object names,
-  internal routes, enums, and onboarding markers remain compatible. The
-  updater object names are transport identifiers and are not the installed
-  application name.
-- An enabled legacy `Notary.plist` LaunchAgent is migrated once to
-  `Exalto Capture.plist` when the app runs from `/Applications` or the current
-  user's `Applications` directory. Development and disk-image launches never
-  rewrite the user's launch-at-login entry.
-- `.llmcapture` and `.llmtrace` extensions remain unchanged.
+- Tauri `productName`, macOS `bundleName`, `CFBundleDisplayName`, the visible
+  menu labels, and the installed bundle name are Exalto Capture.
+- The application identifier is `ai.exalto.capture`.
+- Launch at login uses the `Exalto Capture.plist` LaunchAgent with the
+  `Exalto Capture` label.
+- Published desktop files are named
+  `Exalto-Capture-macos-arm64.dmg` and
+  `Exalto-Capture-macos-arm64.app.tar.gz`.
 
-An existing `Notary.app` updated in place can retain its old filesystem name
-because Tauri replaces the current bundle at its current path. A fresh install
-uses `Exalto Capture.app`. Test the old-client update and duplicate-app path
-before relying on an automatic filesystem rename for existing installations.
+The release line starts with this identity and does not include an automatic
+migration from pre-release `Notary.app` builds. Remove a pre-release build and
+install Exalto Capture as a fresh application.
+
+Technical runtime identities remain intentionally separate from the installed
+application identity. The `notary-app` wrapper executable, `notaryd`,
+`notaryctl`, local `notary` data paths, and Keychain service names are shared
+with the command-line runtime. Internal routes, enums, signed update schemas,
+onboarding markers, and the `.llmcapture` and `.llmtrace` extensions also keep
+their protocol names.
 
 ## Develop from source
 
-The desktop app is built with Tauri 2 under the compatibility package and
-executable name `notary-app`. The source stays portable so Windows and Linux
-packaging can follow without replacing the application shell.
+The desktop app is built with Tauri 2 under the internal package and executable
+name `notary-app`. The source stays portable so Windows and Linux packaging can
+follow without replacing the application shell.
 
 Install the desktop dependencies once:
 

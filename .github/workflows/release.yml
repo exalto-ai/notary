@@ -555,8 +555,8 @@ jobs:
             "notary-runtime-${VERSION}-linux-aarch64.tar.gz" \
             "notary-runtime-${VERSION}-darwin-aarch64.tar.gz" \
             "notary-runtime-${VERSION}-windows-x86_64.zip" \
-            "Notary-macos-arm64.dmg" \
-            "Notary-macos-arm64.app.tar.gz" \
+            "Exalto-Capture-macos-arm64.dmg" \
+            "Exalto-Capture-macos-arm64.app.tar.gz" \
             "notaryctl-linux-x86_64" \
             "notaryd-linux-x86_64" \
             "notaryctl-linux-aarch64" \
@@ -570,7 +570,7 @@ jobs:
             test -f "release/$asset.sha256"
             (cd release && sha256sum --check "$asset.sha256")
           done
-          test -s release/Notary-macos-arm64.app.tar.gz.sig
+          test -s release/Exalto-Capture-macos-arm64.app.tar.gz.sig
           test -s release/release.json.sig
           test -s release/channel.json
           test "$(jq -r .schema_version release/release.json)" = notary/release/v2
@@ -661,9 +661,9 @@ jobs:
           base64 --decode "$RUNNER_TEMP/public-release/release.json.sig" > "$RUNNER_TEMP/release.minisig"
           minisign -Vm "$RUNNER_TEMP/public-release/release.json" \
             -p "$RUNNER_TEMP/updater.pub" -x "$RUNNER_TEMP/release.minisig"
-          base64 --decode "$RUNNER_TEMP/public-release/Notary-macos-arm64.app.tar.gz.sig" \
+          base64 --decode "$RUNNER_TEMP/public-release/Exalto-Capture-macos-arm64.app.tar.gz.sig" \
             > "$RUNNER_TEMP/desktop.minisig"
-          minisign -Vm "$RUNNER_TEMP/public-release/Notary-macos-arm64.app.tar.gz" \
+          minisign -Vm "$RUNNER_TEMP/public-release/Exalto-Capture-macos-arm64.app.tar.gz" \
             -p "$RUNNER_TEMP/updater.pub" -x "$RUNNER_TEMP/desktop.minisig"
           jq -r .signed "$RUNNER_TEMP/public-release/channel.json" \
             | base64 --decode > "$RUNNER_TEMP/channel.payload.json"

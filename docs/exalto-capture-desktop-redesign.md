@@ -32,7 +32,7 @@ The shell around that workflow is fragmented:
 - The menu bar and Help menu do not provide a complete task path.
 - Onboarding selects a provider but does not persist or validate that choice, and it does not prove that the first request was captured.
 
-The redesign resolves the shell and first-run issues while preserving the working trace lifecycle and compatibility boundaries.
+The redesign resolves the shell and first-run issues while preserving the working trace lifecycle and technical runtime boundaries.
 
 ## New information architecture
 
@@ -117,23 +117,27 @@ The complete `.llmcapture` artifact is vault-encrypted. When retained previews a
 
 Official key-creation links are opened through a fixed native allowlist rather than an arbitrary URL from the webview. Provider credentials are never sent to the sealing service.
 
-## Naming and compatibility boundary
+## Naming and permanent identity boundary
 
-This release changes the visible product name to **Exalto Capture** while preserving installed identity and user data compatibility:
+This release establishes one clean installed identity for **Exalto Capture**:
 
-- Set `productName`, the macOS `bundleName`, `CFBundleDisplayName`, and visible application-menu labels to **Exalto Capture**.
-- Keep bundle identifier `ai.exalto.notary`.
-- Keep the `notary-app`, `notaryd`, and `notaryctl` executable and package identities.
-- Keep local `notary` data paths, Keychain service names, onboarding markers, internal routes, enums, and `.llmcapture` and `.llmtrace` extensions.
-- Keep existing updater object names and update-channel compatibility. Those
-  transport identifiers do not control the installed bundle name.
-- Safely migrate an enabled legacy `Notary.plist` LaunchAgent to
-  `Exalto Capture.plist` only from a durable Applications install, leaving
-  unrecognized entries and development or disk-image launches untouched.
+- `productName`, the macOS `bundleName`, `CFBundleDisplayName`, the installed
+  `Exalto Capture.app` bundle, and visible application-menu labels all use the
+  product name.
+- The bundle identifier is `ai.exalto.capture`.
+- Launch at login uses the `Exalto Capture.plist` LaunchAgent with the
+  `Exalto Capture` label.
+- Public desktop artifacts are
+  `Exalto-Capture-macos-arm64.dmg` and
+  `Exalto-Capture-macos-arm64.app.tar.gz`.
+- There is no automatic migration from the pre-release `Notary.app` or
+  `Notary.plist` identities. Pre-release builds are removed before a fresh
+  Exalto Capture installation.
 
-A fresh install is named `Exalto Capture.app`. An existing `Notary.app` updated
-in place can retain its filesystem path, so old-client update, duplicate-app,
-autostart, and vault-access behavior still require release testing.
+The `notary-app`, `notaryd`, and `notaryctl` executable and package identities
+remain internal runtime names. Local `notary` data paths, Keychain service
+names, onboarding markers, internal routes, signed update schemas, enums, and
+the `.llmcapture` and `.llmtrace` extensions remain protocol-level identities.
 
 The hosted Public Traces destination is `https://seal.exalto.ai/traces`, the same canonical Exalto Seal origin used for hosted accounts and verification. The updater origin remains unchanged in this PR so installed clients keep a working update channel.
 
@@ -171,5 +175,4 @@ The following items remain intentionally outside this PR:
 - A simpler native in-app seal and verify path, including an optional first-run action for the disposable trace.
 - A shared-trace collection API before adding a local Shared or Public Traces destination.
 - Direct Codex desktop support, any supported Claude Desktop route, and future provider expansion such as xAI and Grok.
-- An automatic rename migration for existing `Notary.app` installations after updater, duplicate-app, autostart, and vault-access testing.
 - An optional live hosted sealing check for a small disposable trace once Exalto Seal is release-ready.
