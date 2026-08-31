@@ -491,8 +491,8 @@ pub fn run() {
             Some(AppMenuAction::HelpGuide) => {
                 let _ = open_product_link("guide".into());
             }
-            Some(AppMenuAction::HelpCatalogue) => {
-                let _ = open_product_link("catalogue".into());
+            Some(AppMenuAction::HelpPublicTraces) => {
+                let _ = open_product_link("public_traces".into());
             }
             Some(AppMenuAction::HelpReport) => {
                 let _ = open_product_link("report".into());
@@ -907,8 +907,8 @@ mod tests {
     #[test]
     fn product_links_are_an_explicit_allowlist() {
         assert_eq!(
-            product_link("catalogue"),
-            Some("https://llm-notary.exalto.ai/traces")
+            product_link("public_traces"),
+            Some("https://seal.exalto.ai/traces")
         );
         assert_eq!(product_link("guide"), Some("https://exalto.ai/docs/"));
         assert_eq!(

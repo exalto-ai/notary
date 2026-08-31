@@ -44,7 +44,7 @@ The primary navigation contains only:
 - **Traces**, for reviewing, sealing, verifying, exporting, and sharing traces.
 - **Settings**, with Preferences, AI connections, and Activity log sections.
 
-Trace Catalogue is a separate external destination. It is not presented as a
+Public Traces is a separate external destination. It is not presented as a
 fourth local workspace.
 
 The Capture screen combines service startup and capture enablement in one
@@ -298,8 +298,8 @@ The macOS status menu provides:
 - Quit Exalto Capture
 
 The application menu uses About Exalto Capture, Settings…, Hide Exalto Capture,
-and Quit Exalto Capture. Help provides the Exalto Capture guide, Trace
-Catalogue, problem reporting, and About Exalto Capture. Standard macOS File,
+and Quit Exalto Capture. Help provides the Exalto Capture guide, Public Traces,
+problem reporting, and About Exalto Capture. Standard macOS File,
 Edit, View, and Window behavior remains intact.
 
 ## Automatic updates
