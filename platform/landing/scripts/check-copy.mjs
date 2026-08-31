@@ -33,6 +33,7 @@ const docPages = [
 const failures = [];
 
 const banned = [
+  [/\balice\b/i, 'Alice signer persona (use the server-supplied signer identity)'],
   [/notariz/i, 'notarize/notarization (say seal/sealing)'],
   [/finaliz/i, 'finaliz* (retired vocabulary; say seal)'],
   [/checkpoint/i, 'checkpoint (reserved for the runtime private capture state)'],

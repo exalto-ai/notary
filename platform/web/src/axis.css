@@ -1,4 +1,4 @@
-/* Axis is intentionally a working surface: hierarchy comes from rules, type, and selection—not card stacks. */
+/* Working surfaces get hierarchy from rules, type, and selection, not card stacks. */
 :root {
   color-scheme: light;
   --ink: #101010;

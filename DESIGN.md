@@ -1,53 +1,53 @@
 ---
 version: beta
-name: Notary by Exalto / Axis
-description: A compact evidence workspace for people who need to find, inspect, notarize, and verify LLM interactions without ceremony.
+name: Exalto
+description: The design language for Exalto Capture, Exalto Seal, and Exalto's public evidence surfaces.
 colors:
-  canvas: "#FFFFFF"
-  surface: "#FFFFFF"
-  surface-active: "#F2F2F2"
-  section-muted: "#F5F5F5"
-  ink: "#101010"
-  muted: "#6B6B6B"
-  rule: "#D4D4D4"
-  rule-soft: "#E7E7E7"
-  action: "#1C55CD"
-  action-ink: "#143D94"
-  action-soft: "#B9D8FF"
-  action-fill: "#1C55CD"
-  action-fill-hover: "#143D94"
+  canvas: "#F5F3EC"
+  surface: "#FDFCF7"
+  surface-active: "#EAE7DE"
+  section-muted: "#EBE8DD"
+  ink: "#1A2233"
+  muted: "#6D7482"
+  rule: "rgba(26, 34, 51, 0.14)"
+  rule-soft: "rgba(26, 34, 51, 0.08)"
+  action: "#1E4A73"
+  action-ink: "#16395A"
+  action-soft: "rgba(30, 74, 115, 0.10)"
+  action-fill: "#1E4A73"
+  action-fill-hover: "#16395A"
   action-contrast: "#FFFFFF"
-  inverse-accent: "#B9D8FF"
-  attention: "#A85F25"
-  attention-soft: "#F4C27C"
-  dark-canvas: "#000000"
-  dark-surface: "#0B0B0B"
-  dark-surface-active: "#171717"
-  dark-section-muted: "#0B0B0B"
-  dark-ink: "#F5F5F5"
-  dark-muted: "#A0A0A0"
-  dark-rule: "#2C2C2C"
-  dark-action: "#6D92FF"
-  dark-action-ink: "#A9BEFF"
-  dark-action-soft: "#1A2340"
-  dark-action-fill: "#1C55CD"
-  dark-action-fill-hover: "#285FD1"
-  dark-action-contrast: "#FFFFFF"
-  dark-inverse-accent: "#B9D8FF"
+  inverse-accent: "#8FC6EE"
+  attention: "#A86526"
+  attention-soft: "rgba(168, 101, 38, 0.12)"
+  dark-canvas: "#0E1721"
+  dark-surface: "#16222D"
+  dark-surface-active: "#1C2A36"
+  dark-section-muted: "#1C2A36"
+  dark-ink: "#F2F0E8"
+  dark-muted: "#A5AFBB"
+  dark-rule: "#354452"
+  dark-action: "#75ABD3"
+  dark-action-ink: "#9AC8E8"
+  dark-action-soft: "rgba(117, 171, 211, 0.13)"
+  dark-action-fill: "#2D678F"
+  dark-action-fill-hover: "#39779F"
+  dark-action-contrast: "#FDFCF7"
+  dark-inverse-accent: "#8FC6EE"
 typography:
   display:
-    fontFamily: "Instrument Sans Variable"
+    fontFamily: "-apple-system, BlinkMacSystemFont, SF Pro Display, Helvetica Neue, Arial, sans-serif"
     fontWeight: 600
-    letterSpacing: "-0.05em"
-    lineHeight: 0.93
+    letterSpacing: "-0.025em"
+    lineHeight: 1.1
   interface:
-    fontFamily: "Instrument Sans Variable"
+    fontFamily: "-apple-system, BlinkMacSystemFont, SF Pro Text, Helvetica Neue, Arial, sans-serif"
     fontWeight: 400
     lineHeight: 1.45
   data:
-    fontFamily: "IBM Plex Mono"
+    fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, monospace"
     fontWeight: 500
-    letterSpacing: "0.05em"
+    letterSpacing: "0.03em"
     lineHeight: 1.3
 shape:
   controlRadius: 0px
@@ -67,24 +67,24 @@ layout:
 
 # Exalto design language
 
-Exalto ships two deliberately different design systems under one brand, and this
-document governs both. The front-matter tokens above belong to **Axis**, the
-operational product system, and are consumed as machine-readable tokens; do not
-edit them for marketing work.
+Exalto uses two deliberately different interface modes under one brand, and this
+document governs both. The front-matter tokens above belong to the local
+developer workspace used by Exalto Capture and its embedded administration
+surfaces. Do not edit them for marketing work.
 
 | Surface | System | Section |
 | --- | --- | --- |
 | exalto.ai landing and its /docs pages (`platform/landing`) | **Ledger Phosphor** | Part II |
-| Hosted product site and Account (`platform/web`, moving to seal.exalto.ai) | **Axis** | Part III |
-| Local admin dashboard (`runtime/apps/admin-dashboard`) | **Axis** | Part III |
-| Desktop app (`apps/notary-app`) | **Axis** chrome, **Exalto** app icon | Parts I + III |
+| Hosted Exalto Seal site, Account, and public traces (`platform/web`) | **Ledger Phosphor** | Parts I + II |
+| Local admin dashboard (`runtime/apps/admin-dashboard`) | **Developer workspace** | Part III |
+| Exalto Capture desktop app (`apps/notary-app`) | **Developer workspace**, **Exalto Capture** app icon | Parts I + III |
 | Brand marks, icon kits, illustration | **Shared** | Part I |
 
-The split is a snapshot of the rebrand in motion: the Exalto identity leads on
-marketing surfaces today and extends to the product surfaces when the hosted
-site takes the seal.exalto.ai name. Until then, Axis rules keep governing
-operational UI exactly as before. Statements like "never warm cream" are scoped
-to their system; they are not contradictions.
+The split is settled. Ledger Phosphor carries Exalto's public story and the
+hosted Exalto Seal experience. Exalto Capture and the local dashboard use a
+quieter, system-native workspace for developers while keeping the same evidence
+colors, marks, and vocabulary. A rule scoped to one mode does not automatically
+apply to the other.
 
 ---
 
@@ -103,12 +103,16 @@ to their system; they are not contradictions.
   the hero closes with it) · "Verification wants to be free." (pricing
   doctrine; the page label currently reads "COSTS?").
 - **Product names (frozen):** Exalto Notary Protocol (**ENP**), **Exalto
-  Capture** (the desktop recorder; ships today under the working name Notary),
-  **Exalto Seal** (the hosted notary; signs as Alice), **Proof of Thought**
+  Capture** (the macOS capture app), **Exalto Seal** (the hosted sealing and
+  verification product), **Proof of Thought**
   (first-party writing app, early access). **Exalto Verify is retired as a
   separate brand**: verification and shared-trace pages live under Seal, and a
   shared trace shows as "Exalto Seal Verified". Lowercase "notary" survives
   only as the technical role term, the way PKI says "certificate authority".
+- **Signer identity:** every Registry record supplies the exact server identity
+  recorded with its signatures. Exalto Seal signs as `Seal`; deployments with
+  multiple servers may use names such as `seal1` and `seal2`. The signer is
+  evidence metadata, not a fictional persona or a separate product name.
 
 ## The house glyph and product marks
 
@@ -148,8 +152,11 @@ and the center of the Seal stamp. All marks are drawn in brand blue `#0C1622`
   hand and living process**: YOU labels, TRACKED LOCALLY, human washes, carets,
   live statuses, the ledger thread.
 - **`#35e39b` is only ever a glow or a hairline accent, never a fill.**
-- **Recording red `#b3402a`** exists solely for REC.
-- **Faded** = sealed-but-undisclosed. **No amber anywhere.**
+- **Recording red `#b3402a`** marks REC plus destructive or failed local
+  states. It is never a decorative fill.
+- **Faded** = sealed-but-undisclosed. Amber is not a brand or attribution
+  color; the local developer workspace may use muted ochre only for an
+  actionable warning.
 
 ## Vocabulary and doctrine (design-adjacent, CI-enforced)
 
@@ -168,7 +175,7 @@ the repo-wide product model is enforced by `scripts/check-terminology.mjs`.
 
 ---
 
-# Part II · Ledger Phosphor (marketing surfaces)
+# Part II · Ledger Phosphor (public and hosted surfaces)
 
 "Record + Protocol" in Ledger Phosphor — option 7a of the homepage
 exploration, chosen over forest+amber, Sealing Wax, and Counterproof variants.
@@ -178,6 +185,10 @@ recorded and sealed, and the attribution code from Part I threaded through
 every section. The full decision history lives in the design handoff
 (`design_handoff_exalto_7a/`, kept outside the repo); the shipped page in
 `platform/landing` is the copy authority.
+
+Exalto Seal uses the same palette, typography, evidence grammar, and reading
+surfaces at greater operational density. Its account controls remain compact,
+but they do not revert to a separate product identity or design system.
 
 ## Tokens
 
@@ -209,8 +220,8 @@ Slow ambient loops only, no entrance animations: the hero ledger scroll (56s,
 duplicated list, masked fades), blinking cursor/REC (step-end), pulsing seal
 chips, crawling diagram dashes and section rules. All animation is pure
 CSS/SVG, pauses when the document is hidden, and dies completely under
-`prefers-reduced-motion`. (This is the opposite of Axis's one-pass motion
-doctrine; each applies only on its own surfaces.)
+`prefers-reduced-motion`. (This is the opposite of the developer workspace's
+one-pass motion doctrine; each applies only on its own surfaces.)
 
 ## Illustration — "Ledger Grain pointillist"
 
@@ -265,14 +276,14 @@ unevenness with the shared seed, not the palette.
   a ten-chip row of secondary use cases below.
 - **Receipt card:** the sealed trace as a tangible artifact — mono rows
   (trace · provider + TLS ✓ · messages · sessions · sha-256 · **witnessed**
-  UTC · notary), header chip `sealed ✓`, pulsing verified footer. No
+  UTC · signer), header chip `sealed ✓`, pulsing verified footer. No
   live-capture row inside evidence rows.
 - **Ecosystem stack:** layered rows with a right-aligned mono rail (APP LAYER
   → ON YOUR MACHINE → THE NOTARIES → THE NETWORK), connector lines that state
   the trust boundary ("THE NOTARY WITNESSES ONLY CIPHERTEXT · A SIGNED RECEIPT
   RETURNS"), the Capture mini-window with blinking REC, and the ENP band with
-  the animated node graph. Never call Seal "our notary service" — one notary
-  among many; the kicker sentence is a required string.
+  the animated node graph. Exalto Seal is the first-party hosted option, never
+  the only notary; the kicker sentence is a required string.
 - **Trust model:** the two lists stay on the homepage — filled blue ✓ squares
   for what a trace proves, hairline ✕ squares for what it cannot. This is the
   credibility strategy, not a compliance page.
@@ -292,15 +303,15 @@ shrink need `min-width: 0`; wide content scrolls inside its own container.
 
 ---
 
-# Part III · Axis (operational surfaces)
+# Part III · Developer workspace (local operational surfaces)
 
-Axis is the product posture: evidence infrastructure for people who already
-understand model providers and the difference between a claim and a record.
-It must never read like a generic AI product or a marketing dashboard. The
-front-matter tokens describe this system. Within Axis surfaces, the visual
-signature is the indigo rounded-square pen mark; the ordinary product name is
-`Notary`, formally `Notary by Exalto` (until the Exalto Capture / seal.exalto.ai
-rename lands, which will revise this part).
+The local developer workspace is evidence infrastructure for people who already
+understand model providers and the difference between a claim and a record. It
+must never read like a generic AI product or a marketing dashboard. The
+front-matter tokens describe this mode. The product name is **Exalto Capture**,
+and its visual signature is the Recorder mark. When the workspace refers to the
+first-party hosted service, the product is **Exalto Seal**. A server-supplied
+signer identity such as `Seal` or `seal1` is shown separately in evidence facts.
 
 ## The governing rule: start with the work
 
@@ -312,24 +323,23 @@ concise fact (`Request — Private on this device`), not as ambient reassurance.
 
 ## Color
 
-Axis is monochrome by default: true white canvas in light mode, true black in
-dark. Blue is a signal, never an atmosphere. `action` (#1C55CD) marks
-selection, focus, and small highlights and is never a large text-bearing
-background; `action-fill` carries solid primary controls with white text in
-both themes; `inverse-accent` is the pale blue for small technical values on
-black; `attention` appears only for real problems. **Within Axis surfaces:**
-never navy as a default surface, never gradients, glow, or warm cream — those
-belong to Ledger Phosphor and stop at the marketing boundary. Normal text and
-controls meet WCAG AA in both modes.
+The developer workspace is restrained by default: paper and ink in light mode,
+deep navy and pale ink in dark mode. Blue is a signal, never an atmosphere.
+`action` marks selection, focus, and small highlights and is never a large
+text-bearing background; `action-fill` carries solid primary controls with
+white text in both themes; `inverse-accent` is the pale blue for small technical
+values on dark surfaces; `attention` appears only for real problems. Local
+workspaces use no gradients or decorative glow. Normal text and controls meet
+WCAG AA in both modes.
 
 ## Typography
 
-Two families, three roles: **Instrument Sans Variable** for display and
-interface (scale and weight distinguish thesis from controls; never a second
-sans), **IBM Plex Mono** for evidence — identifiers, status, provider/model
-strings, timestamps, counts, code. Display 52–78px for a single landing
-thesis; record titles 24–32; interface 12–16; data labels 9–11. Uppercase
-mono only where a field name or compact state aids scanning, never as texture.
+Three system-native roles: the macOS display stack for headings, the macOS text
+stack for interface and prose, and the system monospace stack for identifiers,
+status, provider/model strings, timestamps, counts, and code. Record titles are
+24–32px; interface text is 12–16px; metadata has an 11px floor. Uppercase mono
+appears only where a field name or compact state aids scanning, never as
+texture. Exalto Capture ships no separate webfont payload.
 
 ## Layout and density
 
@@ -348,11 +358,11 @@ doubled borders.
 - **Navigation:** a single horizontal band; active items take an indigo rule,
   never a pill; counts in mono only when they change a decision.
 - **Controls:** rectangular `action-fill` primaries with white text; direct
-  verbs ("Notarize trace", "Share trace", "Revoke device"); one primary per
+  verbs ("Seal trace", "Share trace", "Revoke device"); one primary per
   screen. Secondary actions bordered or text-only; square neutral filters;
   inputs with a visible 1px rule. No rounded pills, floating buttons, or
   icon-only actions without labels. Behavior-heavy primitives use shadcn/Radix
-  restyled through Axis variables — a primitive is not permission to accept
+  restyled through workspace variables — a primitive is not permission to accept
   its default radius or shadow.
 - **Lists and inspectors:** continuous rule-separated rows; selection gets
   `surface-active` plus a 3px indigo inset; hover never lifts or shadows.
@@ -376,12 +386,12 @@ Motion explains an evidence transition. The relay diagram moves in one
 deliberate pass and rests; selection and dialogs fade in 120–160ms; nothing
 springs, spins, or loops indefinitely. Respect `prefers-reduced-motion` by
 showing final states. (The marketing surfaces' ambient loops are a deliberate
-Ledger Phosphor exception and stay on that side of the boundary.)
+Ledger Phosphor exception and stay on hosted and marketing surfaces.)
 
 ## Copy
 
 Write for a user deciding what to do with an evidence record: sentence case,
-direct nouns, real state names ("Notarize trace", "3 traces match this
+direct nouns, real state names ("Seal trace", "3 traces match this
 view"). Avoid generic AI-product language ("unlock", "seamless", "delve",
 "robust") and empty trust claims. Use actual values in comparisons and
 fixtures, never invented dashboards.
@@ -392,12 +402,11 @@ fixtures, never invented dashboards.
 
 ## Which system, which words
 
-Ledger Phosphor surfaces speak the Part I marketing vocabulary
-(capture · seal · verify; no "notarize"). Axis surfaces speak the settled
-product model (Trace, Captured, Notarized) that `check-terminology.mjs`
-enforces repo-wide. This is intentional during the transition; the boundary is
-the marketing/product line, and the seal.exalto.ai rename is the event that
-moves it.
+Every user-facing surface speaks the settled product model: Exalto Capture,
+Exalto Seal, Trace, Captured, Sealed, and the verbs capture · seal · verify.
+Runtime APIs retain `notarized` states and notarization operation names for
+protocol compatibility. Lowercase notary remains valid for the technical role,
+including compatible third-party and self-hosted notaries.
 
 ## Enforcement
 
@@ -406,8 +415,8 @@ moves it.
   CI job, and inside the deploy image build.
 - `scripts/check-terminology.mjs` — repo-wide retired-term and brand audit
   (scans tracked files; stage new files before running).
-- `platform/web/scripts/test-brand.mjs` — the product site's "Notary by
-  Exalto" identity (unchanged until the rename).
+- `platform/web/scripts/test-brand.mjs` — the hosted Exalto Seal identity and
+  retired-brand regression checks.
 - The `Deploy landing` workflow ships `platform/landing` to exalto.ai on every
   merge to main that touches it, digest-pinned with automatic rollback.
 
@@ -421,15 +430,14 @@ moves it.
 | Landing web icons (Capture/Seal) | `platform/landing/public/icons/` |
 | Ledger Grain tile art (WebP, 1000×333) | `platform/landing/public/art/` |
 | Desktop app bundle icons (Capture set) | `apps/notary-app/src-tauri/icons/` |
-| Product-site mark (pen, Axis) | `platform/web/public/notary-mark.svg` |
+| Hosted site's retained pen asset (legacy filename) | `platform/web/public/notary-mark.svg` |
 
 ## Open design items
 
 - Commissioned exalto.ai site mark and OG image (the placeholder favicon "E"
   stands in; a Ledger Grain crop or rendered receipt card are candidates).
-- The Notary → Exalto Capture rename: product name, DMG identity, updater
-  namespace migration, and this document's Part III revision.
-- The seal.exalto.ai brand flip for the product site (Seal favicons ready in
-  `brand/exalto-seal/web/`), including retitling the Registry page away from
-  "Official Notaries".
+- Replace the hosted site's retained pen favicon and mark with the Exalto Seal
+  Round Stamp assets.
+- Retitle the public Registry page away from "Official Notaries" and make its
+  product, operator, and server-supplied signer identities visually distinct.
 - Proof of Thought early-access destination for the three CTAs.
