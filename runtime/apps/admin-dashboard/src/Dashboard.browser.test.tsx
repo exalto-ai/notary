@@ -1191,7 +1191,7 @@ describe('Notary admin dashboard', () => {
     await expect.element(page.getByText('Verification key', { exact: true }).first()).toBeVisible();
     await expect.element(page.getByText(/installed macOS identity/)).toBeVisible();
     await expect
-      .element(page.getByText('ai.exalto.notary', { exact: false }))
+      .element(page.getByText('ai.exalto.capture', { exact: false }))
       .not.toBeInTheDocument();
     await expect.element(page.getByText('Service', { exact: true })).toBeVisible();
     await expect.element(page.getByText('Developer', { exact: true })).toBeVisible();

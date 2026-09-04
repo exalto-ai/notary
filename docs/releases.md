@@ -188,7 +188,8 @@ Confirm that:
 - `runtime/vX.Y.Z` and public `vX.Y.Z` identify those exact source commits.
 - The plain-text pointer contains the workflow's build ID and version.
 - The website Download button resolves to
-  `releases/builds/<build-id>/Notary-macos-arm64.dmg` and the download succeeds.
+  `releases/builds/<build-id>/Exalto-Capture-macos-arm64.dmg` and the download
+  succeeds.
 - An installed binary reports the expected version and build ID with
   `notaryctl --version` or `notaryd --version`.
 

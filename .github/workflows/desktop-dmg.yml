@@ -131,15 +131,15 @@ jobs:
           test -n "$dmg"
           hdiutil verify "$dmg"
           mkdir -p release
-          cp "$dmg" "release/Notary-${ASSET}.dmg"
-          (cd release && shasum -a 256 "Notary-${ASSET}.dmg" > "Notary-${ASSET}.dmg.sha256")
+          cp "$dmg" "release/Exalto-Capture-${ASSET}.dmg"
+          (cd release && shasum -a 256 "Exalto-Capture-${ASSET}.dmg" > "Exalto-Capture-${ASSET}.dmg.sha256")
           if ${{ inputs.sign }}; then
             updater=$(find "../../target/$TARGET/release/bundle/macos" -maxdepth 1 -name '*.app.tar.gz' -print -quit)
             test -n "$updater"
             test -s "$updater.sig"
-            cp "$updater" "release/Notary-${ASSET}.app.tar.gz"
-            cp "$updater.sig" "release/Notary-${ASSET}.app.tar.gz.sig"
-            (cd release && shasum -a 256 "Notary-${ASSET}.app.tar.gz" > "Notary-${ASSET}.app.tar.gz.sha256")
+            cp "$updater" "release/Exalto-Capture-${ASSET}.app.tar.gz"
+            cp "$updater.sig" "release/Exalto-Capture-${ASSET}.app.tar.gz.sig"
+            (cd release && shasum -a 256 "Exalto-Capture-${ASSET}.app.tar.gz" > "Exalto-Capture-${ASSET}.app.tar.gz.sha256")
           fi
       - name: Resolve signed artifacts
         id: artifacts
@@ -170,12 +170,12 @@ jobs:
           xcrun stapler validate "$DMG"
           spctl --assess --type execute --verbose=4 "$APP"
           spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG"
-          # The visible bundle is Exalto Capture.app, backed by the compatible
-          # notary-app executable and ai.exalto.notary identifier, with exactly
-          # its notaryd sidecar and no retired executable left in the bundle.
+          # The visible bundle and installed application identifier are Exalto
+          # Capture, backed by the notary-app executable and exactly its notaryd
+          # sidecar.
           test "$(basename "$APP")" = "Exalto Capture.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
-            "$APP/Contents/Info.plist")" = "ai.exalto.notary"
+            "$APP/Contents/Info.plist")" = "ai.exalto.capture"
           test "$(cd "$APP/Contents/MacOS" && ls | sort | tr '\n' ' ')" = "notary-app notaryd "
           test -x "$APP/Contents/MacOS/notary-app"
           test -x "$APP/Contents/MacOS/notaryd"
