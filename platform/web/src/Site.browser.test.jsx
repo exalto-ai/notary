@@ -1141,7 +1141,7 @@ describe('hosted site', () => {
     render(
       <HostedNotaryRecord
         record={{
-          name: 'Alice',
+          name: 'Seal',
           operator: 'Exalto',
           host: 'notary.example',
           port: 7047,
@@ -1159,7 +1159,7 @@ describe('hosted site', () => {
     );
 
     await expect.element(page.getByText('No lower bound configured')).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'Alice' })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Seal' })).toBeVisible();
     await expect.element(page.getByText(/Operated by Exalto/)).toBeVisible();
     await expect.element(page.getByText(/1969|1970/)).not.toBeInTheDocument();
   });
@@ -1175,7 +1175,7 @@ describe('hosted site', () => {
           active_key_id: activeKeyId,
           notaries: [
             {
-              name: 'Alice',
+              name: 'Seal',
               operator: 'Exalto',
               host: 'notary.exalto.ai',
               port: 443,
@@ -1188,7 +1188,7 @@ describe('hosted site', () => {
               notarize_until_unix_ms: null,
             },
             {
-              name: 'Alice',
+              name: 'seal1',
               operator: 'Exalto',
               host: 'retired-notary.exalto.ai',
               port: 443,
@@ -1209,7 +1209,8 @@ describe('hosted site', () => {
     await expect.element(page.getByText('Generation 7')).toBeVisible();
     await expect.element(page.getByText('Active verification key').first()).toBeVisible();
     await expect.element(page.getByRole('heading', { name: 'Trust history' })).toBeVisible();
-    expect(page.getByRole('heading', { name: 'Alice' }).elements()).toHaveLength(3);
+    expect(page.getByRole('heading', { name: 'Seal', exact: true }).elements()).toHaveLength(2);
+    expect(page.getByRole('heading', { name: 'seal1', exact: true }).elements()).toHaveLength(1);
     expect(page.getByText(/Operated by Exalto/).elements()).toHaveLength(3);
     await expect.element(page.getByText('Historical verification only')).toBeVisible();
   });
@@ -1480,7 +1481,7 @@ describe('hosted site', () => {
       notarized_state: 'notarized',
       hosted_verification: 'passed',
       notary_key_id: 'sha256:abc',
-      notary_name: 'Alice',
+      notary_name: 'Seal',
       notary_operator: 'Exalto',
       registry_generation: 42,
       trust_source: 'hosted_registry',
@@ -1568,7 +1569,7 @@ describe('hosted site', () => {
       .toBeVisible();
     expect(document.querySelector('.share-verification-mark b')?.textContent).toBe('Notarized');
     await expect.element(page.getByText('Hosted verification passed')).toBeVisible();
-    await expect.element(page.getByText(/Notarized by Alice · Operated by Exalto/)).toBeVisible();
+    await expect.element(page.getByText(/Notarized by Seal · Operated by Exalto/)).toBeVisible();
     await expect.element(page.getByRole('link', { name: /Export .llmtrace/ })).toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Copy link' })).toBeVisible();
     await expect.element(page.getByRole('link', { name: 'Verify independently' })).toBeVisible();
@@ -1634,7 +1635,7 @@ describe('hosted site', () => {
         notarized_state: 'notarized',
         hosted_verification: 'passed',
         notary_key_id: 'sha256:abc',
-        notary_name: 'Alice',
+        notary_name: 'Seal',
         notary_operator: 'Exalto',
         registry_generation: 42,
         trust_source: 'hosted_registry',

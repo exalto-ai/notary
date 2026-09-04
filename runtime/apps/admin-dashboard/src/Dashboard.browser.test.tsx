@@ -1176,18 +1176,16 @@ describe('Notary admin dashboard', () => {
       .element(page.getByText(/not protected by the private-capture vault/))
       .toBeVisible();
     await expect.element(page.getByRole('heading', { name: 'Exalto Seal' })).toBeVisible();
+    await expect.element(page.getByText('Signer', { exact: true }).first()).toBeVisible();
+    await expect.element(page.getByText('Seal', { exact: true }).first()).toBeVisible();
     await expect
       .element(page.getByText('Operated by Exalto', { exact: true }).first())
       .not.toBeInTheDocument();
     await expect.element(page.getByText('Alice', { exact: true })).not.toBeInTheDocument();
     await expect.element(page.getByText('Active verification key', { exact: true })).toBeVisible();
     await page.getByText('View details', { exact: true }).click();
-    await expect
-      .element(page.getByRole('heading', { name: 'Exalto Seal (retiring key)' }))
-      .toBeVisible();
-    await expect
-      .element(page.getByRole('heading', { name: 'Revoked sealing service' }))
-      .toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'seal1' })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'seal3' })).toBeVisible();
     await expect.element(page.getByText('Verification key', { exact: true }).first()).toBeVisible();
     await expect.element(page.getByText(/installed macOS identity/)).toBeVisible();
     await expect

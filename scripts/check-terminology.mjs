@@ -63,11 +63,6 @@ const rules = [
 // contains the given text. Every entry states why the retired name must stay.
 const classified = [
   {
-    file: 'DESIGN.md',
-    contains: 'Notary by Exalto',
-    reason: 'the latest design guide documents the current transitional Axis name',
-  },
-  {
     file: 'platform/web/scripts/test-brand.mjs',
     contains: "'Notary by Exalto'",
     reason: 'asserts the retired public product name never reappears',

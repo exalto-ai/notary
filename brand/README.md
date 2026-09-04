@@ -7,10 +7,9 @@ where that font is loaded (inline on the website); elsewhere prefer the
 baked rasters. Web-ready copies used by the landing site live in
 `platform/landing/public/icons/`.
 
-## exalto-capture/ — Exalto Capture ("The Recorder")
+## exalto-capture/: Exalto Capture ("The Recorder")
 
-The desktop capture app (currently shipping under the working name Notary;
-these icons are for its rename). Viewfinder brackets around a record lens.
+The Exalto Capture desktop app. Viewfinder brackets around a record lens.
 
 - `macos/` AppIcon-16…1024.png (Apple squircle on transparent margin) plus
   `Exalto-Capture.icns` for the app bundle.
@@ -19,12 +18,12 @@ these icons are for its rename). Viewfinder brackets around a record lens.
 - `svg/` `exalto-capture-tile.svg` (full tile) and
   `exalto-capture-mark-white.svg` (mark only, for dark surfaces).
 
-## exalto-seal/ — Exalto Seal ("The Round Stamp")
+## exalto-seal/: Exalto Seal ("The Round Stamp")
 
-The hosted notary service. A circular EXALTO · VERIFIED stamp around the
-house quote glyph. Same layout as above with `Exalto-Seal.icns`; the seal
-favicons are the natural set for seal.exalto.ai when the product site takes
-the new brand.
+The Exalto Seal hosted sealing and verification product. A circular EXALTO ·
+VERIFIED stamp around the house quote glyph. Same layout as above with
+`Exalto-Seal.icns`; the Seal favicons are the canonical set for
+seal.exalto.ai.
 
 ```html
 <link rel="icon" href="/favicon.ico" sizes="48x48">
