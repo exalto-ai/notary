@@ -43,9 +43,9 @@ The redesign resolves the shell and first-run issues while preserving the workin
 | Providers | Settings > AI connections | Connect Codex CLI, Claude Code, or an API client |
 | Activity | Settings > Activity log | Diagnostics and local service events |
 | Settings | Settings > Preferences | Privacy and storage, app behavior, updates, and advanced details |
-| Public traces | Trace Catalogue | External hosted catalogue at `https://llm-notary.exalto.ai/traces` |
+| Public traces | Public Traces | External hosted collection at `https://seal.exalto.ai/traces` |
 
-Primary navigation is exactly **Capture**, **Traces**, and **Settings**. Trace Catalogue remains an external utility until the local API can enumerate shared traces safely.
+Primary navigation is exactly **Capture**, **Traces**, and **Settings**. Public Traces remains an external utility until the local API can enumerate shared traces safely.
 
 ## Capture screen
 
@@ -135,7 +135,7 @@ A fresh install is named `Exalto Capture.app`. An existing `Notary.app` updated
 in place can retain its filesystem path, so old-client update, duplicate-app,
 autostart, and vault-access behavior still require release testing.
 
-The temporary hosted Trace Catalogue origin is `llm-notary.exalto.ai`, per the current product decision. That hostname did not resolve during this review. DNS and hosted routing for it are therefore a release gate. The updater origin remains unchanged in this PR so installed clients keep a working update channel.
+The hosted Public Traces destination is `https://seal.exalto.ai/traces`, the same canonical Exalto Seal origin used for hosted accounts and verification. The updater origin remains unchanged in this PR so installed clients keep a working update channel.
 
 ## Menus
 
@@ -156,7 +156,7 @@ Application menu:
 Help:
 
 - Read the Exalto Capture guide
-- View Trace Catalogue
+- View Public Traces
 - Report a problem
 - About Exalto Capture
 
@@ -172,4 +172,4 @@ The following items remain intentionally outside this PR:
 - A shared-trace collection API before adding a local Shared or Public Traces destination.
 - Direct Codex desktop support, any supported Claude Desktop route, and future provider expansion such as xAI and Grok.
 - An automatic rename migration for existing `Notary.app` installations after updater, duplicate-app, autostart, and vault-access testing.
-- An optional live hosted sealing check for a small disposable trace once the hosted notary and catalogue hostname are release-ready.
+- An optional live hosted sealing check for a small disposable trace once Exalto Seal is release-ready.
