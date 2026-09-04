@@ -385,9 +385,9 @@ pub async fn run(args: ProxyArgs) -> Result<()> {
     }
     let persistence = Persistence::open(&config).await?;
     if desktop_force_capture_disabled_from_environment() {
-        // A desktop recovery marker means the app may have crashed while it
-        // temporarily borrowed capture. Persist OFF before either listener is
-        // bound, so no retrying client can enter the proxy during recovery.
+        // Every desktop-supervised launch begins with capture off. Persist OFF
+        // before either listener is bound, so relaunching the app can never
+        // record a retrying client until the user explicitly starts capture.
         persistence
             .metadata
             .set_capture_enabled(false, current_unix_ms()?)

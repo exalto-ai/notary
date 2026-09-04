@@ -52,6 +52,8 @@ action. It shows `REC · Capturing` only after the service is running and the
 daemon-owned capture setting is on. When capture is off, the fixed loopback
 provider routes can still send requests directly to their providers, but those
 requests create no capture, no trace, and no evidence that can be sealed later.
+Every desktop-supervised service launch begins with capture off, including app
+relaunches. Only an explicit Start capturing action enables recording.
 
 The screen also shows the Capture, Review, Seal, Verify or share workflow,
 private trace counts, local protection, configured sealing-service state, and a trust
@@ -120,6 +122,8 @@ recovery marker next to its existing desktop setup markers. It clears that
 marker only after capture is confirmed off again. Closing setup, quitting, or
 relaunching after an interrupted test therefore retries the restore. On recovery,
 the supervised local service persists capture off before binding either listener.
+Normal desktop-supervised launches enforce the same off-before-bind boundary, so
+relaunching Exalto Capture never resumes recording without a new explicit action.
 If a passphrase vault is still locked or the service is absent, the app may close
 or quit while preserving the marker for the next unlocked launch. The app never
 temporarily enables capture on a service started outside Exalto Capture.

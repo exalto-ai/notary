@@ -11,12 +11,15 @@ use tauri::Manager;
 use tauri_plugin_shell::{ShellExt, process::CommandChild};
 
 use crate::service_client::daemon_is_healthy;
-use crate::vault::{
-    VaultSession, local_vault_mode, temporary_capture_recovery_pending, vault_unlock_key_for_child,
-};
+use crate::vault::{VaultSession, local_vault_mode, vault_unlock_key_for_child};
 
 const DESKTOP_CONTROL_STDIN_ENV: &str = "NOTARYD_DESKTOP_CONTROL_STDIN";
 const DESKTOP_FORCE_CAPTURE_DISABLED_ENV: &str = "NOTARYD_DESKTOP_FORCE_CAPTURE_DISABLED";
+const DESKTOP_CHILD_ENVIRONMENT: [(&str, &str); 3] = [
+    (CHILD_KEY_STDIN_ENV, "1"),
+    (DESKTOP_CONTROL_STDIN_ENV, "1"),
+    (DESKTOP_FORCE_CAPTURE_DISABLED_ENV, "1"),
+];
 
 pub(super) struct ManagedDaemon {
     child: CommandChild,
@@ -149,14 +152,8 @@ fn spawn_daemon_inner(app: &tauri::AppHandle, process: &DaemonProcess) -> Result
     let command = app
         .shell()
         .sidecar("notaryd")
-        .map_err(|error| format!("Could not locate the bundled local capture service: {error}"))?
-        .env(CHILD_KEY_STDIN_ENV, "1")
-        .env(DESKTOP_CONTROL_STDIN_ENV, "1");
-    let command = if temporary_capture_recovery_pending() {
-        command.env(DESKTOP_FORCE_CAPTURE_DISABLED_ENV, "1")
-    } else {
-        command
-    };
+        .map(|command| command.envs(DESKTOP_CHILD_ENVIRONMENT))
+        .map_err(|error| format!("Could not locate the bundled local capture service: {error}"))?;
     let (mut events, mut child) = command
         .spawn()
         .map_err(|error| format!("Could not start the bundled local capture service: {error}"))?;
@@ -367,6 +364,16 @@ mod tests {
         assert!(process.ensure_starts_allowed().is_err());
         process.resume_starts();
         assert!(process.ensure_starts_allowed().is_ok());
+    }
+
+    #[test]
+    fn every_managed_desktop_child_forces_capture_off() {
+        assert_eq!(
+            DESKTOP_CHILD_ENVIRONMENT
+                .iter()
+                .find(|(key, _)| *key == DESKTOP_FORCE_CAPTURE_DISABLED_ENV),
+            Some(&(DESKTOP_FORCE_CAPTURE_DISABLED_ENV, "1")),
+        );
     }
 
     #[tokio::test]

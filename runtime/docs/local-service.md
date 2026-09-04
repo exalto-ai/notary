@@ -33,9 +33,10 @@ curl -X PUT http://127.0.0.1:8788/v1/settings/capture \
 ```
 
 The write returns the authoritative stored value. The setting lives in daemon
-metadata, defaults to on, and survives daemon and desktop restarts. If admin
-authentication is configured, these routes require it like the other `/v1`
-routes.
+metadata, defaults to on, and survives ordinary daemon restarts. Exalto Capture
+deliberately persists it off before every desktop-supervised listener startup,
+so relaunching the app cannot silently resume recording. If admin authentication
+is configured, these routes require it like the other `/v1` routes.
 
 Off does not stop or bypass the local daemon. Existing configured provider
 URLs continue to work, but new requests stream from `notaryd` directly to
