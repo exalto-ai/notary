@@ -4,7 +4,9 @@ Exalto has separate private product and public runtime documentation:
 
 - This directory contains hosted-product and contributor references.
 - [`runtime/docs`](../runtime/docs/README.md) contains public runtime guidance.
-- The public site contains the shorter user journey and trust explanation.
+- [Exalto Seal docs](https://seal.exalto.ai/docs), maintained in `platform/web`,
+  is the single public user guide and trust explanation. The family landing
+  site links and redirects there rather than maintaining another copy.
 - Running services expose generated OpenAPI contracts for exact HTTP schemas.
 
 Use the generated contract when prose and an installed service disagree.

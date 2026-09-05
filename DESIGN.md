@@ -74,8 +74,8 @@ surfaces. Do not edit them for marketing work.
 
 | Surface | System | Section |
 | --- | --- | --- |
-| exalto.ai landing and its /docs pages (`platform/landing`) | **Ledger Phosphor** | Part II |
-| Hosted Exalto Seal site, Account, and public traces (`platform/web`) | **Ledger Phosphor** | Parts I + II |
+| exalto.ai landing (`platform/landing`) | **Ledger Phosphor** | Part II |
+| Hosted Exalto Seal site, docs, Account, and public traces (`platform/web`) | **Ledger Phosphor** | Parts I + II |
 | Local admin dashboard (`runtime/apps/admin-dashboard`) | **Developer workspace** | Part III |
 | Exalto Capture desktop app (`apps/notary-app`) | **Developer workspace**, **Exalto Capture** app icon | Parts I + III |
 | Brand marks, icon kits, illustration | **Shared** | Part I |
@@ -287,11 +287,11 @@ unevenness with the shared seed, not the palette.
 - **Trust model:** the two lists stay on the homepage — filled blue ✓ squares
   for what a trace proves, hairline ✕ squares for what it cannot. This is the
   credibility strategy, not a compliance page.
-- **Docs shell** (`/docs/*`): grouped sticky sidebar (Start / Understand /
+- **Docs shell** (`seal.exalto.ai/docs/*`, `platform/web`): grouped sticky sidebar (Start / Understand /
   Share), prev/next footer navigation, chip TOC on long pages, definition
   tables and participant cards in the card style, code blocks in the dark
   editor treatment. Prose uses the Part I vocabulary; commands and API routes
-  inside code blocks stay verbatim (the copy audit exempts `pre`/`code`).
+  inside code blocks stay verbatim.
 
 ## Responsive
 

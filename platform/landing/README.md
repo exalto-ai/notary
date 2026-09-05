@@ -11,6 +11,14 @@ This site is separate from the hosted product site in `platform/web`. Product
 links point at the product origin (default `https://seal.exalto.ai`), set at
 build time with `VITE_PRODUCT_ORIGIN`.
 
+The public user guides live only at [Exalto Seal docs](https://seal.exalto.ai/docs)
+in `platform/web`. The production Caddy server permanently redirects `/docs`
+and `/docs/*` to the product origin, preserving paths and queries. The image's
+`EXALTO_PRODUCT_ORIGIN` build argument supplies both the links and redirects;
+it must be an origin without a trailing slash.
+Vite dev/preview serves only the landing page; use the redirect test below to
+exercise Caddy. Runtime reference docs remain in `runtime/docs`.
+
 ## Develop
 
 ```bash
@@ -18,13 +26,13 @@ npm ci
 npm run dev        # http://127.0.0.1:4174
 npm run build      # runs the copy audit, then builds dist/
 npm run preview
+npm run test:redirects # requires Docker and a completed build
 ```
 
 `npm run check:copy` enforces the handoff QA checklist: banned vocabulary
 absent (notarize, finaliz*, checkpoint, fingerprint claims, any API), required
 doctrine strings present verbatim, tile order, and no em- or en-dashes in
-rendered copy. Documentation pages are scanned with code blocks exempted, so
-commands and API routes stay verbatim.
+rendered copy.
 
 ## Placeholders
 

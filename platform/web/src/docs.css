@@ -297,6 +297,7 @@
 .docs-page-nav a { color: var(--ink); font-size: 13px; font-weight: 700; }
 .docs-page-nav a:hover { text-decoration: underline; text-decoration-color: var(--action); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .docs-page-nav span { display: block; margin-bottom: 6px; color: var(--muted); font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .05em; text-transform: uppercase; }
+.docs-legal-notice { max-width: 78ch; margin: 32px 0 0; color: var(--muted); font: 11px/1.8 'IBM Plex Mono', monospace; }
 
 .docs-toc { padding-top: 18px; border-top: 1px solid var(--line); }
 .docs-toc > span { margin-bottom: 4px; color: var(--muted); font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .07em; text-transform: uppercase; }

@@ -1,4 +1,3 @@
-import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 // The hosted product site. The landing links to it for docs, downloads,
@@ -7,29 +6,17 @@ const productOrigin = process.env.VITE_PRODUCT_ORIGIN ?? 'https://seal.exalto.ai
 const productOriginUrl = new URL(productOrigin);
 if (
   !['http:', 'https:'].includes(productOriginUrl.protocol) ||
+  productOrigin !== productOriginUrl.origin ||
   productOriginUrl.pathname !== '/' ||
   productOriginUrl.search ||
   productOriginUrl.hash
 ) {
   throw new Error(
-    'VITE_PRODUCT_ORIGIN must be an HTTP(S) origin without a path, query, or fragment',
+    'VITE_PRODUCT_ORIGIN must be a canonical HTTP(S) origin without a trailing slash, path, query, or fragment',
   );
 }
 
 export default defineConfig({
-  build: {
-    rollupOptions: {
-      input: {
-        main: resolve(import.meta.dirname, 'index.html'),
-        docs: resolve(import.meta.dirname, 'docs/index.html'),
-        docsGettingStarted: resolve(import.meta.dirname, 'docs/getting-started/index.html'),
-        docsHowItWorks: resolve(import.meta.dirname, 'docs/how-it-works/index.html'),
-        docsHostedCredits: resolve(import.meta.dirname, 'docs/hosted-credits/index.html'),
-        docsTracePackages: resolve(import.meta.dirname, 'docs/trace-packages/index.html'),
-        docsShare: resolve(import.meta.dirname, 'docs/share/index.html'),
-      },
-    },
-  },
   plugins: [
     {
       name: 'product-origin',

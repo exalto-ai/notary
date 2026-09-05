@@ -79,6 +79,29 @@ for (const [name, source] of [
   }
 }
 
+const legalNotice =
+  'Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ENP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."';
+for (const [name, source] of [
+  ['public site documentation', publicDocs],
+  ['llms.txt', llms],
+]) {
+  if (!source.includes(legalNotice)) {
+    throw new Error(`${name} is missing the public legal notice`);
+  }
+}
+
+// Apple's release process uses “notarized” as a platform term. Remove only
+// that fixed phrase before checking the public product vocabulary.
+const publicCopy = `${publicDocs}\n${llms.replace('signed, notarized, and published', '')}`;
+for (const [pattern, replacement] of [
+  [/\bnotariz(?:e|ed|ation)\b/i, 'seal/sealed/sealing'],
+  [/\bcheckpoints?\b/i, 'capture/captures'],
+]) {
+  if (pattern.test(publicCopy)) {
+    throw new Error(`Public user guides use retired terminology; replace it with ${replacement}`);
+  }
+}
+
 const consistencySources = markdown.map((file) => [
   file.replace(`${repositoryRoot}/`, ''),
   readFileSync(file, 'utf8'),
