@@ -114,11 +114,15 @@ jobs:
             --retry 10 --retry-all-errors --retry-delay 2 --retry-max-time 90 \
             --max-time 20 "$origin/")"
           grep -q '<title' <<<"$body"
-          # The docs shell is a separate entry point; a missing directory index
-          # here means the Caddy try_files fallback silently swallowed it.
-          curl --fail --silent --show-error --location \
-            --retry 5 --retry-all-errors --retry-delay 2 \
-            --max-time 20 "$origin/docs/" >/dev/null
+          # Old docs URLs must redirect, not fall back to the landing page.
+          # Do not couple this rollout to the product site's availability.
+          for path in /docs/ '/docs/getting-started/?section=connect-an-sdk'; do
+            redirect="$(curl --fail --silent --show-error \
+              --retry 5 --retry-all-errors --retry-delay 2 --max-time 20 \
+              --output /dev/null --write-out '%{http_code} %{redirect_url}' \
+              "$origin$path")"
+            test "$redirect" = "308 https://seal.exalto.ai$path"
+          done
 
       - name: Summarize the rollout
         env:

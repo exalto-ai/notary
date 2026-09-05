@@ -32,6 +32,16 @@ afterEach(async () => {
   await page.viewport(1280, 900);
 });
 
+test('serves the canonical Seal guide without sign-in', async () => {
+  window.history.replaceState({}, '', '/docs/trace-packages');
+  render(<App loadCurrentUser={async () => null} />);
+
+  await expect.element(page.getByRole('heading', { name: 'Seal and verify' })).toBeVisible();
+  await expect
+    .element(page.getByText('Exalto Seal is not a notary public.', { exact: false }))
+    .toBeVisible();
+});
+
 const libraryShares = Array.from({ length: 20 }, (_, index) => ({
   trace_id: `share-${index + 1}`,
   title: `Prompt for share-${index + 1}`,

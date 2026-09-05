@@ -19,7 +19,7 @@ A trace proves presence, never absence. It proves the disclosed bytes traveled a
 
 ## Links
 
-- Docs and spec: https://exalto.ai/docs/
+- Docs and spec: https://seal.exalto.ai/docs
 - Hosted product: https://seal.exalto.ai
 - Verify a trace: https://seal.exalto.ai/verify
 - Example traces: https://seal.exalto.ai/traces

@@ -269,20 +269,8 @@ jobs:
       # vocabulary, verbatim doctrine strings, tile order — gates the merge
       # rather than only the deploying machine.
       - run: npm run build
-      # Caddy resolves /docs/ through a directory index. A build that stopped
-      # emitting the nested entry points would still serve, silently falling
-      # back to the homepage for every documentation link.
-      - name: Verify the documentation entry points were emitted
-        run: |
-          set -euo pipefail
-          for page in index getting-started how-it-works hosted-credits \
-            trace-packages share; do
-            path="dist/docs/index.html"
-            if test "$page" != index; then
-              path="dist/docs/$page/index.html"
-            fi
-            test -s "$path" || { echo "missing $path" >&2; exit 1; }
-          done
+      - name: Verify legacy documentation redirects
+        run: npm run test:redirects
       # The deploy workflow names the app independently of the Fly config, so a
       # rename in one place must not silently deploy nothing in the other.
       - name: Verify the deploy target agrees with the Fly config

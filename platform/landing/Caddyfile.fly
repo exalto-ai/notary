@@ -1,5 +1,8 @@
 :80 {
 	route {
+		@docs path /docs /docs/*
+		redir @docs {$EXALTO_PRODUCT_ORIGIN:https://seal.exalto.ai}{uri} 308
+
 		@immutable path /assets/*
 		header @immutable Cache-Control "public, max-age=31536000, immutable"
 

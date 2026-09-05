@@ -39,8 +39,10 @@ type DocOutlineItem = { block: DocBlock; children: DocBlock[] };
 type DocNavigationGroup = { label: string; pages: Array<readonly [DocPageKey, string]> };
 
 const installCommand = 'curl -fsSL https://seal.exalto.ai/install.sh | sh';
+const legalNotice =
+  'Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ENP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."';
 const sourceInstallCommand = `git clone https://github.com/exalto-ai/notary-runtime.git
-cd notary-runtime
+cd notary-runtime/runtime
 cargo install --locked --path crates/notaryd --bin notaryd
 cargo install --locked --path crates/notaryctl --bin notaryctl`;
 
@@ -54,15 +56,15 @@ const docPages: Record<DocPageKey, DocPage> = {
         steps: [
           {
             title: 'Capture',
-            body: 'Point an SDK or agent at the local proxy. Requests and streamed responses continue normally while each completed provider call becomes an encrypted local checkpoint.',
+            body: 'Point an SDK or agent at the local proxy. Requests and streamed responses continue normally while each completed provider call becomes an encrypted local capture.',
           },
           {
             title: 'Choose',
-            body: 'Checkpoints wait on your disk. Nothing is shared automatically, and interactive model use does not wait for the expensive proof step.',
+            body: 'Captures wait on your disk. Nothing is shared automatically, and interactive model use does not wait for the expensive proof step.',
           },
           {
-            title: 'Notarize',
-            body: 'Turn a selected checkpoint into authenticated TLS evidence and a deterministic OTel GenAI trace. This can happen long after the original model call.',
+            title: 'Seal',
+            body: 'Turn a selected capture into authenticated TLS evidence and a deterministic OTel GenAI trace. This can happen long after the original model call.',
           },
           {
             title: 'Verify or share',
@@ -76,10 +78,10 @@ const docPages: Record<DocPageKey, DocPage> = {
           {
             meta: 'Captured',
             title: 'Private local evidence',
-            body: 'The Trace retains a sensitive encrypted checkpoint that can be notarized later. It is not yet evidence another person can verify.',
+            body: 'The Trace retains a sensitive encrypted capture that can be sealed later. It is not yet evidence another person can verify.',
           },
           {
-            meta: 'Notarized',
+            meta: 'Sealed',
             title: 'Portable Trace package',
             body: 'TLSNotary evidence, disclosed authenticated HTTP, canonical OTLP, and a manifest binding the files together.',
           },
@@ -87,14 +89,14 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Sharing is a separate action',
-        body: 'A Notarized Trace can remain local or be shared deliberately. Sharing hosts the exact admitted .llmtrace package and its disclosed conversation; it does not create another evidence state.',
+        body: 'A Sealed Trace can remain local or be shared deliberately. Sharing hosts the exact admitted .llmtrace package and its disclosed conversation; it does not create another evidence state.',
       },
       {
         heading: 'What is automatic',
         items: [
-          'The first service start creates or opens the local encrypted-checkpoint vault. On a desktop OS, its random key is stored in the system credential service.',
+          'The first service start creates or opens the local encrypted-capture vault. On a desktop OS, its random key is stored in the system credential service.',
           'The service discovers the production notary endpoint and public key from the Exalto Seal Registry, then pins that trust information locally.',
-          'Notarization and verification use the pinned notary identity. Normal hosted use does not require copying a public key into an API request.',
+          'Sealing and verification use the pinned notary identity. Normal hosted use does not require copying a public key into an API request.',
           'Provider credentials remain in your existing SDK or agent environment; the local service does not require a project .env file.',
         ],
       },
@@ -118,7 +120,7 @@ const docPages: Record<DocPageKey, DocPage> = {
           {
             meta: 'User / client',
             title: 'Holds the plaintext',
-            body: 'The local proxy sees the request and response. A user cannot change authenticated bytes or invent a provider response and still produce valid notarized evidence.',
+            body: 'The local proxy sees the request and response. A user cannot change authenticated bytes or invent a provider response and still produce valid sealed evidence.',
           },
           {
             meta: 'Notary',
@@ -158,7 +160,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'How trust is established',
-        body: 'The service retrieves the versioned Exalto Seal Registry over authenticated HTTPS and caches its key history. The JSON directory is not separately signed. Notarized packages identify the notary key that signed their evidence; verification accepts it only if that key was trusted at the package timestamp. A self-hosted deployment pairs `notary.endpoint` with `notary.public_key` in `config.toml`, but that is not part of the normal hosted workflow.',
+        body: 'The service retrieves the versioned Exalto Seal Registry over authenticated HTTPS and caches its key history. The JSON directory is not separately signed. Sealed packages identify the notary key that signed their evidence; verification accepts it only if that key was trusted at the package timestamp. A self-hosted deployment pairs `notary.endpoint` with `notary.public_key` in `config.toml`, but that is not part of the normal hosted workflow.',
       },
     ],
   },
@@ -213,7 +215,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Install the agent skill',
-        body: 'The CLI bundles portable instructions for finding Traces, notarizing with approval, verifying packages, diagnosing operations, and protecting private evidence. Install them for Codex, Claude Code, or both. The command does not contact or start the daemon. Use `--skills-dir /path/to/agent/skills` for another Agent Skills compatible client; re-run with `--force` only after inspecting a different existing skill. Claude Code uses `$CLAUDE_CONFIG_DIR/skills` when that environment variable is nonempty and `~/.claude/skills` otherwise. It detects changes inside an existing personal skills directory; restart it if that directory did not exist when the current session started.',
+        body: 'The CLI bundles portable instructions for finding Traces, sealing with approval, verifying packages, diagnosing operations, and protecting private evidence. Install them for Codex, Claude Code, or both. The command does not contact or start the daemon. Use `--skills-dir /path/to/agent/skills` for another Agent Skills compatible client; re-run with `--force` only after inspecting a different existing skill. Claude Code uses `$CLAUDE_CONFIG_DIR/skills` when that environment variable is nonempty and `~/.claude/skills` otherwise. It detects changes inside an existing personal skills directory; restart it if that directory did not exist when the current session started.',
         code: 'notaryctl skill install --target codex\nnotaryctl skill install --target claude\nnotaryctl skill install --target all',
       },
       { heading: 'Start the service', code: 'notaryd' },
@@ -303,7 +305,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'OpenRouter + Chat Completions',
-        body: 'The model slug remains trace metadata. The resulting evidence authenticates OpenRouter—not the vendor named in that slug. The Authorization, HTTP-Referer, and X-Title header values are hidden in a notarized package.',
+        body: 'The model slug remains trace metadata. The resulting evidence authenticates OpenRouter—not the vendor named in that slug. The Authorization, HTTP-Referer, and X-Title header values are hidden in a sealed package.',
         code: 'curl http://127.0.0.1:8787/openrouter/api/v1/chat/completions \\\n  -H "Authorization: Bearer $OPENROUTER_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -H "HTTP-Referer: https://example.test" \\\n  -H "X-Title: Exalto example" \\\n  -d \'{"model":"YOUR_MODEL","stream":true,"messages":[{"role":"user","content":"Reply with exactly: notary"}]}\'',
       },
       {
@@ -325,7 +327,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Codex + ChatGPT plan',
-        body: 'This flow is live-tested with Codex CLI. First run codex login status and confirm that Codex says it is logged in using ChatGPT. Do not set env_key in this provider. Codex owns the login and refreshes it; the local service only forwards the request headers and hides every header value from the notarized package. The proof authenticates chatgpt.com and the disclosed bodies, not the account owner, plan, or billing. Codex desktop is not yet end-to-end tested or supported, and cloud work cannot reach the loopback route.',
+        body: 'This flow is live-tested with Codex CLI. First run codex login status and confirm that Codex says it is logged in using ChatGPT. Do not set env_key in this provider. Codex owns the login and refreshes it; the local service only forwards the request headers and hides every header value from the sealed package. The proof authenticates chatgpt.com and the disclosed bodies, not the account owner, plan, or billing. Codex desktop is not yet end-to-end tested or supported, and cloud work cannot reach the loopback route.',
         code: 'Add this to ~/.codex/config.toml:\n\nmodel_provider = "notary-chatgpt"\n\n[model_providers.notary-chatgpt]\nname = "Exalto local proxy · ChatGPT plan"\nbase_url = "http://127.0.0.1:8787/codex"\nrequires_openai_auth = true\nwire_api = "responses"\nsupports_websockets = false',
       },
       {
@@ -339,7 +341,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Claude Code + claude.ai plan',
-        body: 'Run claude auth status first; Claude Code itself must report a saved first-party login. A login in the native Claude desktop app is separate. Remove apiKeyHelper and do not set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN. Claude Code owns login and refresh; the local service forwards its authorization and Messages protocol unchanged and hides every header value from the notarized package. The proof authenticates api.anthropic.com and the disclosed bodies, not the account owner, subscription, or billing. Native Claude Desktop, web, Slack, remote, and cloud sessions do not run through this local route.',
+        body: 'Run claude auth status first; Claude Code itself must report a saved first-party login. A login in the native Claude desktop app is separate. Remove apiKeyHelper and do not set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN. Claude Code owns login and refresh; the local service forwards its authorization and Messages protocol unchanged and hides every header value from the sealed package. The proof authenticates api.anthropic.com and the disclosed bodies, not the account owner, subscription, or billing. Native Claude Desktop, web, Slack, remote, and cloud sessions do not run through this local route.',
         code: "env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN \\\n  ANTHROPIC_BASE_URL=http://127.0.0.1:8787/anthropic \\\n  claude -p 'Reply with exactly: notary'",
       },
       {
@@ -348,7 +350,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Search local Traces',
-        body: 'Each completed provider interaction keeps its vault-encrypted checkpoint in the selected private artifact store and gains a row in the selected metadata store. Use the dashboard, or fetch the live OpenAPI document and query the local admin API:',
+        body: 'Each completed provider interaction keeps its vault-encrypted capture in the selected private artifact store and gains a row in the selected metadata store. Use the dashboard, or fetch the live OpenAPI document and query the local admin API:',
         code: 'curl "http://127.0.0.1:8788/v1/traces?query=pricing&provider=openai"',
       },
       {
@@ -366,25 +368,25 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Stopping and retrying',
-        body: 'Once the end-of-stream checkpoint is sealed, stopping the proxy does not invalidate it. Notarization can happen later. Retry a failed or interrupted attempt through the owning Trace; the unchanged checkpoint is retained, although interrupted proof computation starts over.',
+        body: 'Once the encrypted capture is committed, stopping the proxy does not invalidate it. Sealing can happen later. Retry a failed or interrupted attempt through the owning Trace; the unchanged capture is retained, although interrupted proof computation starts over.',
       },
     ],
   },
   'hosted-credits': {
     title: 'Plans and usage',
-    lead: 'Each subscription has separate monthly capture and notarization allowances, plus storage for uploaded trace packages.',
+    lead: 'Each subscription has separate monthly capture and sealing allowances, plus storage for uploaded trace packages.',
     blocks: [
       {
         heading: 'Three plans',
-        body: 'Free includes 50 MB of capture and 50 MB of notarization each month, with up to 1 GB of uploaded trace packages. The $9.99 monthly plan includes 1 GB for each monthly allowance and up to 10 GB of trace packages. The $49.99 monthly plan includes 10 GB for each monthly allowance and no fixed trace-storage ceiling, subject to fair-use and abuse controls.',
+        body: 'Free includes 50 MB of capture and 50 MB of sealing each month, with up to 1 GB of uploaded trace packages. The $9.99 monthly plan includes 1 GB for each monthly allowance and up to 10 GB of trace packages. The $49.99 monthly plan includes 10 GB for each monthly allowance and no fixed trace-storage ceiling, subject to fair-use and abuse controls.',
       },
       {
-        heading: 'Capture and notarization are separate',
-        body: 'A hosted capture reserves capture allowance for its authenticated HTTP byte limit. Turning a capture into a portable proof spends notarization allowance separately. Monthly allowances refresh on the account reset date; unused monthly allowance does not roll over.',
+        heading: 'Capture and sealing are separate',
+        body: 'A hosted capture reserves capture allowance for its authenticated HTTP byte limit. Turning a capture into a portable proof spends sealing allowance separately. Monthly allowances refresh on the account reset date; unused monthly allowance does not roll over.',
       },
       {
-        heading: 'Buy more notarization',
-        body: 'Every plan can buy additional notarization credits for $10 USD per GB through Stripe Checkout. Purchased credits do not expire. Exalto Seal consumes monthly notarization allowance before non-expiring purchased credits. Refunds and disputes remove the corresponding credits; reinstated payments restore them.',
+        heading: 'Buy more sealing',
+        body: 'Every plan can buy additional sealing credits for $10 USD per GB through Stripe Checkout. Purchased credits do not expire. Exalto Seal consumes monthly sealing allowance before non-expiring purchased credits. Refunds and disputes remove the corresponding credits; reinstated payments restore them.',
       },
       {
         heading: 'Trace storage',
@@ -400,21 +402,21 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Your usage',
-        body: 'Your Exalto account shows the current plan, capture and notarization balances, trace storage, monthly reset, purchases, offers, and activity. A connected local service can retrieve the same account summary with `notaryctl account show --json`.',
+        body: 'Your Exalto account shows the current plan, capture and sealing balances, trace storage, monthly reset, purchases, offers, and activity. A connected local service can retrieve the same account summary with `notaryctl account show --json`.',
       },
       {
         heading: 'Evidence is unchanged',
-        body: 'Admission and credit bookkeeping do not change TLSNotary evidence, trace-package verification, local checkpoint retention, or the trust claim. Self-hosted notaries do not need the hosted credit ledger unless their operator deliberately adopts it.',
+        body: 'Admission and credit bookkeeping do not change TLSNotary evidence, trace-package verification, local capture retention, or the trust claim. Self-hosted notaries do not need the hosted credit ledger unless their operator deliberately adopts it.',
       },
     ],
   },
   'trace-packages': {
-    title: 'Notarize and verify',
+    title: 'Seal and verify',
     lead: 'Turn one encrypted capture into a portable evidence package, inspect its canonical OpenTelemetry trace, and verify the entire package offline.',
     blocks: [
       {
-        heading: 'Notarize one interaction',
-        body: 'Select a Captured Trace in the dashboard or admin API. The service atomically commits `trace-packages/<trace-id>.llmtrace`, records that exact package in Trace metadata, and retains the encrypted source checkpoint.',
+        heading: 'Seal one interaction',
+        body: 'Select a Captured Trace in the dashboard or admin API. The service atomically commits `trace-packages/<trace-id>.llmtrace`, records that exact package in Trace metadata, and retains the encrypted source capture.',
         code: 'curl -X POST http://127.0.0.1:8788/v1/traces/trc-example/notarizations',
       },
       {
@@ -423,7 +425,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Fresh notary connection',
-        body: 'The original provider stream and proxy no longer need to be running. A new notary session using the compatible signing identity can complete notarization from the encrypted local checkpoint.',
+        body: 'The original provider stream and proxy no longer need to be running. A new notary session using the compatible signing identity can complete sealing from the encrypted local capture.',
       },
       {
         heading: 'Expect this step to take time',
@@ -431,7 +433,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Interruption behavior',
-        body: 'The pending checkpoint is not consumed. If notarization fails or the service stops, retry through `POST /v1/traces/{trace_id}/notarizations`; proof work from the interrupted attempt is not resumed.',
+        body: 'The pending capture is not consumed. If sealing fails or the service stops, retry through `POST /v1/traces/{trace_id}/notarizations`; proof work from the interrupted attempt is not resumed.',
       },
       {
         heading: 'Package layout',
@@ -473,7 +475,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Package versus shared view',
-        body: 'The notarized `.llmtrace` package carries all cryptographic evidence and is independently verifiable. A shared Trace presents a readable view derived from that package and retains the exact admitted bytes for export and independent verification.',
+        body: 'The sealed `.llmtrace` package carries all cryptographic evidence and is independently verifiable. A shared Trace presents a readable view derived from that package and retains the exact admitted bytes for export and independent verification.',
       },
       {
         heading: 'Verify a portable package',
@@ -509,12 +511,12 @@ const docPages: Record<DocPageKey, DocPage> = {
     ],
   },
   share: {
-    title: 'Share a Notarized Trace',
-    lead: 'Sharing is a deliberate upload of one already-notarized package. The local service verifies it and shows the full disclosed conversation before it contacts Exalto Seal.',
+    title: 'Share a Sealed Trace',
+    lead: 'Sharing is a deliberate upload of one already-sealed package. The local service verifies it and shows the full disclosed conversation before it contacts Exalto Seal.',
     blocks: [
       {
         heading: 'Connect the local service',
-        body: 'Open a Notarized Trace in the local workspace, choose Share, or begin the documented `POST /v1/account` device flow and poll its returned request identifier at the required interval.',
+        body: 'Open a Sealed Trace in the local workspace, choose Share, or begin the documented `POST /v1/account` device flow and poll its returned request identifier at the required interval.',
       },
       {
         heading: 'Choose visibility',
@@ -525,7 +527,7 @@ const docPages: Record<DocPageKey, DocPage> = {
         body: 'From the originating local Trace or Account → Traces, you can copy or open the canonical link, change Listed or Unlisted visibility, replace or remove a password, change or clear an expiration of up to 365 days, and stop sharing. Protected Listed traces remain discoverable, but their conversation previews are withheld.',
       },
       {
-        heading: 'Share one Notarized Trace',
+        heading: 'Share one Sealed Trace',
         code: 'PUT /v1/traces/{trace_id}/share\n{"visibility":"unlisted"}',
       },
       {
@@ -548,7 +550,7 @@ const docPages: Record<DocPageKey, DocPage> = {
           {
             title: 'Never uploaded',
             items: [
-              'encrypted .llmcapture checkpoints',
+              'encrypted .llmcapture state',
               'API-key or cookie values',
               'unselected captures from the same session',
               'extra files or symlink targets',
@@ -558,7 +560,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Admission checks',
-        body: 'The local service and hosted admission service validate the deterministic archive, verify its evidence, require hidden header values, and scan every archive entry and nested disclosed body for credential patterns and high-entropy secrets. After storage, admission downloads the exact public bytes and repeats validation, scanning, and verification before exposing the link.',
+        body: 'The local service and hosted admission service validate the deterministic archive, verify its evidence, require hidden header values, and scan every archive entry and nested disclosed body for credential patterns and high-entropy secrets. After storage, admission downloads the public package and requires its size, SHA-256 digest, and exact bytes to match the package already verified before exposing the link.',
       },
       {
         heading: 'Current consent boundary',
@@ -627,7 +629,7 @@ const docSubheadings: Partial<Record<DocPageKey, ReadonlySet<string>>> = {
   ]),
   share: new Set([
     'Choose visibility',
-    'Submit one notarized package',
+    'Share one Sealed Trace',
     'Script-friendly output',
     'Admission checks',
     'Current consent boundary',
@@ -658,13 +660,11 @@ const docOrder = docNavigation.flatMap((group) => group.pages.map(([key]) => key
 const docAliases: Record<string, DocPageKey> = {
   install: 'getting-started',
   proxy: 'getting-started',
-  checkpoints: 'getting-started',
   captures: 'getting-started',
   providers: 'getting-started',
   credits: 'hosted-credits',
   plans: 'hosted-credits',
   harnesses: 'getting-started',
-  notarize: 'trace-packages',
   artifacts: 'trace-packages',
   verify: 'trace-packages',
   publish: 'share',
@@ -1174,6 +1174,7 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
               </a>
             )}
           </div>
+          <p className="docs-legal-notice">{legalNotice}</p>
         </article>
         <aside className="docs-toc" aria-label="On this page">
           <span>On this page</span>
