@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-use super::public::purge_expired_trace_rate_limits;
+use super::{public::purge_expired_trace_rate_limits, storage::TraceStorage};
 
 const CLAIM_TIMEOUT_SECS: i64 = 15 * 60;
 const LISTING_PREVIEW_CHARS: usize = 180;
@@ -704,23 +704,7 @@ async fn store_committed_artifacts(
         )
         .await?;
 
-        // Read through the same storage path used by recipients, then repeat
-        // size/hash, safety, and cryptographic verification before the row can
-        // atomically become reachable.
-        let downloaded = state
-            .traces
-            .storage
-            .get_object(&stored.package_object_key, artifacts.archive.len())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("stored package disappeared before admission"))?;
-        if downloaded.len() as i64 != stored.package_size_bytes
-            || sha256_hex(&downloaded) != stored.package_sha256
-            || downloaded != artifacts.archive
-        {
-            bail!("stored package failed its pre-commit integrity check");
-        }
-        reverify_stored_package(downloaded, state.registry.clone(), &artifacts.verified).await?;
-        Ok::<(), anyhow::Error>(())
+        check_stored_package_integrity(&state.traces.storage, &stored, &artifacts.archive).await
     }
     .await;
     if let Err(error) = result {
@@ -732,32 +716,23 @@ async fn store_committed_artifacts(
     Ok(stored)
 }
 
-async fn reverify_stored_package(
-    archive: Vec<u8>,
-    registry: notary_core::registry::Registry,
-    expected: &VerifiedPackage,
+async fn check_stored_package_integrity(
+    storage: &TraceStorage,
+    stored: &StoredPublicArtifacts,
+    verified_archive: &[u8],
 ) -> Result<()> {
-    reverify_stored_package_with(archive, registry, expected, verify_hosted).await
-}
-
-async fn reverify_stored_package_with<F, Fut>(
-    archive: Vec<u8>,
-    registry: notary_core::registry::Registry,
-    expected: &VerifiedPackage,
-    run_verifier: F,
-) -> Result<()>
-where
-    F: FnOnce(Vec<u8>, notary_core::registry::Registry, bool) -> Fut,
-    Fut: std::future::Future<Output = Result<VerifiedPackage, VerificationError>>,
-{
-    let allow_high_entropy = expected.safety_override_applied.ok_or_else(|| {
-        anyhow::anyhow!("initial hosted verification omitted its public-safety decision")
-    })?;
-    let verified = run_verifier(archive, registry, allow_high_entropy)
+    // Read through the recipient storage path. Exact equality preserves the
+    // initial cryptographic and safety verification without repeating it.
+    let downloaded = storage
+        .get_object(&stored.package_object_key, verified_archive.len())
         .await
-        .map_err(|error| anyhow::anyhow!("stored package verifier failed: {error:?}"))?;
-    if &verified != expected {
-        bail!("stored package verification metadata changed");
+        .context("reading stored package before admission")?
+        .ok_or_else(|| anyhow::anyhow!("stored package disappeared before admission"))?;
+    if downloaded.len() as i64 != stored.package_size_bytes
+        || sha256_hex(&downloaded) != stored.package_sha256
+        || downloaded != verified_archive
+    {
+        bail!("stored package failed its pre-commit integrity check");
     }
     Ok(())
 }
@@ -1360,21 +1335,58 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn post_storage_recheck_rejects_changed_verification_metadata() {
-        let archive = b"exact stored package".to_vec();
-        let expected = verified_package(&archive);
-        let mut changed = expected.clone();
-        changed.provider_host = "unexpected.example".to_owned();
-        let result = reverify_stored_package_with(
+    async fn stored_package_readback_requires_the_verified_bytes() {
+        let archive = b"verified package";
+        let stored = StoredPublicArtifacts {
+            content_object_key: "test/content/trace.json".to_owned(),
+            content_size_bytes: 0,
+            content_sha256: sha256_hex(b""),
+            package_object_key: "test/packages/trace.llmtrace".to_owned(),
+            package_size_bytes: archive.len() as i64,
+            package_sha256: sha256_hex(archive),
+        };
+        for (body, expected_error) in [
+            (Some(archive.to_vec()), None),
+            (
+                Some(b"modified package".to_vec()),
+                Some("stored package failed its pre-commit integrity check"),
+            ),
+            (
+                Some(b"truncated".to_vec()),
+                Some("stored package failed its pre-commit integrity check"),
+            ),
+            (None, Some("stored package disappeared before admission")),
+        ] {
+            let storage = MockTraceStorage::new();
+            if let Some(body) = body {
+                storage.object_bytes(&stored.package_object_key, body);
+            }
+            let result =
+                check_stored_package_integrity(&TraceStorage::Mock(storage), &stored, archive)
+                    .await;
+            assert_eq!(
+                result.err().map(|error| error.to_string()).as_deref(),
+                expected_error
+            );
+        }
+
+        // Matching storage metadata must not authorize a different package.
+        let replacement = b"modified package";
+        let storage = MockTraceStorage::new();
+        storage.object_bytes(&stored.package_object_key, replacement.to_vec());
+        let changed_metadata = StoredPublicArtifacts {
+            package_sha256: sha256_hex(replacement),
+            ..stored
+        };
+        let result = check_stored_package_integrity(
+            &TraceStorage::Mock(storage),
+            &changed_metadata,
             archive,
-            crate::tests::test_registry(),
-            &expected,
-            move |_, _, _| async move { Ok(changed) },
         )
         .await;
         assert_eq!(
             result.unwrap_err().to_string(),
-            "stored package verification metadata changed"
+            "stored package failed its pre-commit integrity check"
         );
     }
 }

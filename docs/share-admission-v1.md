@@ -48,12 +48,14 @@ verifier. The worker:
 4. applies the disclosure-safety contract with authenticated provider context;
 5. derives only the bounded metadata needed by public views;
 6. writes canonical `trace.otlp.json` and the exact package to immutable keys;
-7. re-downloads through the recipient storage path and repeats exact-byte,
-   hash, cryptographic, and safety checks;
+7. re-downloads the package through the recipient storage path and checks its
+   size, SHA-256, and exact equality with the already-verified bytes;
 8. atomically records both artifacts before deleting private intake bytes.
 
 An unreferenced candidate object is not reachable. The atomic transition to
-`shared` is the public boundary.
+`shared` is the public boundary. Exact byte equality preserves the initial
+cryptographic and disclosure-safety verification; storage does not require a
+second verifier run with the same trust registry.
 
 ## Visibility and protected discovery
 
