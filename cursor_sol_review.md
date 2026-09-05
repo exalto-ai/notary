@@ -3,7 +3,7 @@
 **Reviewer:** Cursor Grok 4.6 (source review)  
 **Review date:** 2026-09-05  
 **Revision reviewed:** `66f94c6ba4f6ec63c8468a77d0f891401627cdce` (`main`, “Consolidate public guides on Exalto Seal”)  
-**Method:** Static review of protocol, runtime, hosted platform, desktop app, updater, Compose/Fly deploy, and CI. Findings were checked against the current source; this is not a live pentest and no production secrets were exercised.
+**Method:** Two-pass static review. Pass 1 mapped trust boundaries and evidence/sharing leaks. Pass 2 hunted remote cyber threats: notary framing and bincode, HTTP/1.1 CL/TE residue, IDOR/SQLi, session cookies, public exposure of “internal” APIs, XSS/`javascript:` hrefs, container uid, CI supply chain, and updater/signing jobs. Findings were checked against the current source. This is not a live pentest and no production secrets were exercised.
 
 This review privileges two classes of issue:
 
@@ -22,8 +22,9 @@ The serious issues are on the **confidentiality, local-trust, and sharing** edge
 - The local daemon’s administration and proxy APIs are **unauthenticated on loopback by default**. Combined with a caller-chosen `api_origin` and an unpinned desktop account-link host check, a local attacker can bind the daemon to an attacker HTTPS origin (registry, admission, and share uploads follow that origin) or drive hosted credit burn / share.
 - Device approval secrets travel in URLs. OAuth `return_to` can drop a logged-in user onto an attacker-started device-approval page.
 - Hosted anonymous verification rate limits trust client-controlled forwarding headers. Compose publishes the notary protocol port on all host interfaces.
+- The hosted **notary control plane** (`/api/internal/notary/*` redeem/activate/settle) is on the same public `/api/*` vhost as the website, gated only by the shared service bearer. Admin dashboard `href={verification_uri_complete}` is an unvalidated URL (including `javascript:`).
 
-No Critical (remote unauthenticated evidence forgery / mass credential theft from the notary) finding was confirmed.
+No Critical (remote unauthenticated evidence forgery / mass credential theft from the notary without a stolen secret) finding was confirmed. Pass 2 also did **not** find owner IDOR, SQL injection, zip-slip in `.llmtrace`, or unbounded notary frame allocation (length is capped before `vec![0; n]`).
 
 | ID | Severity | Confidence | Title |
 | --- | --- | --- | --- |
@@ -33,6 +34,7 @@ No Critical (remote unauthenticated evidence forgery / mass credential theft fro
 | H4 | High | High | macOS refresh token passed on `security -w` argv |
 | H5 | High | High | Anonymous `/api/verify` rate limits spoofable via forwarding headers |
 | H6 | High | High | Compose publishes `notary-server` on `0.0.0.0` |
+| H7 | High | High | Public `/api/*` edge exposes notary redeem/activate/settle (service-token-only) |
 | M1 | Medium | High | OAuth `return_to` device-approval phishing (plus `..` path prefix hole) |
 | M2 | Medium | High | Vault passphrase / cluster key files follow symlinks; empty passphrase allowed |
 | M3 | Medium | High | Desktop adopts any healthy listener on `:8788` |
@@ -43,12 +45,18 @@ No Critical (remote unauthenticated evidence forgery / mass credential theft fro
 | M8 | Medium | High | Provider connect is hostname-allowlisted, not destination-IP-filtered |
 | M9 | Medium | High | Unauthenticated cluster proxy; ticketless generic notary capacity |
 | M10 | Medium | High | Updater artifact URLs are HTTPS-only, not origin-pinned |
+| M11 | Medium | High | Admin dashboard `href={verification_uri_complete}` is unsanitized |
+| M12 | Medium | Medium | Capture proxy keeps client `Content-Length` after stripping `Transfer-Encoding` |
+| M13 | Medium | High | Production `notary-api` / `notary-server` images run as root |
+| M14 | Medium | Medium | CI floating tags (`claude-code-action@v1`, `rust-toolchain@master`) and public `@claude` trigger |
 | L1 | Low | High | Password-protected Listed search hits a constant haystack |
 | L2 | Low | High | Admin dashboard `postMessage(..., '*')` |
 | L3 | Low | High | Unauthenticated `/metrics` on notary-server and API |
 | L4 | Low | High | S3 keys in Compose environment; broad trusted-proxy CIDR |
 | L5 | Low | Medium | `/downloads/*` reverse-proxies an entire Tigris bucket host |
 | L6 | Low | High | `allow_high_entropy` / `force` share override; `signature` entropy exemption |
+| L7 | Low | Medium | Public-object `Cache-Control: public, max-age=31536000, immutable` |
+| L8 | Low | Medium | Session cookies lack `__Host-` (sibling-subdomain tossing residual) |
 
 ---
 
@@ -284,6 +292,28 @@ Unauthenticated reachability of a **hosted** notary is ticket-gated (good). Reac
 
 ---
 
+### H7 — Public `/api/*` edge exposes notary redeem / activate / settle
+
+**Severity:** High (privileged control plane on the public hostname)  
+**Confidence:** High that the routes are Internet-reachable via Caddy; exploit without a leaked token is not shown  
+**Type:** Confirmed (deployment + routing)
+
+`POST /api/internal/notary/admissions/redeem`, `…/operations/activate`, and `…/operations/settle` live on the same Axum router as the public website API (`platform/crates/notary-api/src/lib.rs` `hosted_router` merges `admissions::router()`). They are part of the published OpenAPI path list. Both `deploy/gateway.Caddyfile` and `platform/web/Caddyfile.fly` reverse-proxy **all** `/api/*` to `notary-api`.
+
+Auth is only `authenticate_service`: Bearer compared as SHA-256 of the shared `service_token` (min 32 characters, constant-time on the digests). There is **no** peer CIDR / Flycast-only check on these handlers, unlike admission client-IP logic.
+
+```842:854:platform/crates/notary-api/src/admissions.rs
+fn authenticate_service(...) {
+    // Bearer token required; SHA-256 then ct_eq; no network ACL
+}
+```
+
+Fly comments describe the API as private, but the **web** app is public and forwards the internal prefix. Anyone who obtains the service token (compromised `notary-server`, secret store, log, or over-broad CI) can redeem tickets, activate operations, and settle usage **from the Internet** — credit fraud and settlement abuse — without being on the private mesh.
+
+**Fix direction:** Do not proxy `/api/internal/*` on the public Caddy vhost; bind those routes to Flycast/private listen only, or require mTLS / source CIDR in addition to the bearer. Treat the service token as a production root secret.
+
+---
+
 ### M1 — OAuth `return_to` can land on attacker device approval
 
 **Severity:** Medium  
@@ -450,6 +480,70 @@ Channel + manifest minisign, SHA-256, size, immutable `/releases/builds/{build_i
 
 ---
 
+### M11 — Admin dashboard opens unsanitized `verification_uri_complete`
+
+**Severity:** Medium (High if `admin.auth` is enabled — session XSS)  
+**Confidence:** High  
+**Type:** Confirmed
+
+The daemon stores whatever JSON string the device-authorization API returns and the dashboard renders it as a raw `href`:
+
+```464:466:runtime/apps/admin-dashboard/src/views/SettingsView.tsx
+            <a href={started.flow.verification_uri_complete} target="_blank" rel="noreferrer">
+              Open approval page
+            </a>
+```
+
+Unlike the desktop app, there is no scheme/host allowlist. Combined with H1 (caller-chosen `api_origin`), an attacker API can return `javascript:…` or `data:text/html,…`. A click runs script on the admin origin. With admin auth on, that origin holds `notary_admin_session` (HttpOnly does not stop same-origin `fetch` from XSS). Default unauthenticated admin is already fully exposed (H1); this adds a browser-session steal when operators turn auth on.
+
+**Fix direction:** Parse as `https` URL, pin host to the configured API origin, reject other schemes. Never assign an API-supplied string to `href` without that check.
+
+---
+
+### M12 — Capture path keeps client `Content-Length` after stripping `Transfer-Encoding`
+
+**Severity:** Medium  
+**Confidence:** Medium  
+**Type:** Confirmed framing residue (HTTP/1.1)
+
+Hop-by-hop stripping removes `Transfer-Encoding` and `Connection`-nominated names, but **keeps** `Content-Length` (`end_to_end_headers` in `runtime/crates/notaryd/src/service/proxy.rs`). The capture path then collects the full inbound body (hyper may have used TE to parse it) and sends `chunked_request_body` — an unknown-length stream — with the original CL still on the request.
+
+If a client sends both TE and CL (RFC 9112: TE wins inbound), leftover CL can disagree with `input.len()`. Hyper will prefer an explicit `Content-Length` for the outbound encoder. Mismatched length vs body can fail the send, hang, or produce TLS bytes whose HTTP framing is attacker-influenced. The notarized transcript is whatever was written on the wire; a provider parser that disagrees with TLSNotary’s HTTP parser on those bytes is a smuggling-class integrity risk.
+
+**Fix direction:** After collecting the body, delete inbound `Content-Length` / `Transfer-Encoding` and set `Content-Length` from `input.len()` (or send a known-size body). Add a test for `TE: chunked` plus disagreeing `Content-Length`.
+
+---
+
+### M13 — Production API and notary-server images run as root
+
+**Severity:** Medium  
+**Confidence:** High  
+**Type:** Confirmed
+
+Root `Dockerfile` stages `notary-api` and `notary-server` copy binaries and `CMD`/`ENTRYPOINT` with **no** `USER`. `runtime/Dockerfile` `daemon` and `notary-server` stages are the same; only the `cluster` daemon stage drops to `10001`. Compose mitigates with `cap_drop: ALL`, `read_only`, and `no-new-privileges` for those two services; Fly tomls do not declare a non-root user.
+
+RCE in the binary already has the process’s signing key / service token. Root inside the container still removes a step from secret-file reads outside the process umask, writable-path abuse, and some escape primitives.
+
+**Fix direction:** Numeric non-root `USER` in every production stage; keep `cap_drop` / read-only.
+
+---
+
+### M14 — CI floating tags and public `@claude` trigger
+
+**Severity:** Medium  
+**Confidence:** Medium  
+**Type:** Confirmed supply-chain surface
+
+- `.github/workflows/claude.yml` runs `anthropics/claude-code-action@v1` (floating major) with `CLAUDE_CODE_OAUTH_TOKEN` whenever an issue/PR comment contains `@claude`. Permissions are read-oriented plus `id-token: write` and `actions: read`. Prompt injection in a public comment can steer an agent that can read the repo and Actions logs.
+- `.github/workflows/claude-code-review.yml` uses `--permission-mode bypassPermissions` for OWNER/MEMBER/COLLABORATOR PRs.
+- Signing/release jobs use `dtolnay/rust-toolchain@master` while Apple / Tauri signing secrets are loaded (`desktop-dmg.yml`, `release.yml`, and several other workflows).
+
+No `pull_request_target` checkout of untrusted code with secrets was found. First-party workflows do not interpolate PR titles into `run:`.
+
+**Fix direction:** Pin actions to commit SHAs; restrict `@claude` to org members; do not `bypassPermissions` on CI; pin `rust-toolchain` to a tag or SHA.
+
+---
+
 ### L1 — Password-protected Listed traces match a fixed search string
 
 **Severity:** Low  
@@ -515,6 +609,24 @@ OAuth/admission secrets use Compose `secrets:` `0400`. S3 access keys are plain 
 
 ---
 
+### L7 — Public artifact objects advertised as year-long immutable CDN cache
+
+**Severity:** Low  
+**Confidence:** Medium  
+
+`put_public_artifact` sets `Cache-Control: public, max-age=31536000, immutable` on the object (`platform/crates/notary-api/src/traces/storage.rs`). API HTTP responses correctly use `private, no-store`. If bucket policy, a signed URL, or a CDN is ever opened, caches will treat unshared or password-changed packages as permanently public.
+
+---
+
+### L8 — Session cookies are not `__Host-` prefixed
+
+**Severity:** Low  
+**Confidence:** Medium  
+
+Hosted session / OAuth cookies are `Path=/`, `HttpOnly`, `Secure` (when HTTPS), `SameSite=Lax`, without `__Host-` (`platform/crates/notary-api/src/lib.rs`). A sibling host under the same registrable domain can set `Domain=.exalto.ai` and toss the cookie name. JSON mutating APIs still need `application/json` (no CORS), so this is not a demonstrated account takeover by itself.
+
+---
+
 ## Protocol attack surface (no forgery found)
 
 Reviewed with particular attention to mixing artifacts, confusing participants, and weakening verification.
@@ -536,6 +648,9 @@ Reviewed with particular attention to mixing artifacts, confusing participants, 
 | Stripe webhooks | Signature + timestamp window, livemode check, checkout rebound to DB, event idempotency |
 | JSON parse | Vendored spansy patch: iterative strings + nesting cap (stack DoS on transcripts) |
 | Hop-by-hop | `Connection`-nominated headers stripped on the proxy |
+| Notary frames | 4-byte length prefixed; `validate_frame_length` before allocate |
+| Owner APIs | `account_id` bound on trace/device/key/billing queries (no IDOR found in pass 2) |
+| SQL | Parameter binds; no string-concat queries found in pass 2 |
 
 **Residual protocol risks (design, not bugs):**
 
@@ -547,6 +662,9 @@ Reviewed with particular attention to mixing artifacts, confusing participants, 
 6. **TLS 1.2 cert binding** (`CertBinding::V1_2`) — Proxy-TLS profile limitation, not an extra check skipped for TLS 1.3.
 7. **Usage `GONE` (410)** on settle deletes the outbox entry (`notary-server-platform-adapter`). Correct if the API means “already settled/gone”; a buggy 410 drops unpaid usage.
 8. **Public safety is heuristic.** Hostile nested JSON, homoglyph keys, and split tokens are tested; encoded query keys (H3) are not.
+9. **Notarization does not re-check today’s hostname allowlist.** Capture enforces allowlist; sealing only verifies the signed receipt. Shrinking the allowlist does not prevent sealing an existing capture of a delisted host (usually desirable for deferred notarization).
+10. **`AttestationRequest` cert commitment** is taken from the client at seal time; `sign_attestation` overlays receipt connection info / ephemeral key. A honest presentation still needs a matching identity opening — not a free cert forge, but a missing capture-time consistency check.
+11. **Unchecked `sum::<usize>()`** in `verified_connection_metadata_with_roots` and `ensure_attestable_ranges` vs `checked_add` elsewhere. On 64-bit this is unreachable given prior checked counts; keep it consistent.
 
 ---
 
@@ -575,24 +693,31 @@ Reviewed with particular attention to mixing artifacts, confusing participants, 
 - Telemetry module explicitly forbids headers, bodies, credentials, presigned URLs, and checkpoint paths.
 - Entrypoint secret copy: no symlinks, `0400`, `umask 077`.
 - Updater minisign chain (aside from host unpinning).
+- Notary frame reads cap length before allocation; zip archives require an exact Stored entry set and byte-identical rewrite (no zip-slip / zip-bomb path found).
+- Owner/device/key/billing queries bind `account_id`; Stripe webhook signature + livemode + DB rebound checkout (no new fraud bug in pass 2).
+- No `pull_request_target` + untrusted checkout with secrets in first-party workflows.
 
 ---
 
 ## Recommended fix order
 
-1. **H1 + H2 + M3:** Pin API origin and account-link hosts; default-on local admin auth (or a pairing header); refuse foreign `:8788`; `Host` allowlist.
-2. **H4:** Stop putting refresh tokens on argv.
-3. **H3:** Decode query keys; entropy-scan request targets; add tests for `api%5Fkey`, `%61pi_key`, `x%2Damz%2Dsignature`.
-4. **M1 + H2 URL secret:** Stop putting `approval_secret` in query/`return_to`.
-5. **H5:** Verification IP = `resolve_client_ip`.
-6. **H6 + M9:** Loopback-publish Compose notary; never ticketless-sign on a public IP.
-7. **M2, M5, M6, M8:** Vault file `O_NOFOLLOW`; streaming byte caps; CSP/`frame-ancestors`; destination IP policy.
-8. **L1, L2, M7, M10, L3–L6:** Search haystack, `postMessage` origin, Markdown sanitize, updater host pin, metrics auth, Compose secrets/CIDRs.
+1. **H1 + H2 + M3 + M11:** Pin API origin and account-link hosts; default-on local admin auth (or a pairing header); refuse foreign `:8788`; `Host` allowlist; never put API URLs in `href` unsanitized.
+2. **H7:** Stop publishing `/api/internal/notary/*` on the public Caddy vhost; add network ACL or mTLS.
+3. **H4:** Stop putting refresh tokens on argv.
+4. **H3:** Decode query keys; entropy-scan request targets; add tests for `api%5Fkey`, `%61pi_key`, `x%2Damz%2Dsignature`.
+5. **M1 + H2 URL secret:** Stop putting `approval_secret` in query/`return_to`.
+6. **H5:** Verification IP = `resolve_client_ip`.
+7. **H6 + M9:** Loopback-publish Compose notary; never ticketless-sign on a public IP.
+8. **M12, M13, M14:** Fix leftover `Content-Length`; non-root images; pin CI actions to SHAs.
+9. **M2, M5, M6, M8:** Vault file `O_NOFOLLOW`; streaming byte caps; CSP/`frame-ancestors`; destination IP policy.
+10. **L1–L8, M7, M10:** Search haystack, `postMessage` origin, Markdown sanitize, updater host pin, metrics auth, Compose secrets/CIDRs, `__Host-` cookies, object cache headers.
 
 ---
 
 ## Scope notes
 
-- Reviewed: `runtime/crates/notary-core`, `notaryd`, `notary-server`, `notary-updater`, `notaryctl`; `platform/crates/notary-api`, `notary-server-platform-adapter`; `platform/web`; `apps/notary-app`; `compose.yml`; `deploy/`; selected workflows. Vendored TLSNotary was treated as third-party except the documented spansy stack patches and the Proxy-TLS integration in `notary-core`.
+- Pass 1 reviewed protocol/evidence, daemon, hosted API, desktop, updater, Compose/Fly.
+- Pass 2 additionally reviewed notary framing/`bincode`, HTTP CL/TE residue, owner IDOR/SQLi, cookie flags, public routing of `/api/internal/*`, dashboard URL sinks, Docker `USER`, and GitHub Actions (`pull_request_target`, floating tags, `@claude`).
+- Vendored TLSNotary was treated as third-party except the documented spansy stack patches and the Proxy-TLS integration in `notary-core`.
 - Not done: live exploitation against production, fuzzing of the notary framing codec, review of every TLSNotary prover/verifier line, or confirmation of Fly IP allocation (`fly ips`).
 - Ordinary tests were not re-run; this change adds documentation only.
