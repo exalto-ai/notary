@@ -83,6 +83,7 @@ jobs:
 
       - name: Run production canary
         env:
+          NOTARYD_PLATFORM_API_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
           OPENROUTER_FREE_TIER_API_KEY: ${{ secrets.OPENROUTER_FREE_TIER_API_KEY }}
           NOTARYD_E2E_API_KEY: ${{ secrets.NOTARY_E2E_API_KEY }}
         run: |
