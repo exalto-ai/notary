@@ -405,6 +405,32 @@ describe('hosted site', () => {
     expect(await fetchLatestMacosDownload(async () => ({ ok: false }))).toBe(null);
   });
 
+  test('serves the enforced plan prices at /pricing without sign-in', async () => {
+    window.history.replaceState({}, '', '/pricing');
+    render(<App loadCurrentUser={async () => null} />);
+
+    await expect
+      .element(page.getByRole('heading', { name: 'Verification wants to be free.' }))
+      .toBeVisible();
+    expect(document.title).toBe('Pricing · Exalto Seal');
+    // These are the amounts platform/crates/notary-api enforces; a page that
+    // drifts from the billing implementation quotes a price nobody can buy.
+    for (const amount of ['$0', '$9.99', '$49.99', '$10 per additional GB']) {
+      await expect.element(page.getByText(amount, { exact: true })).toBeVisible();
+    }
+    for (const allowance of [
+      '50 MB capture each month',
+      '1 GB sealing each month',
+      'Store up to 10 GB of traces',
+      'Trace storage without a fixed plan limit',
+    ]) {
+      await expect.element(page.getByText(allowance)).toBeVisible();
+    }
+    await expect
+      .element(page.getByRole('link', { name: 'Plan and usage details' }))
+      .toHaveAttribute('href', '/docs/hosted-credits');
+  });
+
   test('leads the signed-out root with the macOS download', async () => {
     render(<App loadCurrentUser={async () => null} />);
 

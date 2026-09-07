@@ -127,6 +127,38 @@ const STEPS = [
   },
 ] as const;
 
+// The numbers are the ones the platform enforces: plan allowances in
+// platform/crates/notary-api (credits.rs, config.rs) and Stripe unit amounts in
+// billing/stripe.rs. Change them here only when those change.
+const PLANS = [
+  {
+    name: 'Free',
+    price: '$0',
+    cadence: 'per month',
+    summary: 'Enough to seal real work and see how a trace holds up.',
+    rows: ['50 MB capture each month', '50 MB sealing each month', 'Store up to 1 GB of traces'],
+  },
+  {
+    name: '1 GB',
+    price: '$9.99',
+    cadence: 'per month',
+    summary: 'For steady research and everyday evidence.',
+    featured: true,
+    rows: ['1 GB capture each month', '1 GB sealing each month', 'Store up to 10 GB of traces'],
+  },
+  {
+    name: '10 GB',
+    price: '$49.99',
+    cadence: 'per month',
+    summary: 'For sustained workloads and teams keeping an archive.',
+    rows: [
+      '10 GB capture each month',
+      '10 GB sealing each month',
+      'Trace storage without a fixed plan limit',
+    ],
+  },
+] as const;
+
 const PROVES = [
   'This exact conversation reached this provider over TLS.',
   'These bytes were witnessed at this time by a named notary.',
@@ -317,6 +349,59 @@ export function LandingPage() {
           </div>
         </div>
         <p className="landing-doctrine">A trace proves presence, never absence.</p>
+      </section>
+
+      <section
+        className="landing-section landing-pricing"
+        id="pricing"
+        aria-labelledby="pricing-title"
+      >
+        <p className="landing-section-label">
+          WHAT IT COSTS
+          <i className="landing-dash" aria-hidden="true" />
+        </p>
+        <h2 id="pricing-title">Verification wants to be free.</h2>
+        <p className="landing-body">
+          Verifying a trace is free, offline, and needs no account, now and always. Capture against
+          a notary you run yourself is free and unlimited too. The plans below cover what our hosted
+          notary does for you: seal your traces, and keep them at a link you can share.
+        </p>
+        <div className="landing-plans">
+          {PLANS.map((plan) => (
+            <article
+              key={plan.name}
+              className={`landing-plan${'featured' in plan && plan.featured ? ' is-featured' : ''}`}
+            >
+              <header>
+                <span className="landing-plan-name">{plan.name}</span>
+                <p className="landing-plan-price">
+                  <b>{plan.price}</b>
+                  <small>{plan.cadence}</small>
+                </p>
+              </header>
+              <p className="landing-plan-summary">{plan.summary}</p>
+              <ul>
+                {plan.rows.map((row) => (
+                  <li key={row}>
+                    <i className="landing-mark is-yes" aria-hidden="true" />
+                    {row}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+        <div className="landing-plan-addon">
+          <span>NEED MORE SEALING?</span>
+          <b>$10 per additional GB</b>
+          <small>1 to 20 GB on any plan · purchased credits do not expire</small>
+        </div>
+        <p className="landing-plan-fine">
+          Allowances are decimal bytes and reset each UTC month. The 10 GB plan has no fixed trace
+          storage limit; fair use still applies. Plans change what our notary does for you, never
+          how strong a trace is or who can check it.{' '}
+          <a href="/docs/hosted-credits">Plan and usage details</a>
+        </p>
       </section>
 
       <section className="landing-build" id="build" aria-labelledby="build-title">

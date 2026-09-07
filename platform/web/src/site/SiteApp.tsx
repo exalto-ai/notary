@@ -427,6 +427,7 @@ export function Footer() {
       <nav aria-label="Footer">
         <a href="https://exalto.ai">About Exalto</a>
         <a href="/docs">Docs</a>
+        <a href="/pricing">Pricing</a>
         <a href="/verify">Verify</a>
         <a href="/traces">Traces</a>
         <a href="/registry">Registry</a>
@@ -600,17 +601,27 @@ export function App({
   }, []);
   useEffect(() => {
     const nextSection = route.split(/[/?]/)[0];
+    if (nextSection === 'pricing') {
+      // The plans sit far down a page whose serif faces load after first paint,
+      // so the target moves. Position after the fonts settle, and place the
+      // section directly rather than animating two thousand pixels to reach it.
+      // `instant` is required: styles.css sets scroll-behavior: smooth on the
+      // document, and an animated scroll gets retargeted by the reflow.
+      let cancelled = false;
+      const scrollToPlans = () => {
+        if (!cancelled)
+          document
+            .getElementById('pricing')
+            ?.scrollIntoView({ block: 'start', behavior: 'instant' });
+      };
+      window.requestAnimationFrame(scrollToPlans);
+      document.fonts?.ready.then(scrollToPlans).catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }
     window.requestAnimationFrame(() => {
-      if (nextSection === 'pricing') {
-        document.getElementById('pricing')?.scrollIntoView({
-          block: 'start',
-          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-            ? 'auto'
-            : 'smooth',
-        });
-      } else if (nextSection !== 'docs') {
-        window.scrollTo({ top: 0, behavior: 'instant' });
-      }
+      if (nextSection !== 'docs') window.scrollTo({ top: 0, behavior: 'instant' });
     });
   }, [route]);
   useEffect(() => {
@@ -716,6 +727,8 @@ export function App({
         <PublicTraces />
       ) : section === 'registry' ? (
         <RegistryPage />
+      ) : section === 'pricing' ? (
+        <LandingPage />
       ) : workspaceLoading ? (
         placeholderVisible && <WorkspacePlaceholder />
       ) : !section && user ? (
