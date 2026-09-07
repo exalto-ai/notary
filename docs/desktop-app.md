@@ -40,16 +40,12 @@ Exalto Capture supervises the bundled `notaryd` process, exposes capture status
 from the macOS menu bar, and embeds the local workspace in its native window.
 The primary navigation contains only:
 
-- **Capture**, for starting and stopping private local capture.
+- **Overview**, for starting and stopping private local capture.
 - **Traces**, for reviewing, sealing, verifying, exporting, and sharing traces.
 - **Settings**, with Preferences, AI connections, and Activity log sections.
 
-Public Traces is a separate external destination. It is not presented as a
-fourth local workspace.
-
-The Capture screen combines service startup and capture enablement in one
-action. It shows `REC · Capturing` only after the service is running and the
-daemon-owned capture setting is on. When capture is off, the fixed loopback
+The Overview screen combines service startup and capture enablement in one
+action. Its primary control reflects the daemon-owned capture setting. When capture is off, the fixed loopback
 provider routes can still send requests directly to their providers, but those
 requests create no capture, no trace, and no evidence that can be sealed later.
 
@@ -292,14 +288,14 @@ desktop actions. Vault keys and provider API keys do not cross that frame.
 
 The macOS status menu provides:
 
-- Open Exalto Capture
-- Start capturing or Stop capturing
-- Settings…
-- Quit Exalto Capture
+- Capture, checked when capture is on
+- A separator
+- Open
+- Quit
 
 The application menu uses About Exalto Capture, Settings…, Hide Exalto Capture,
-and Quit Exalto Capture. Help provides the Exalto Capture guide, Public Traces,
-problem reporting, and About Exalto Capture. Standard macOS File,
+and Quit Exalto Capture. Help provides the Exalto Capture guide, problem
+reporting, and About Exalto Capture. Standard macOS File,
 Edit, View, and Window behavior remains intact.
 
 ## Automatic updates
