@@ -854,3 +854,161 @@
     animation: none;
   }
 }
+
+/* ---------- pricing ---------- */
+
+.landing-plans {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 34px;
+  border: 1px solid var(--app-rule);
+  background: var(--app-rule);
+}
+
+.landing-plan {
+  display: grid;
+  align-content: start;
+  background: var(--app-card);
+  padding: 24px 24px 28px;
+}
+
+/* The middle plan is the one most accounts land on, so it carries a blue rail
+   rather than a badge or a lift. */
+.landing-plan.is-featured {
+  box-shadow: inset 3px 0 0 var(--app-blue);
+}
+
+.landing-plan header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--app-rule-soft);
+  padding-bottom: 16px;
+}
+
+.landing-plan-name {
+  color: var(--app-muted);
+  font-family: var(--app-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+
+.landing-plan.is-featured .landing-plan-name {
+  color: var(--app-blue);
+}
+
+.landing-plan-price {
+  margin: 0;
+  text-align: right;
+}
+
+.landing-plan-price b {
+  display: block;
+  color: var(--app-ink);
+  font-family: var(--app-display);
+  font-size: 27px;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.landing-plan-price small {
+  color: var(--app-muted);
+  font-family: var(--app-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.landing-plan-summary {
+  margin: 16px 0 0;
+  color: var(--app-ink-soft);
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+
+.landing-plan ul {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-plan li {
+  display: grid;
+  align-items: start;
+  gap: 11px;
+  grid-template-columns: 13px minmax(0, 1fr);
+  color: var(--app-ink-soft);
+  font-family: var(--app-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+}
+
+.landing-plan li .landing-mark {
+  margin-top: 4px;
+}
+
+.landing-plan-addon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 18px;
+  margin-top: 20px;
+  border: 1px solid var(--app-rule);
+  background: color-mix(in srgb, var(--app-blue) 6%, transparent);
+  padding: 16px 22px;
+}
+
+.landing-plan-addon span {
+  color: var(--app-muted);
+  font-family: var(--app-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+
+.landing-plan-addon b {
+  color: var(--app-ink);
+  font-family: var(--app-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.landing-plan-addon small {
+  margin-left: auto;
+  color: var(--app-muted);
+  font-family: var(--app-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+
+.landing-plan-fine {
+  margin: 16px 0 0;
+  max-width: 76ch;
+  color: var(--app-muted);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.landing-plan-fine a {
+  color: var(--app-blue);
+}
+
+@media (max-width: 1040px) {
+  .landing-plans {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .landing-plan.is-featured {
+    box-shadow: inset 0 3px 0 var(--app-blue);
+  }
+
+  .landing-plan-addon small {
+    margin-left: 0;
+  }
+}

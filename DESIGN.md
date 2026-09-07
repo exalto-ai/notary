@@ -101,7 +101,9 @@ apply to the other.
 - **Tagline system, three lines with three jobs:** "Verification, unbound."
   (brand: footer, decks, bios) · "Anyone can verify." (the refrain inside copy;
   the hero closes with it) · "Verification wants to be free." (pricing
-  doctrine; the page label currently reads "COSTS?").
+  doctrine; it heads the plans on the Exalto Seal landing under the label
+  "WHAT IT COSTS"). Plans are sold where the product is: exalto.ai carries no
+  prices and links to `seal.exalto.ai/pricing`.
 - **Product names (frozen):** Exalto Notary Protocol (**ENP**), **Exalto
   Capture** (the macOS capture app), **Exalto Seal** (the hosted sealing and
   verification product), **Proof of Thought**
@@ -289,6 +291,13 @@ unevenness with the shared seed, not the palette.
 - **Trust model:** the two lists stay on the homepage — filled blue ✓ squares
   for what a trace proves, hairline ✕ squares for what it cannot. This is the
   credibility strategy, not a compliance page.
+- **Plan ledger** (`seal.exalto.ai`, anchored at `/pricing`): three plan cards
+  in one ruled grid, the middle plan carrying a blue rail rather than a badge
+  or a lift, then the additional-sealing strip and the fine print. Every
+  number is enforced by the platform, not chosen for the page: plan allowances
+  live in `platform/crates/notary-api` (`credits.rs`, `config.rs`) and the
+  amounts in `billing/stripe.rs`. Change the page only when those change, and
+  keep `docs/hosted-credits.md` in step.
 - **Docs shell** (`seal.exalto.ai/docs/*`, `platform/web`): grouped sticky sidebar (Start / Understand /
   Share), prev/next footer navigation, chip TOC on long pages, definition
   tables and participant cards in the card style, code blocks in the dark
