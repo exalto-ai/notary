@@ -115,7 +115,7 @@ body {
   gap: 8px;
   color: var(--app-ink);
   font-family: var(--app-display);
-  font-size: 25px;
+  font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.045em;
 }
@@ -125,14 +125,17 @@ body {
   text-decoration: none;
 }
 
-/* Seal is the product at this hostname; Exalto is the family it belongs to,
-   so the wordmark leads and the attribution sits quietly beside it. */
+/* Seal is the product at this hostname; Exalto is the family it belongs to, so
+   the wordmark leads and the attribution sits quietly beside it. The two read
+   as one lockup rather than a label pinned to a heading, so the attribution
+   stays close to the wordmark in size and carries the contrast in weight and
+   colour instead. */
 .app-brand small {
   color: var(--app-muted);
   font-family: var(--app-mono);
-  font-size: 8.5px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
 }
 
 .app-brand:hover small {
