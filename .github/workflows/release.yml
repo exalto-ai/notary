@@ -7,6 +7,10 @@ on:
         description: Next stable Runtime version (X.Y.Z)
         required: true
         type: string
+      notes:
+        description: Public changes, compatibility notes, and known limitations (Markdown)
+        required: true
+        type: string
 
 permissions:
   actions: read
@@ -25,12 +29,14 @@ jobs:
     name: Validate release origin
     runs-on: ubuntu-24.04
     env:
+      RELEASE_NOTES: ${{ inputs.notes }}
       PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
     steps:
       - name: Verify the compiled public origin
         run: |
           set -euo pipefail
           node -e '
+            if (!process.env.RELEASE_NOTES?.trim()) throw new Error("Public release notes are required");
             const origin = new URL(process.env.PUBLIC_ORIGIN);
             if (origin.protocol !== "https:" || origin.pathname !== "/" || origin.search || origin.hash) {
               throw new Error("NOTARY_PUBLIC_ORIGIN must be an HTTPS origin");
@@ -714,6 +720,8 @@ jobs:
             -o "$RUNNER_TEMP/website-channel.json"
           cmp "$RUNNER_TEMP/channel.json" "$RUNNER_TEMP/website-channel.json"
       - name: Publish public source release
+        env:
+          RELEASE_NOTES: ${{ inputs.notes }}
         run: |
           set -euo pipefail
           reference="$(gh api "repos/exalto-ai/notary-runtime/git/ref/tags/$PUBLIC_TAG")"
@@ -729,16 +737,12 @@ jobs:
           if gh release view "$PUBLIC_TAG" --repo exalto-ai/notary-runtime >/dev/null 2>&1; then
             echo "public GitHub Release $PUBLIC_TAG already exists"
           else
-            notes="$(printf '%s\n\n%s\n%s\n%s\n' \
-              "Stable Notary Runtime $VERSION." \
-              "Private source: $GITHUB_REPOSITORY@$RELEASE_SHA ($PRIVATE_TAG)" \
-              "Public source: exalto-ai/notary-runtime@$PUBLIC_SHA ($PUBLIC_TAG)" \
-              "Immutable build: $BUILD_ID")"
+            node scripts/release-notes.mjs release/release.json "$RUNNER_TEMP/release-notes.md"
             gh release create "$PUBLIC_TAG" \
               --repo exalto-ai/notary-runtime \
               --verify-tag \
               --title "Notary Runtime v$VERSION" \
-              --notes "$notes"
+              --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
           {
             echo "### Published Notary Runtime v$VERSION"

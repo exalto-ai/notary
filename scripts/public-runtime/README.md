@@ -72,8 +72,10 @@ changes must be imported into that monorepo before export; merging a change
 only into this mirror would allow the next export to overwrite it. Each export
 records its source revision in `.notary-source.json`.
 
-Stable source releases use `vX.Y.Z` tags. Official clients are distributed
-through the signed `latest` update channel at `seal.exalto.ai`.
+[GitHub Releases](https://github.com/exalto-ai/notary-runtime/releases) provide
+change notes and download links. Stable source releases use `vX.Y.Z` tags.
+Official clients use the signed `latest` update channel at `seal.exalto.ai`; see
+[download verification](runtime/docs/releases.md).
 
 ## License
 

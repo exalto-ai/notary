@@ -17,6 +17,12 @@ different author, committer, or tagger identity.
 
 ## Before releasing
 
+Prepare a Markdown notes file describing user-visible changes, compatibility or
+manual-upgrade requirements, known limitations, and contributor credit where
+applicable. These notes are published verbatim: use public issue links and do
+not include private issue references or internal discussion. Downloads and
+verification links are added automatically from the verified release manifest.
+
 Start only when the current `main` head is green and is the source that should
 be released. Choose the next strictly increasing stable version in `X.Y.Z`
 form. Pre-release versions and reuse of an existing version are rejected.
@@ -79,7 +85,8 @@ Dispatch the workflow from `main`, substituting the next version:
 gh workflow run release.yml \
   --repo exalto-ai/notary \
   --ref main \
-  -f version=X.Y.Z
+  -f version=X.Y.Z \
+  -F notes=@/path/to/release-notes.md
 ```
 
 Watch it through completion:
@@ -97,7 +104,7 @@ and the corresponding public Runtime export.
 The workflow performs these steps:
 
 1. Confirms the dispatch came from the current green `main`, validates the
-   version, and rejects conflicting tags.
+   version and public release notes, and rejects conflicting tags.
 2. Synchronizes version metadata, commits it to `main`, and waits for Main
    validation of that exact commit.
 3. Waits for that commit's public Runtime export and verifies its source
@@ -145,8 +152,9 @@ must not use the plain-text pointer as their source of trust.
 
 The immutable build includes raw CLI and daemon binaries, platform archives,
 the macOS DMG, the signed macOS updater bundle, checksums, signatures, and
-`release.json`. The public GitHub Release records the public source tag and
-release identity; binary downloads come from Tigris rather than GitHub Release
+`release.json`. The public GitHub Release includes the supplied changes, public
+source tag, release identity, immutable download links, and verification
+instructions. Binary downloads come from Tigris rather than GitHub Release
 assets.
 
 The signed `release.json` manifest binds the version and build ID to the exact
