@@ -141,7 +141,7 @@ export function Header({
       </a>
       <nav className="app-nav-links" aria-label="Product">
         <a href="/account">Capture</a>
-        <a href="/account/traces">Sealed Traces</a>
+        <a href="/account/traces">Traces</a>
         <a href="/verify">Verify</a>
       </nav>
       <div className="app-nav-actions">

@@ -173,14 +173,14 @@ describe('hosted site', () => {
     expect(document.querySelector('.footer-copyright b')?.textContent).toBe('Exalto Seal');
     expect(Array.from(productNav.querySelectorAll('a'), (link) => link.textContent)).toEqual([
       'Capture',
-      'Sealed Traces',
+      'Traces',
       'Verify',
     ]);
     await expect
       .element(page.getByRole('link', { name: 'Capture' }))
       .toHaveAttribute('href', '/account');
     await expect
-      .element(page.getByRole('link', { name: 'Sealed Traces' }))
+      .element(page.getByRole('banner').getByRole('link', { name: 'Traces' }))
       .toHaveAttribute('href', '/account/traces');
     await expect
       .element(page.getByRole('link', { name: 'Sign in' }))
