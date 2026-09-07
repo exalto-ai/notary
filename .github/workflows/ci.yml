@@ -191,8 +191,8 @@ jobs:
     needs: changes
     if: >-
       needs.changes.outputs.windows_update == 'true' &&
-      (github.event_name == 'pull_request' ||
-       (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v6
