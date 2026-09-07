@@ -132,7 +132,9 @@ and the center of the Seal stamp. All marks are drawn in brand blue `#0C1622`
   alpha, stroke 8 on the 92-unit viewBox, `icon_as_template`).
 - **Exalto Seal — "The Round Stamp"** — a circular `EXALTO · VERIFIED` ring
   (IBM Plex Mono 500, rotated −8°) around the quote glyph. Kit in
-  `brand/exalto-seal/`; its favicons are the natural set for seal.exalto.ai.
+  `brand/exalto-seal/`. The Seal mark names the hosted product inside the
+  interface; the seal.exalto.ai favicon is the Capture kit, because the site
+  leads with the macOS download and the tab should match the app it offers.
   **Raster caveat:** the raw Seal SVG's ring text references IBM Plex Mono via
   textPath, which `<img>` and SVG-image contexts do not resolve — use the
   font-baked rasters (`icon-192.png` etc.) anywhere the SVG is not inlined into

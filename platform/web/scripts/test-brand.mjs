@@ -7,6 +7,10 @@ const packageJson = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8
 const llms = readFileSync(resolve(root, 'public/llms.txt'), 'utf8');
 const mark = readFileSync(resolve(root, 'public/notary-mark.svg'), 'utf8');
 const favicon = readFileSync(resolve(root, 'public/favicon.svg'), 'utf8');
+const captureTile = readFileSync(
+  resolve(root, '../../brand/exalto-capture/svg/exalto-capture-tile.svg'),
+  'utf8',
+);
 const preview = readFileSync(resolve(root, 'public/social-preview.png'));
 const siteCaddy = readFileSync(resolve(root, 'Caddyfile'), 'utf8');
 const flyCaddy = readFileSync(resolve(root, 'Caddyfile.fly'), 'utf8');
@@ -33,6 +37,18 @@ if (!llms.startsWith('# Exalto Seal\n')) {
 }
 requireText(mark, '<title id="title">Exalto Seal</title>', 'public mark title');
 requireText(favicon, '<title id="title">Exalto Seal</title>', 'favicon title');
+// The site leads with the macOS download, so its browser icon is the app's own
+// mark rather than a separate drawing that drifts from the shipped kit.
+for (const geometry of captureTile.match(/<(?:g|circle|path|rect)[^>]*>/g) ?? []) {
+  requireText(favicon, geometry, 'favicon Exalto Capture mark');
+}
+requireText(html, 'rel="icon" href="/favicon.ico', 'icon link');
+requireText(html, 'rel="apple-touch-icon" href="/apple-touch-icon-180.png', 'touch icon link');
+for (const icon of ['favicon.ico', 'apple-touch-icon-180.png', 'icon-192.png', 'icon-512.png']) {
+  if (!readFileSync(resolve(root, `public/${icon}`)).length) {
+    throw new Error(`public/${icon} is empty`);
+  }
+}
 requireText(siteApp, 'aria-label="Exalto Seal home"', 'site header identity');
 requireText(siteApp, '<span>Seal</span>', 'site header product wordmark');
 requireText(siteApp, '<small>BY EXALTO</small>', 'site header family attribution');
