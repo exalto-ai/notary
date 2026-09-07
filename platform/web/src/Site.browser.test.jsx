@@ -30,6 +30,7 @@ afterEach(async () => {
   });
   window.history.replaceState({}, '', '/');
   window.localStorage.removeItem('notary-theme');
+  window.localStorage.removeItem('notary-session');
   await page.viewport(1280, 900);
 });
 
@@ -238,7 +239,7 @@ describe('hosted site', () => {
     await expect.element(page.getByRole('link', { name: 'Sign in' })).not.toBeInTheDocument();
   });
 
-  test('keeps an Account deep link out of the landing page while authentication loads', async () => {
+  test('holds the Account layout with a placeholder while authentication loads', async () => {
     window.location.hash = '#/account/settings';
     let resolveCurrentUser;
     const loadCurrentUser = () =>
@@ -247,13 +248,14 @@ describe('hosted site', () => {
       });
     render(<App loadCurrentUser={loadCurrentUser} />);
 
-    await expect.element(page.getByRole('status', { name: 'Loading Account' })).toBeVisible();
-    await expect.element(page.getByText('Loading Account…')).toBeVisible();
+    const placeholder = page.getByRole('status', { name: 'Loading Account' });
+    await expect.element(placeholder).toBeVisible();
+    // The placeholder is the Account layout, not an indicator floating over it.
+    expect(document.querySelector('.dashboard-shell--placeholder .dashboard-layout')).not.toBe(
+      null,
+    );
     await expect
-      .element(page.getByRole('heading', { name: 'Loading your account' }))
-      .not.toBeInTheDocument();
-    await expect
-      .element(page.getByRole('heading', { name: 'Verifiable intelligence' }))
+      .element(page.getByRole('heading', { name: 'Record every session.' }))
       .not.toBeInTheDocument();
 
     resolveCurrentUser({
@@ -335,6 +337,43 @@ describe('hosted site', () => {
     await expect
       .element(page.getByRole('link', { name: /Manage Traces/ }))
       .toHaveAttribute('href', '/account/traces');
+  });
+
+  test('paints the landing at once for a browser that has never signed in', async () => {
+    render(<App loadCurrentUser={() => new Promise(() => {})} />);
+
+    await expect
+      .element(page.getByRole('heading', { name: 'Record every session.' }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole('status', { name: 'Opening your workspace' }))
+      .not.toBeInTheDocument();
+  });
+
+  test('holds the workspace layout for a browser that has held a session', async () => {
+    window.localStorage.setItem('notary-session', 'yes');
+    let resolveCurrentUser;
+    render(
+      <App
+        loadCurrentUser={() =>
+          new Promise((resolve) => {
+            resolveCurrentUser = resolve;
+          })
+        }
+      />,
+    );
+
+    await expect
+      .element(page.getByRole('status', { name: 'Opening your workspace' }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'Record every session.' }))
+      .not.toBeInTheDocument();
+
+    resolveCurrentUser({ provider_display_name: 'fixture-user', usage: usageFixture() });
+    await expect
+      .element(page.getByRole('heading', { name: 'Welcome back, fixture-user.' }))
+      .toBeVisible();
   });
 
   test('resolves the macOS download from the release pointer and manifest', async () => {

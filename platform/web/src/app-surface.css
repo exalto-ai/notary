@@ -599,35 +599,29 @@ body {
   color: var(--app-blue);
 }
 
-.app-workspace--loading {
-  display: grid;
-  place-content: center;
-  gap: 18px;
-  color: var(--app-muted);
-  font-family: var(--app-mono);
-  font-size: 10px;
-  letter-spacing: 0.05em;
+/* Placeholders stand in the geometry they replace: the page settles into the
+   real content instead of swapping a centred indicator for a whole layout. */
+.app-skeleton {
+  display: block;
+  background: var(--app-rule-soft);
+  animation: app-skeleton-settle 1.4s ease-in-out infinite;
 }
 
-.app-loading-mark {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-}
+.app-skeleton--kicker { width: 148px; height: 10px; }
+.app-skeleton--title { width: min(420px, 72%); height: 34px; margin-top: 18px; }
+.app-skeleton--line { width: min(520px, 88%); height: 14px; margin-top: 18px; }
+.app-skeleton--label { width: 62px; height: 9px; }
+.app-skeleton--value { width: 40px; height: 18px; margin-top: 10px; }
+.app-skeleton--nav { width: 100%; height: 15px; }
+.app-skeleton--card { width: 100%; height: 96px; border: 1px solid var(--app-rule); background: var(--app-card); }
 
-.app-loading-mark i {
-  width: 7px;
-  height: 7px;
-  background: var(--app-phosphor);
-  animation: app-loading-pulse 1s ease-in-out infinite;
-}
+.app-workspace--placeholder .app-product { min-height: 268px; background: var(--app-card); }
+.dashboard-shell--placeholder .dashboard-sidebar nav { display: grid; gap: 20px; padding-top: 6px; }
+.app-skeleton-cards { display: grid; gap: 14px; margin-top: 28px; }
 
-.app-loading-mark i:nth-child(2) { animation-delay: 130ms; }
-.app-loading-mark i:nth-child(3) { animation-delay: 260ms; }
-
-@keyframes app-loading-pulse {
-  0%, 100% { opacity: 0.25; transform: translateY(0); }
-  50% { opacity: 1; transform: translateY(-4px); }
+@keyframes app-skeleton-settle {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 
 .app-footer {
@@ -807,18 +801,6 @@ body {
 .dashboard-shell .dashboard-credit-offer button:hover:not(:disabled) {
   border-color: var(--action-fill-hover);
   background: var(--action-fill-hover);
-}
-
-.dashboard-auth-loading {
-  min-height: calc(100dvh - 66px);
-  background: var(--app-paper);
-}
-
-.dashboard-auth-loading-card {
-  border-color: var(--app-rule);
-  background: var(--app-card);
-  color: var(--app-ink);
-  font-family: var(--app-mono);
 }
 
 /* Controls take the Ledger Phosphor button grammar: mono label, tracked, softly
@@ -1102,5 +1084,5 @@ html {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-loading-mark i { animation: none; opacity: 1; }
+  .app-skeleton { animation: none; opacity: 1; }
 }
