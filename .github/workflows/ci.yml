@@ -461,7 +461,7 @@ jobs:
   validation:
     name: ${{ github.event_name == 'pull_request' && 'Required checks' || 'Main validation' }}
     if: always()
-    needs: [changes, rust, postgres-integration, windows-update, app, landing, desktop, docs, containers, terminology, gitleaks]
+    needs: [changes, rust, postgres-integration, windows-update, app, desktop, docs, containers, terminology, gitleaks]
     runs-on: ubuntu-24.04
     env:
       CHANGES_RESULT: ${{ needs.changes.result }}
@@ -473,8 +473,6 @@ jobs:
       WINDOWS_UPDATE_RESULT: ${{ needs.windows-update.result }}
       APP_CHANGED: ${{ needs.changes.outputs.app }}
       APP_RESULT: ${{ needs.app.result }}
-      LANDING_CHANGED: ${{ needs.changes.outputs.landing }}
-      LANDING_RESULT: ${{ needs.landing.result }}
       DESKTOP_REQUIRED: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.desktop == 'true' }}
       DESKTOP_RESULT: ${{ needs.desktop.result }}
       DOCS_CHANGED: ${{ needs.changes.outputs.docs }}
@@ -511,7 +509,6 @@ jobs:
           require_selected PostgreSQL "$POSTGRES_REQUIRED" "$POSTGRES_RESULT"
           require_selected "Windows client update" "$WINDOWS_UPDATE_REQUIRED" "$WINDOWS_UPDATE_RESULT"
           require_selected SPA "$APP_CHANGED" "$APP_RESULT"
-          require_selected Landing "$LANDING_CHANGED" "$LANDING_RESULT"
           require_selected Desktop "$DESKTOP_REQUIRED" "$DESKTOP_RESULT"
           require_selected Documentation "$DOCS_CHANGED" "$DOCS_RESULT"
           require_selected Deployment "$CONTAINERS_CHANGED" "$CONTAINERS_RESULT"
