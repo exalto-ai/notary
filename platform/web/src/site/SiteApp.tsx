@@ -31,9 +31,11 @@ import {
   RegistryPage,
 } from './AuthorizationPages';
 import { LandingPage } from './LandingPage';
+import { AccountPlaceholder, useSettledWait, WorkspacePlaceholder } from './LoadingStates';
 import { currentRoute, migrateLegacyRoute, navigateTo } from './navigation';
 import { Docs } from './PublicDocs';
 import { PublicTracePage, PublicTraces, VerificationPage } from './PublicTracePages';
+import { hadSession, rememberSession } from './session';
 
 const loadCreditUtilizationChart = () => import('../CreditUtilizationChart');
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
@@ -318,19 +320,6 @@ export function SignInPage({
   );
 }
 
-function WorkspaceLoading() {
-  return (
-    <main className="app-workspace app-workspace--loading" role="status" aria-live="polite">
-      <div className="app-loading-mark" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </div>
-      <p>Opening your workspace…</p>
-    </main>
-  );
-}
-
 function AppWorkspace({ user }: { user: CurrentUser }) {
   const sharedTraces = user.usage.hosted_traces.shared;
   const totalTraces = user.usage.hosted_traces.total;
@@ -574,24 +563,6 @@ export {
   VerificationPage,
 };
 
-export function DashboardAuthLoading() {
-  return (
-    <main
-      className="dashboard-auth-loading"
-      role="status"
-      aria-live="polite"
-      aria-label="Loading Account"
-    >
-      <div className="dashboard-auth-loading-card">
-        <span className="dashboard-auth-loading-indicator" aria-hidden="true">
-          <i />
-        </span>
-        <span>Loading Account…</span>
-      </div>
-    </main>
-  );
-}
-
 export function App({
   loadCurrentUser = getCurrentUser,
 }: {
@@ -649,6 +620,7 @@ export function App({
         if (!cancelled) {
           setUser(user);
           setAuthPending(false);
+          rememberSession(Boolean(user));
         }
       })
       .catch(() => {
@@ -667,11 +639,13 @@ export function App({
   const logout = async () => {
     await logoutBrowser();
     setUser(null);
+    rememberSession(false);
     if (section === 'account') navigateTo('/');
   };
   const accountDeleted = () => {
     setUser(null);
     setAuthPending(false);
+    rememberSession(false);
     navigateTo('/');
   };
   const path = route;
@@ -687,7 +661,11 @@ export function App({
   const sectionAnchor = new URLSearchParams(path.split('?')[1] || '').get('section');
   const isPublicTraces = section === 'traces';
   const accountLoading = section === 'account' && authPending;
-  const workspaceLoading = !section && authPending;
+  // A visitor this browser has never signed in on gets the public landing at
+  // once. Only a browser that has held a session waits for the workspace, and
+  // a hint that turns out to be stale simply resolves to the landing.
+  const workspaceLoading = !section && authPending && hadSession();
+  const placeholderVisible = useSettledWait(accountLoading || workspaceLoading);
   useEffect(() => {
     const titles: Record<string, string> = {
       authorize: 'Connect device',
@@ -739,13 +717,13 @@ export function App({
       ) : section === 'registry' ? (
         <RegistryPage />
       ) : workspaceLoading ? (
-        <WorkspaceLoading />
+        placeholderVisible && <WorkspacePlaceholder />
       ) : !section && user ? (
         <AppWorkspace user={user} />
       ) : !section ? (
         <LandingPage />
       ) : accountLoading ? (
-        <DashboardAuthLoading />
+        placeholderVisible && <AccountPlaceholder />
       ) : section === 'account' && user ? (
         <Dashboard
           user={user}
