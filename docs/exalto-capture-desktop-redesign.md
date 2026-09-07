@@ -43,9 +43,7 @@ The redesign resolves the shell and first-run issues while preserving the workin
 | Providers | Settings > AI connections | Connect Codex CLI, Claude Code, or an API client |
 | Activity | Settings > Activity log | Diagnostics and local service events |
 | Settings | Settings > Preferences | Privacy and storage, app behavior, updates, and advanced details |
-| Public traces | Public Traces | External hosted collection at `https://seal.exalto.ai/traces` |
-
-Primary navigation is exactly **Capture**, **Traces**, and **Settings**. Public Traces remains an external utility until the local API can enumerate shared traces safely.
+Primary navigation is exactly **Overview**, **Traces**, and **Settings**.
 
 ## Capture screen
 
@@ -53,7 +51,7 @@ The primary button performs the full action a developer expects:
 
 - If the local service is stopped, start it.
 - Enable capture through the local administration API.
-- Show `REC · Capturing` only after both operations succeed.
+- Reflect the daemon-owned capture setting only after both operations succeed.
 
 The screen uses four compact, operational cues from the public site:
 
@@ -139,16 +137,16 @@ remain internal runtime names. Local `notary` data paths, Keychain service
 names, onboarding markers, internal routes, signed update schemas, enums, and
 the `.llmcapture` and `.llmtrace` extensions remain protocol-level identities.
 
-The hosted Public Traces destination is `https://seal.exalto.ai/traces`, the same canonical Exalto Seal origin used for hosted accounts and verification. The updater origin remains unchanged in this PR so installed clients keep a working update channel.
+The updater origin remains unchanged in this PR so installed clients keep a working update channel.
 
 ## Menus
 
 Status menu:
 
-- Open Exalto Capture
-- Start capturing or Stop capturing
-- Settings…
-- Quit Exalto Capture
+- Capture, checked when capture is on
+- A separator
+- Open
+- Quit
 
 Application menu:
 
@@ -160,7 +158,6 @@ Application menu:
 Help:
 
 - Read the Exalto Capture guide
-- View Public Traces
 - Report a problem
 - About Exalto Capture
 
