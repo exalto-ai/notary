@@ -125,12 +125,18 @@ body {
   text-decoration: none;
 }
 
+/* Seal is the product at this hostname; Exalto is the family it belongs to,
+   so the wordmark leads and the attribution sits quietly beside it. */
 .app-brand small {
-  color: var(--app-blue);
+  color: var(--app-muted);
   font-family: var(--app-mono);
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+}
+
+.app-brand:hover small {
+  color: var(--app-blue);
 }
 
 .app-nav-links,

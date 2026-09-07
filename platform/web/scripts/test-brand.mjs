@@ -34,7 +34,8 @@ if (!llms.startsWith('# Exalto Seal\n')) {
 requireText(mark, '<title id="title">Exalto Seal</title>', 'public mark title');
 requireText(favicon, '<title id="title">Exalto Seal</title>', 'favicon title');
 requireText(siteApp, 'aria-label="Exalto Seal home"', 'site header identity');
-requireText(siteApp, '<small>SEAL</small>', 'site header product label');
+requireText(siteApp, '<span>Seal</span>', 'site header product wordmark');
+requireText(siteApp, '<small>BY EXALTO</small>', 'site header family attribution');
 requireText(
   siteApp,
   '<b>Exalto Seal</b> <span>· Evidence stays yours</span>',

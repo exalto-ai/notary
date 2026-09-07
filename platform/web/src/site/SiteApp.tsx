@@ -20,6 +20,7 @@ import '../legal.css';
 import '../notaries.css';
 import '../axis.css';
 import '../verification.css';
+import '../landing.css';
 import '../sharing.css';
 import '../app-surface.css';
 import { getAuthProviders, getCurrentUser, logoutBrowser } from '../platform-api/client';
@@ -29,6 +30,7 @@ import {
   HostedNotaryRecord,
   RegistryPage,
 } from './AuthorizationPages';
+import { LandingPage } from './LandingPage';
 import { currentRoute, migrateLegacyRoute, navigateTo } from './navigation';
 import { Docs } from './PublicDocs';
 import { PublicTracePage, PublicTraces, VerificationPage } from './PublicTracePages';
@@ -134,8 +136,8 @@ export function Header({
   return (
     <header className="app-nav">
       <a className="app-brand" href="/" aria-label="Exalto Seal home">
-        <span>Exalto</span>
-        <small>SEAL</small>
+        <span>Seal</span>
+        <small>BY EXALTO</small>
       </a>
       <nav className="app-nav-links" aria-label="Product">
         <a href="/account">Capture</a>
@@ -719,7 +721,7 @@ export function App({
       <Header
         user={user}
         onLogout={logout}
-        hideSignIn={section === 'authorize' || section === 'signin' || (!section && !user)}
+        hideSignIn={section === 'authorize' || section === 'signin'}
         authPending={authPending}
       />
       {directTraceId ? (
@@ -741,7 +743,7 @@ export function App({
       ) : !section && user ? (
         <AppWorkspace user={user} />
       ) : !section ? (
-        <SignInPage route="signin" user={null} />
+        <LandingPage />
       ) : accountLoading ? (
         <DashboardAuthLoading />
       ) : section === 'account' && user ? (

@@ -59,6 +59,9 @@ export default defineConfig({
     port: 4173,
     proxy: {
       '/api': { target: apiProxyOrigin, changeOrigin: true },
+      // The release bucket is only mounted by the deployed gateway, so proxy it
+      // in development to exercise the real macOS download resolution.
+      '/downloads': { target: publicOrigin, changeOrigin: true },
     },
   },
 });
