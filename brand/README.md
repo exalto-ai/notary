@@ -22,8 +22,10 @@ The Exalto Capture desktop app. Viewfinder brackets around a record lens.
 
 The Exalto Seal hosted sealing and verification product. A circular EXALTO ·
 VERIFIED stamp around the house quote glyph. Same layout as above with
-`Exalto-Seal.icns`; the Seal favicons are the canonical set for
-seal.exalto.ai.
+`Exalto-Seal.icns`. The Seal mark names the hosted product wherever a tool is
+named in the interface. It is not the site favicon: seal.exalto.ai leads with
+the macOS download, so its browser icon is the Capture kit under
+`exalto-capture/web/`, matching the app in the reader's Dock.
 
 ```html
 <link rel="icon" href="/favicon.ico" sizes="48x48">

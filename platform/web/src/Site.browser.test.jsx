@@ -4,6 +4,7 @@ import { page } from 'vitest/browser';
 import CreditUtilizationChart from './CreditUtilizationChart';
 import { ProviderIdentity } from './ProviderIdentity';
 import { PlatformApiError } from './platform-api/client';
+import { fetchLatestMacosDownload } from './site/release';
 import {
   AccountSettings,
   ApiKeysPanel,
@@ -167,19 +168,19 @@ describe('hosted site', () => {
     await expect
       .element(page.getByRole('link', { name: 'Exalto Seal home' }))
       .toHaveAttribute('href', '/');
-    expect(document.querySelector('.app-brand > span')?.textContent).toBe('Exalto');
-    expect(document.querySelector('.app-brand > small')?.textContent).toBe('SEAL');
+    expect(document.querySelector('.app-brand > span')?.textContent).toBe('Seal');
+    expect(document.querySelector('.app-brand > small')?.textContent).toBe('BY EXALTO');
     expect(document.querySelector('.footer-copyright b')?.textContent).toBe('Exalto Seal');
     expect(Array.from(productNav.querySelectorAll('a'), (link) => link.textContent)).toEqual([
       'Capture',
-      'Sealed Traces',
+      'Traces',
       'Verify',
     ]);
     await expect
       .element(page.getByRole('link', { name: 'Capture' }))
       .toHaveAttribute('href', '/account');
     await expect
-      .element(page.getByRole('link', { name: 'Sealed Traces' }))
+      .element(page.getByRole('banner').getByRole('link', { name: 'Traces' }))
       .toHaveAttribute('href', '/account/traces');
     await expect
       .element(page.getByRole('link', { name: 'Sign in' }))
@@ -336,13 +337,49 @@ describe('hosted site', () => {
       .toHaveAttribute('href', '/account/traces');
   });
 
-  test('uses sign-in as the signed-out root experience', async () => {
+  test('resolves the macOS download from the release pointer and manifest', async () => {
+    const build = 'runtime-v9.9.9-abc-1';
+    const responses = {
+      '/downloads/releases/latest': { ok: true, text: async () => `${build} 9.9.9\n` },
+      [`/downloads/releases/builds/${build}/release.json`]: {
+        ok: true,
+        json: async () => ({
+          version: '9.9.9',
+          desktop: {
+            'darwin-aarch64': {
+              dmg: { name: 'Exalto-Capture-macos-arm64.dmg', size_bytes: 24_500_000 },
+            },
+          },
+        }),
+      },
+    };
+
+    expect(await fetchLatestMacosDownload(async (url) => responses[url])).toEqual({
+      url: `/downloads/releases/builds/${build}/Exalto-Capture-macos-arm64.dmg`,
+      version: '9.9.9',
+      sizeBytes: 24_500_000,
+    });
+    // A pointer that names a path rather than a build identifier is never followed.
+    expect(
+      await fetchLatestMacosDownload(async () => ({ ok: true, text: async () => '../evil 9.9.9' })),
+    ).toBe(null);
+    expect(await fetchLatestMacosDownload(async () => ({ ok: false }))).toBe(null);
+  });
+
+  test('leads the signed-out root with the macOS download', async () => {
     render(<App loadCurrentUser={async () => null} />);
 
     await expect
-      .element(page.getByRole('heading', { name: 'Keep the record close.' }))
+      .element(page.getByRole('heading', { name: /Record every session\./ }))
       .toBeVisible();
-    await expect.element(page.getByText('Verifiable intelligence')).not.toBeInTheDocument();
+    const download = page.getByRole('link', { name: /Download for macOS/ }).first();
+    await expect.element(download).toBeVisible();
+    await expect
+      .element(page.getByRole('link', { name: /Build on the Exalto stack/ }).first())
+      .toHaveAttribute('href', '#build');
+    await expect
+      .element(page.getByRole('banner').getByRole('link', { name: 'Sign in' }))
+      .toHaveAttribute('href', '/signin');
   });
 
   test('returns signed-out Account visitors to the requested Account route', async () => {
