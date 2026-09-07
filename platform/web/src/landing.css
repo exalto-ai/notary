@@ -922,8 +922,11 @@
   text-transform: uppercase;
 }
 
+/* Plans are read across, not down, so the feature lists must start on the same
+   line even though the summaries above them differ in length. */
 .landing-plan-summary {
   margin: 16px 0 0;
+  min-height: calc(2 * 1.55em);
   color: var(--app-ink-soft);
   font-size: 15.5px;
   line-height: 1.55;
@@ -1006,6 +1009,10 @@
 
   .landing-plan.is-featured {
     box-shadow: inset 0 3px 0 var(--app-blue);
+  }
+
+  .landing-plan-summary {
+    min-height: 0;
   }
 
   .landing-plan-addon small {
