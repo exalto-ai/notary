@@ -4,8 +4,8 @@ Shared product marks for Exalto's tools. Brand blue `#0C1622`, mark white
 `#FFFFFF`; the Seal ring text is IBM Plex Mono 500, baked into every
 PNG/ICNS/ICO. The raw SVGs reference the font by name, so use them only
 where that font is loaded (inline on the website); elsewhere prefer the
-baked rasters. Web-ready copies used by the landing site live in
-`platform/landing/public/icons/`.
+baked rasters. Web-ready copies used by exalto.ai live in the standalone
+[`exalto-ai/website`](https://github.com/exalto-ai/website) repository.
 
 ## exalto-capture/: Exalto Capture ("The Recorder")
 

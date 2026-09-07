@@ -74,7 +74,7 @@ surfaces. Do not edit them for marketing work.
 
 | Surface | System | Section |
 | --- | --- | --- |
-| exalto.ai landing (`platform/landing`) | **Ledger Phosphor** | Part II |
+| exalto.ai landing ([`exalto-ai/website`](https://github.com/exalto-ai/website)) | **Ledger Phosphor** | Part II |
 | Hosted Exalto Seal site, docs, Account, and public traces (`platform/web`) | **Ledger Phosphor** | Parts I + II |
 | Local admin dashboard (`runtime/apps/admin-dashboard`) | **Developer workspace** | Part III |
 | Exalto Capture desktop app (`apps/notary-app`) | **Developer workspace**, **Exalto Capture** app icon | Parts I + III |
@@ -121,8 +121,8 @@ apply to the other.
 The double opening-quote is the house glyph: it is the Proof of Thought mark
 and the center of the Seal stamp. All marks are drawn in brand blue `#0C1622`
 (which is also Ledger Phosphor's band navy) with white geometry. Kits live in
-`brand/`; web-ready copies used by the landing live in
-`platform/landing/public/` and `platform/landing/public/icons/`.
+`brand/`; web-ready copies used by exalto.ai live in the standalone
+[`exalto-ai/website`](https://github.com/exalto-ai/website) repository.
 
 - **Proof of Thought** — the quote glyph. `pot-tile.svg` (app tile),
   `pot-mark-white.svg` / `pot-mark-blue.svg` (outline marks for dark / light
@@ -174,7 +174,8 @@ protocol is drawn with its true relay topology (see Part II). Rendered copy
 contains no em- or en-dashes. Required doctrine strings (the four-sentence
 legal footer, "A trace proves presence, never absence.", the one-notary-among-
 many sentence, the diagram caption, "Nothing readable ever leaves your
-machine.") are enforced verbatim by `platform/landing/scripts/check-copy.mjs`;
+machine.") are enforced verbatim by the website repository's
+`scripts/check-copy.mjs`;
 the repo-wide product model is enforced by `scripts/check-terminology.mjs`.
 
 ---
@@ -187,8 +188,8 @@ The page must feel like the product: evidence, seals, receipts. Two signature
 moves carry it: a hero whose background is a real human/AI conversation being
 recorded and sealed, and the attribution code from Part I threaded through
 every section. The full decision history lives in the design handoff
-(`design_handoff_exalto_7a/`, kept outside the repo); the shipped page in
-`platform/landing` is the copy authority.
+(`design_handoff_exalto_7a/`, kept outside the repo); the standalone website
+repository is the copy authority.
 
 Exalto Seal uses the same palette, typography, evidence grammar, and reading
 surfaces at greater operational density. Its account controls remain compact,
@@ -421,15 +422,15 @@ including compatible third-party and self-hosted notaries.
 
 ## Enforcement
 
-- `platform/landing/scripts/check-copy.mjs` — landing banned/required strings,
-  tile order, em-dash ban; runs in every landing build and the `Landing site`
-  CI job, and inside the deploy image build.
+- `exalto-ai/website`'s `scripts/check-copy.mjs` — landing banned/required
+  strings, tile order, em-dash ban; runs in every website build, its CI job,
+  and the deploy image build.
 - `scripts/check-terminology.mjs` — repo-wide retired-term and brand audit
   (scans tracked files; stage new files before running).
 - `platform/web/scripts/test-brand.mjs` — the hosted Exalto Seal identity and
   retired-brand regression checks.
-- The `Deploy landing` workflow ships `platform/landing` to exalto.ai on every
-  merge to main that touches it, digest-pinned with automatic rollback.
+- Vercel deploys the standalone website repository on every merge to main and
+  creates preview deployments for pull requests.
 
 ## Asset inventory
 
@@ -437,9 +438,9 @@ including compatible third-party and self-hosted notaries.
 | --- | --- |
 | Capture icon kit (SVG, macOS + icns, web) | `brand/exalto-capture/` |
 | Seal icon kit (SVG, macOS + icns, web) | `brand/exalto-seal/` |
-| PoT marks | `platform/landing/public/pot-*.svg` |
-| Landing web icons (Capture/Seal) | `platform/landing/public/icons/` |
-| Ledger Grain tile art (WebP, 1000×333) | `platform/landing/public/art/` |
+| PoT marks | `exalto-ai/website` `public/pot-*.svg` |
+| Landing web icons (Capture/Seal) | `exalto-ai/website` `public/icons/` |
+| Ledger Grain tile art (WebP, 1000×333) | `exalto-ai/website` `public/art/` |
 | Desktop app bundle icons (Capture set) | `apps/notary-app/src-tauri/icons/` |
 | Hosted site's retained pen asset (legacy filename) | `platform/web/public/notary-mark.svg` |
 
