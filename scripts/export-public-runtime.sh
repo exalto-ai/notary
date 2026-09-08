@@ -57,6 +57,7 @@ fi
 install -m 0644 "$source_root/runtime/LICENSE-MIT" "$destination/LICENSE-MIT"
 mkdir -p "$destination/.github/workflows"
 install -m 0644 "$source_root/scripts/public-runtime/README.md" "$destination/README.md"
+install -m 0644 "$source_root/scripts/public-runtime/SECURITY.md" "$destination/SECURITY.md"
 install -m 0644 "$source_root/scripts/public-runtime/gitignore" "$destination/.gitignore"
 install -m 0644 "$source_root/scripts/public-runtime/ci.yml" \
   "$destination/.github/workflows/ci.yml"

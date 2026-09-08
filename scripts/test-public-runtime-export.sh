@@ -16,6 +16,7 @@ git -C "$first" init --quiet
 git -C "$first" add --all --force -- .
 scripts/audit-public-runtime.sh "$first" >/dev/null
 
+test -f "$first/SECURITY.md"
 test ! -e "$first/LICENSE-APACHE"
 cmp "$repository/runtime/LICENSE-MIT" "$first/LICENSE-MIT"
 cmp "$first/LICENSE-MIT" "$first/apps/notary-app/LICENSE-MIT"
