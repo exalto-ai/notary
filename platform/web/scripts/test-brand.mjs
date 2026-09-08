@@ -54,7 +54,7 @@ requireText(siteApp, '<span>Seal</span>', 'site header product wordmark');
 requireText(siteApp, '<small>BY EXALTO</small>', 'site header family attribution');
 requireText(
   siteApp,
-  '<b>Exalto Seal</b> <span>· Evidence stays yours</span>',
+  '<a className="footer-copyright" href="https://exalto.ai">',
   'site footer identity',
 );
 requireText(publicTracePages, "'Shared trace · Exalto Seal'", 'shared Trace title identity');

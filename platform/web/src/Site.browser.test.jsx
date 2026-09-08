@@ -4,6 +4,7 @@ import { page } from 'vitest/browser';
 import CreditUtilizationChart from './CreditUtilizationChart';
 import { ProviderIdentity } from './ProviderIdentity';
 import { PlatformApiError } from './platform-api/client';
+import { migrateLegacyRoute } from './site/navigation';
 import { fetchLatestMacosDownload } from './site/release';
 import {
   AccountSettings,
@@ -157,7 +158,38 @@ const usageFixture = ({
 });
 
 describe('hosted site', () => {
-  test('uses the app navigation and keeps record tools in the footer', async () => {
+  test('canonicalizes dashboard entry points and preserves billing queries', () => {
+    for (const [oldPath, newPath] of [
+      ['/app/', '/app/overview'],
+      ['/account', '/app/overview'],
+      ['/account/traces', '/app/traces'],
+      [
+        '/account/usage?checkout=success&purchase_id=123',
+        '/app/usage?checkout=success&purchase_id=123',
+      ],
+      ['/#/dashboard/credits', '/app/usage'],
+      ['/#/account/settings', '/app/settings'],
+    ]) {
+      window.history.replaceState({}, '', oldPath);
+      migrateLegacyRoute();
+      expect(window.location.pathname + window.location.search).toBe(newPath);
+      expect(window.location.hash).toBe('');
+    }
+  });
+
+  test('preserves the requested dashboard page through sign-in', async () => {
+    render(
+      <SignInPage
+        route="signin?return_to=%2Fapp%2Ftraces"
+        loadProviders={async () => ({ google: true, github: true })}
+      />,
+    );
+    await expect
+      .element(page.getByRole('link', { name: 'Continue with Google' }))
+      .toHaveAttribute('href', '/api/auth/google?return_to=%2Fapp%2Ftraces');
+  });
+
+  test('uses the app navigation and keeps only legal links in the footer', async () => {
     render(
       <>
         <Header user={null} onLogout={() => {}} />
@@ -171,34 +203,39 @@ describe('hosted site', () => {
       .toHaveAttribute('href', '/');
     expect(document.querySelector('.app-brand > span')?.textContent).toBe('Seal');
     expect(document.querySelector('.app-brand > small')?.textContent).toBe('BY EXALTO');
-    expect(document.querySelector('.footer-copyright b')?.textContent).toBe('Exalto Seal');
+    expect(document.querySelector('.footer-copyright')?.textContent.trim()).toBe('Exalto');
     expect(Array.from(productNav.querySelectorAll('a'), (link) => link.textContent)).toEqual([
-      'Capture',
-      'Traces',
+      'Docs',
       'Verify',
     ]);
+    await expect.element(page.getByRole('link', { name: 'Docs' })).toHaveAttribute('href', '/docs');
     await expect
-      .element(page.getByRole('link', { name: 'Capture' }))
-      .toHaveAttribute('href', '/account');
-    await expect
-      .element(page.getByRole('banner').getByRole('link', { name: 'Traces' }))
-      .toHaveAttribute('href', '/account/traces');
+      .element(page.getByRole('banner').getByRole('link', { name: 'Verify' }))
+      .toHaveAttribute('href', '/verify');
     await expect
       .element(page.getByRole('link', { name: 'Sign in' }))
       .toHaveAttribute('href', '/signin');
-    const footer = page.getByRole('navigation', { name: 'Footer' });
     await expect
-      .element(footer.getByRole('link', { name: 'About Exalto' }))
+      .element(page.getByRole('contentinfo').getByRole('link', { name: 'Exalto', exact: true }))
       .toHaveAttribute('href', 'https://exalto.ai');
+    expect(
+      Array.from(document.querySelectorAll('.app-footer nav a'), (link) => link.textContent),
+    ).toEqual(['Privacy', 'Terms']);
     await expect
-      .element(footer.getByRole('link', { name: 'Verify' }))
-      .toHaveAttribute('href', '/verify');
-    await expect
-      .element(footer.getByRole('link', { name: 'Traces' }))
-      .toHaveAttribute('href', '/traces');
-    await expect
-      .element(footer.getByRole('link', { name: 'Registry' }))
-      .toHaveAttribute('href', '/registry');
+      .element(page.getByRole('banner').getByRole('link', { name: 'Docs' }))
+      .toHaveAttribute('href', '/docs');
+  });
+
+  test('keeps Docs and Verify visible on narrow screens for either sign-in state', async () => {
+    await page.viewport(320, 700);
+    for (const user of [null, { provider_display_name: 'fixture-user' }]) {
+      render(<Header user={user} onLogout={() => {}} />);
+      const header = page.getByRole('banner');
+      await expect.element(header.getByRole('link', { name: 'Docs' })).toBeVisible();
+      await expect.element(header.getByRole('link', { name: 'Verify' })).toBeVisible();
+      expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);
+      cleanup();
+    }
   });
 
   test('uses the endorsed identity in browser titles', async () => {
@@ -224,7 +261,7 @@ describe('hosted site', () => {
     );
 
     await page.getByRole('button', { name: 'Account menu for fixture-user' }).click();
-    await expect.element(page.getByRole('link', { name: 'Account' })).toBeVisible();
+    await expect.element(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
     await page.getByRole('button', { name: 'Sign out' }).click();
     expect(signedOut).toBe(true);
     await expect.element(page.getByRole('group', { name: 'Appearance' })).not.toBeInTheDocument();
@@ -248,7 +285,7 @@ describe('hosted site', () => {
       });
     render(<App loadCurrentUser={loadCurrentUser} />);
 
-    const placeholder = page.getByRole('status', { name: 'Loading Account' });
+    const placeholder = page.getByRole('status', { name: 'Loading dashboard' });
     await expect.element(placeholder).toBeVisible();
     // The placeholder is the Account layout, not an indicator floating over it.
     expect(document.querySelector('.dashboard-shell--placeholder .dashboard-layout')).not.toBe(
@@ -266,6 +303,7 @@ describe('hosted site', () => {
       .element(page.getByRole('heading', { name: 'Settings', exact: true }))
       .toBeVisible();
     expect(document.title).toBe('Settings · Exalto Seal');
+    expect(window.location.pathname).toBe('/app/settings');
   });
 
   test('offers Google first and preserves a local-service return route', async () => {
@@ -316,7 +354,7 @@ describe('hosted site', () => {
       .toBeVisible();
   });
 
-  test('makes the root an authenticated workspace for Capture and Sealed Traces', async () => {
+  test('keeps the landing page at root when signed in', async () => {
     render(
       <App
         loadCurrentUser={async () => ({
@@ -325,18 +363,13 @@ describe('hosted site', () => {
         })}
       />,
     );
-
+    await page.getByRole('button', { name: 'Account menu for fixture-user' }).click();
     await expect
-      .element(page.getByRole('heading', { name: 'Welcome back, fixture-user.' }))
+      .element(page.getByRole('link', { name: 'Dashboard' }))
+      .toHaveAttribute('href', '/app/');
+    await expect
+      .element(page.getByRole('heading', { name: 'Record every session.' }))
       .toBeVisible();
-    await expect.element(page.getByText('EXALTO CAPTURE')).toBeVisible();
-    await expect.element(page.getByText('EXALTO SEAL', { exact: true })).toBeVisible();
-    await expect
-      .element(page.getByRole('link', { name: /Manage Capture/ }))
-      .toHaveAttribute('href', '/account');
-    await expect
-      .element(page.getByRole('link', { name: /Manage Traces/ }))
-      .toHaveAttribute('href', '/account/traces');
   });
 
   test('paints the landing at once for a browser that has never signed in', async () => {
@@ -350,7 +383,7 @@ describe('hosted site', () => {
       .not.toBeInTheDocument();
   });
 
-  test('holds the workspace layout for a browser that has held a session', async () => {
+  test('shows the landing immediately for a browser that has held a session', async () => {
     window.localStorage.setItem('notary-session', 'yes');
     let resolveCurrentUser;
     render(
@@ -365,14 +398,14 @@ describe('hosted site', () => {
 
     await expect
       .element(page.getByRole('status', { name: 'Opening your workspace' }))
-      .toBeVisible();
+      .not.toBeInTheDocument();
     await expect
       .element(page.getByRole('heading', { name: 'Record every session.' }))
-      .not.toBeInTheDocument();
+      .toBeVisible();
 
     resolveCurrentUser({ provider_display_name: 'fixture-user', usage: usageFixture() });
     await expect
-      .element(page.getByRole('heading', { name: 'Welcome back, fixture-user.' }))
+      .element(page.getByRole('heading', { name: 'Record every session.' }))
       .toBeVisible();
   });
 
@@ -517,8 +550,8 @@ describe('hosted site', () => {
     );
     await expect.element(page.getByRole('heading', { name: 'You’re already here.' })).toBeVisible();
     await expect
-      .element(page.getByRole('link', { name: /Open workspace/ }))
-      .toHaveAttribute('href', '/');
+      .element(page.getByRole('link', { name: /Open dashboard/ }))
+      .toHaveAttribute('href', '/app/');
   });
 
   test('offers Auto, Light, and Dark in Account appearance settings', async () => {
@@ -563,13 +596,13 @@ describe('hosted site', () => {
     );
 
     const navigation = page.getByRole('navigation', { name: 'Account navigation' });
-    const trigger = navigation.getByRole('button', { name: 'Account menu: Plan & usage' });
+    const trigger = navigation.getByRole('button', { name: 'Account menu: Usage' });
     await expect.element(trigger).toHaveAttribute('aria-expanded', 'false');
     await trigger.click();
     await expect.element(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect.element(navigation.getByRole('link', { name: /^Traces\s*3$/ })).toBeVisible();
     await expect
-      .element(navigation.getByRole('link', { name: 'Plan & usage' }))
+      .element(navigation.getByRole('link', { name: 'Usage' }))
       .toHaveAttribute('aria-current', 'page');
     fireEvent.keyDown(window, { key: 'Escape' });
     await expect.element(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -598,10 +631,10 @@ describe('hosted site', () => {
       (link) => [link.textContent?.trim(), link.getAttribute('href')],
     );
     expect(accountRoutes).toEqual([
-      ['Overview', '/account'],
-      ['Traces3', '/account/traces'],
-      ['Plan & usage', '/account/usage'],
-      ['Settings', '/account/settings'],
+      ['Overview', '/app/overview'],
+      ['Traces3', '/app/traces'],
+      ['Usage', '/app/usage'],
+      ['Settings', '/app/settings'],
     ]);
     expect(document.querySelector('a[href^="/dashboard"]')).toBeNull();
   });

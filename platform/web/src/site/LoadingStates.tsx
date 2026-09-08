@@ -21,46 +21,13 @@ export function useSettledWait(waiting: boolean, delay = PLACEHOLDER_DELAY_MS): 
 // The placeholders below stand in the geometry they are about to replace, so
 // the page does not jump when the real content arrives.
 
-export function WorkspacePlaceholder() {
-  return (
-    <main
-      className="app-workspace app-workspace--placeholder"
-      role="status"
-      aria-live="polite"
-      aria-label="Opening your workspace"
-    >
-      <section className="app-workspace-intro">
-        <div>
-          <i className="app-skeleton app-skeleton--kicker" />
-          <i className="app-skeleton app-skeleton--title" />
-          <i className="app-skeleton app-skeleton--line" />
-        </div>
-        <div className="app-workspace-status">
-          <div>
-            <i className="app-skeleton app-skeleton--label" />
-            <i className="app-skeleton app-skeleton--value" />
-          </div>
-          <div>
-            <i className="app-skeleton app-skeleton--label" />
-            <i className="app-skeleton app-skeleton--value" />
-          </div>
-        </div>
-      </section>
-      <div className="app-products">
-        <article className="app-product" />
-        <article className="app-product" />
-      </div>
-    </main>
-  );
-}
-
 export function AccountPlaceholder() {
   return (
     <main
       className="dashboard-shell dashboard-shell--account dashboard-shell--placeholder"
       role="status"
       aria-live="polite"
-      aria-label="Loading Account"
+      aria-label="Loading dashboard"
     >
       <div className="dashboard-layout">
         <aside className="dashboard-sidebar" aria-hidden="true">

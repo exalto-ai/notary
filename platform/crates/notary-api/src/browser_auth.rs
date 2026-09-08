@@ -62,6 +62,8 @@ impl BrowserAuthProvider {
 
 fn allowed_return_to(value: String) -> Option<String> {
     (value.starts_with("/authorize?")
+        || value == "/app"
+        || value.starts_with("/app/")
         || value == "/account"
         || value.starts_with("/account/")
         || value.starts_with("#/authorize?")
@@ -239,7 +241,11 @@ pub(super) async fn finish_github_login(
             return_to
                 .as_deref()
                 .and_then(|value| state.public_origin.join(value).ok())
-                .unwrap_or_else(|| state.public_origin.clone())
+                .unwrap_or_else(|| {
+                    let mut url = state.public_origin.clone();
+                    url.set_path("/app/");
+                    url
+                })
                 .as_str(),
         ),
     ))
@@ -386,7 +392,11 @@ pub(super) async fn finish_google_login(
             return_to
                 .as_deref()
                 .and_then(|value| state.public_origin.join(value).ok())
-                .unwrap_or_else(|| state.public_origin.clone())
+                .unwrap_or_else(|| {
+                    let mut url = state.public_origin.clone();
+                    url.set_path("/app/");
+                    url
+                })
                 .as_str(),
         ),
     ))
@@ -712,6 +722,11 @@ mod tests {
     fn browser_auth_returns_only_to_bounded_in_app_routes() {
         for route in [
             "/authorize?request_id=request-1",
+            "/app/",
+            "/app/overview",
+            "/app/traces",
+            "/app/usage?checkout=success",
+            "/app/settings",
             "/account",
             "/account/traces",
             "#/authorize?request_id=legacy-request-1",

@@ -597,10 +597,10 @@ function planLabel(plan: ServicePlan): string {
 }
 
 const dashboardSections = [
-  { key: 'overview', label: 'Overview', href: '/account' },
-  { key: 'traces', label: 'Traces', href: '/account/traces' },
-  { key: 'usage', label: 'Plan & usage', href: '/account/usage' },
-  { key: 'settings', label: 'Settings', href: '/account/settings' },
+  { key: 'overview', label: 'Overview', href: '/app/overview' },
+  { key: 'traces', label: 'Traces', href: '/app/traces' },
+  { key: 'usage', label: 'Usage', href: '/app/usage' },
+  { key: 'settings', label: 'Settings', href: '/app/settings' },
 ] as const;
 
 const checkoutReturnMessages = {
@@ -1376,10 +1376,10 @@ export function Dashboard({
   const traceAttentionCount = user.usage.hosted_traces.needs_attention;
   const needsAttention =
     billing.billing_status === 'review'
-      ? { href: '/account/usage', value: 'Billing' }
+      ? { href: '/app/usage', value: 'Billing' }
       : shareError
-        ? { href: '/account/traces', value: 'Unavailable' }
-        : { href: '/account/traces', value: traceAttentionCount || 'None' };
+        ? { href: '/app/traces', value: 'Unavailable' }
+        : { href: '/app/traces', value: traceAttentionCount || 'None' };
   const purchaseMode = billing.purchase_mode || 'disabled';
   const checkoutEnabled = purchaseMode === 'test' || purchaseMode === 'live';
   const subscriptionCheckoutEnabled = checkoutEnabled && billing.subscriptions_configured === true;
@@ -1401,14 +1401,14 @@ export function Dashboard({
           <nav>
             <a
               className={activeView === 'overview' ? 'active' : ''}
-              href="/account"
+              href="/app/overview"
               aria-current={activeView === 'overview' ? 'page' : undefined}
             >
               <span>Overview</span>
             </a>
             <a
               className={activeView === 'traces' ? 'active' : ''}
-              href="/account/traces"
+              href="/app/traces"
               aria-current={activeView === 'traces' ? 'page' : undefined}
             >
               <span>Traces</span>
@@ -1416,14 +1416,14 @@ export function Dashboard({
             </a>
             <a
               className={activeView === 'usage' ? 'active' : ''}
-              href="/account/usage"
+              href="/app/usage"
               aria-current={activeView === 'usage' ? 'page' : undefined}
             >
-              <span>Plan & usage</span>
+              <span>Usage</span>
             </a>
             <a
               className={activeView === 'settings' ? 'active' : ''}
-              href="/account/settings"
+              href="/app/settings"
               aria-current={activeView === 'settings' ? 'page' : undefined}
             >
               <span>Settings</span>
@@ -1480,7 +1480,7 @@ export function Dashboard({
             <>
               <header className="dashboard-page-header">
                 <span className="eyebrow">Billing</span>
-                <h1>Plan & usage</h1>
+                <h1>Usage</h1>
                 <p>
                   Manage your subscription and track capture, notarization, and trace storage
                   separately.

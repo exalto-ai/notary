@@ -662,7 +662,7 @@ pub(super) fn checkout_return_urls(
 ) -> ApiResult<(Url, Url)> {
     let build = |outcome: &str| -> ApiResult<Url> {
         let mut url = public_origin
-            .join("account/usage")
+            .join("app/usage")
             .map_err(|error| ApiError::internal(error.into()))?;
         let query = url::form_urlencoded::Serializer::new(String::new())
             .append_pair("checkout", outcome)
@@ -679,7 +679,7 @@ pub(super) fn checkout_return_urls(
 pub(super) fn subscription_return_urls(public_origin: &Url) -> ApiResult<(Url, Url)> {
     let build = |outcome: &str| -> ApiResult<Url> {
         let mut url = public_origin
-            .join("account/usage")
+            .join("app/usage")
             .map_err(|error| ApiError::internal(error.into()))?;
         url.set_query(Some(&format!("subscription={outcome}")));
         Ok(url)
