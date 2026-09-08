@@ -56,6 +56,8 @@ jobs:
               - 'apps/notary-app/src-tauri/tauri.release.conf.json'
               - 'scripts/release-manifest.mjs'
               - 'scripts/release-manifest.test.mjs'
+              - 'scripts/release-notes.mjs'
+              - 'scripts/release-notes.test.mjs'
               - 'scripts/runtime-version.mjs'
               - 'scripts/runtime-version.test.mjs'
               - 'scripts/*public-runtime*'
@@ -224,7 +226,7 @@ jobs:
           cache: npm
           cache-dependency-path: platform/web/package-lock.json
       - run: npm ci
-      - run: node --test ../../scripts/release-manifest.test.mjs ../../scripts/runtime-version.test.mjs
+      - run: node --test ../../scripts/release-manifest.test.mjs ../../scripts/release-notes.test.mjs ../../scripts/runtime-version.test.mjs
       - run: npm run build
       - run: npm --prefix ../../runtime/apps/admin-dashboard ci
       - run: npm --prefix ../../runtime/apps/admin-dashboard run build

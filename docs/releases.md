@@ -17,6 +17,26 @@ different author, committer, or tagger identity.
 
 ## Before releasing
 
+Release notes are generated automatically from first-parent commit subjects
+that touch `runtime/` or `apps/notary-app/`. The range starts after the highest
+older stable version published in the public repository and ends at the exact
+release source commit. Drafts, prereleases, and failed release tags do not
+advance that baseline. Without an earlier published release, the range includes
+all matching history. A missing or unrelated baseline tag fails publication
+before uploads rather than silently omitting changes.
+
+Hosted-only commits and mechanical release-version commits are omitted. The
+generator removes PR references, URLs, and full commit IDs, and combines duplicate
+summaries. It does not interpret diffs or infer upgrade requirements. Keep
+subjects touching exported paths suitable for public release notes, including
+subjects of mixed public/private changes.
+
+For upgrade instructions, known limitations, or a curated summary, optionally
+supply a Markdown notes file. It replaces the generated Changes section and is
+published verbatim; use public links and omit private discussion. Downloads and
+verification links are always added from the release manifest. Notes generation
+finishes before any upload or update-pointer change.
+
 Start only when the current `main` head is green and is the source that should
 be released. Choose the next strictly increasing stable version in `X.Y.Z`
 form. Pre-release versions and reuse of an existing version are rejected.
@@ -82,6 +102,10 @@ gh workflow run release.yml \
   -f version=X.Y.Z
 ```
 
+To override the generated notes, add `-F notes=@/path/to/release-notes.md` to
+that command, or fill in the optional **notes** field in GitHub’s Run workflow
+form. Leaving it blank selects automatic generation.
+
 Watch it through completion:
 
 ```bash
@@ -145,8 +169,9 @@ must not use the plain-text pointer as their source of trust.
 
 The immutable build includes raw CLI and daemon binaries, platform archives,
 the macOS DMG, the signed macOS updater bundle, checksums, signatures, and
-`release.json`. The public GitHub Release records the public source tag and
-release identity; binary downloads come from Tigris rather than GitHub Release
+`release.json`. The public GitHub Release includes generated or overridden changes, public
+source tag, release identity, immutable download links, and verification
+instructions. Binary downloads come from Tigris rather than GitHub Release
 assets.
 
 The signed `release.json` manifest binds the version and build ID to the exact
