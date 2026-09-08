@@ -354,7 +354,10 @@ jobs:
           cp "target/$TARGET/release/notaryd${suffix}" "$folder/"
           "target/$TARGET/release/notaryctl${suffix}" --version | grep -F "$NOTARY_BUILD_ID" >/dev/null
           "target/$TARGET/release/notaryd${suffix}" --version | grep -F "$NOTARY_BUILD_ID" >/dev/null
-          cp runtime/LICENSE-APACHE runtime/LICENSE-MIT runtime/THIRD-PARTY-NOTICES.md "$folder/"
+          cp runtime/LICENSE-MIT runtime/THIRD-PARTY-NOTICES.md "$folder/"
+          mkdir -p "$folder/third-party-licenses/tlsn" "$folder/third-party-licenses/tlsn-utils"
+          cp runtime/vendor/tlsn/LICENSE-* "$folder/third-party-licenses/tlsn/"
+          cp runtime/vendor/tlsn-utils/LICENSE-* "$folder/third-party-licenses/tlsn-utils/"
           if [[ "$ARCHIVE" == "zip" ]]; then
             archive="${folder}.zip"
             7z a "$archive" "$folder" >/dev/null

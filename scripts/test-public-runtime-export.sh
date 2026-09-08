@@ -16,6 +16,10 @@ git -C "$first" init --quiet
 git -C "$first" add --all --force -- .
 scripts/audit-public-runtime.sh "$first" >/dev/null
 
+test ! -e "$first/LICENSE-APACHE"
+cmp "$repository/runtime/LICENSE-MIT" "$first/LICENSE-MIT"
+cmp "$first/LICENSE-MIT" "$first/apps/notary-app/LICENSE-MIT"
+test -f "$first/runtime/vendor/tlsn/LICENSE-APACHE"
 test ! -e "$first/platform"
 test ! -e "$first/deploy"
 test "$(jq -r .canonical_source_sha "$first/.notary-source.json")" = "$source_sha"

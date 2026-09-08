@@ -24,5 +24,8 @@ Use a normal pull request for one independent change. Use `gh stack` for two or
 more dependent pull requests, ordered from the foundational change upward, as
 described in [AGENTS.md](AGENTS.md#stacked-pull-requests).
 
-Notary is dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE),
-at your option.
+This is Exalto’s private development repository. Hosted product code is
+proprietary. The public runtime and desktop application are MIT licensed; see
+[runtime/LICENSE-MIT](runtime/LICENSE-MIT) and
+[apps/notary-app/LICENSE-MIT](apps/notary-app/LICENSE-MIT). Third-party code
+retains its own licenses and notices.

@@ -3,10 +3,6 @@
   "info": {
     "title": "Exalto Seal API",
     "description": "Account, Device, hosted Trace, public Trace, Registry, verification, admission, usage, credits, and billing API for Exalto Seal. This contract is separate from the loopback local administration API.",
-    "license": {
-      "name": "MIT OR Apache-2.0",
-      "identifier": "MIT OR Apache-2.0"
-    },
     "version": "1.0.0"
   },
   "servers": [
