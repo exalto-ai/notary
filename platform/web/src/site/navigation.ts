@@ -18,6 +18,13 @@ export function navigateTo(route: string): void {
 }
 
 export function migrateLegacyRoute(): void {
-  if (!window.location.hash.startsWith('#/')) return;
-  window.history.replaceState({}, '', routeHref(window.location.hash.slice(1)));
+  const route = currentRoute();
+  const canonical = route
+    .replace(/^(?:account|dashboard)(?=\/|\?|$)/, 'app')
+    .replace(/^app\/credits(?=\?|$)/, 'app/usage')
+    .replace(/^app\/shares(?=\?|$)/, 'app/traces')
+    .replace(/^app\/?(?=\?|$)/, 'app/overview');
+  if (canonical !== route || window.location.hash.startsWith('#/')) {
+    window.history.replaceState({}, '', routeHref(canonical));
+  }
 }

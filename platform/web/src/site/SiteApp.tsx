@@ -31,11 +31,11 @@ import {
   RegistryPage,
 } from './AuthorizationPages';
 import { LandingPage } from './LandingPage';
-import { AccountPlaceholder, useSettledWait, WorkspacePlaceholder } from './LoadingStates';
+import { AccountPlaceholder, useSettledWait } from './LoadingStates';
 import { currentRoute, migrateLegacyRoute, navigateTo } from './navigation';
 import { Docs } from './PublicDocs';
 import { PublicTracePage, PublicTraces, VerificationPage } from './PublicTracePages';
-import { hadSession, rememberSession } from './session';
+import { rememberSession } from './session';
 
 const loadCreditUtilizationChart = () => import('../CreditUtilizationChart');
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
@@ -105,8 +105,8 @@ function AccountMenu({ user, onLogout }: { user: AccountIdentity; onLogout: () =
             </div>
           </div>
           <div className="account-actions">
-            <a href="/account" onClick={() => setOpen(false)}>
-              Account
+            <a href="/app/" onClick={() => setOpen(false)}>
+              Dashboard
             </a>
             <button
               type="button"
@@ -142,14 +142,10 @@ export function Header({
         <small>BY EXALTO</small>
       </a>
       <nav className="app-nav-links" aria-label="Product">
-        <a href="/account">Capture</a>
-        <a href="/account/traces">Traces</a>
+        <a href="/docs">Docs</a>
         <a href="/verify">Verify</a>
       </nav>
       <div className="app-nav-actions">
-        <a className="app-site-link" href="https://exalto.ai">
-          exalto.ai <span aria-hidden="true">↗</span>
-        </a>
         {user ? (
           <AccountMenu user={user} onLogout={onLogout} />
         ) : !hideSignIn && authPending ? (
@@ -247,6 +243,8 @@ export function SignInPage({
   const requestedReturn = new URLSearchParams(route.split('?')[1] || '').get('return_to');
   const returnTo =
     requestedReturn?.startsWith('/authorize?') ||
+    requestedReturn === '/app' ||
+    requestedReturn?.startsWith('/app/') ||
     requestedReturn === '/account' ||
     requestedReturn?.startsWith('/account/') ||
     requestedReturn?.startsWith('#/authorize?') ||
@@ -265,8 +263,8 @@ export function SignInPage({
           <p>
             You’re signed in as <b>{accountName(user)}</b>.
           </p>
-          <a className="app-primary-action" href="/">
-            Open workspace <span aria-hidden="true">→</span>
+          <a className="app-primary-action" href={returnTo || '/app/'}>
+            Open dashboard <span aria-hidden="true">→</span>
           </a>
         </section>
       </main>
@@ -320,117 +318,13 @@ export function SignInPage({
   );
 }
 
-function AppWorkspace({ user }: { user: CurrentUser }) {
-  const sharedTraces = user.usage.hosted_traces.shared;
-  const totalTraces = user.usage.hosted_traces.total;
-  return (
-    <main className="app-workspace" id="main">
-      <section className="app-workspace-intro" aria-labelledby="workspace-title">
-        <div>
-          <span className="app-kicker">YOUR EXALTO SEAL WORKSPACE</span>
-          <h1 id="workspace-title">Welcome back, {accountName(user)}.</h1>
-          <p>
-            Capture records what happened on your machine. Seal the Traces you choose and keep
-            control of what you share.
-          </p>
-        </div>
-        <dl className="app-workspace-status" aria-label="Capture status">
-          <div>
-            <dt>Capture</dt>
-            <dd>Ready</dd>
-          </div>
-          <div>
-            <dt>Sealed Traces</dt>
-            <dd>{totalTraces}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <section className="app-products" aria-label="Your Exalto Seal tools">
-        <article className="app-product app-product--capture">
-          <div className="app-product-heading">
-            <span className="app-product-index">01</span>
-            <span className="app-product-state">AVAILABLE NOW</span>
-          </div>
-          <div className="app-product-copy">
-            <span className="app-product-overline">EXALTO CAPTURE</span>
-            <h2>Keep an account of the exchange.</h2>
-            <p>
-              Capture AI interactions locally, seal the traces you choose, and control the records
-              you share.
-            </p>
-          </div>
-          <div className="app-product-footer">
-            <span>
-              {totalTraces} {totalTraces === 1 ? 'Trace' : 'Traces'} · {sharedTraces} shared
-            </span>
-            <a className="app-primary-action" href="/account">
-              Manage Capture <span aria-hidden="true">→</span>
-            </a>
-          </div>
-        </article>
-
-        <article className="app-product app-product--seal">
-          <div className="app-product-heading">
-            <span className="app-product-index">02</span>
-            <span className="app-product-state">YOUR RECORDS</span>
-          </div>
-          <div className="app-product-copy">
-            <span className="app-product-overline">EXALTO SEAL</span>
-            <h2>Ready when you are.</h2>
-            <p>
-              Review the Traces you have sealed. Share a precise record when it serves you, and
-              leave the rest private.
-            </p>
-          </div>
-          <div className="app-product-footer">
-            <span>
-              {sharedTraces} shared · {totalTraces - sharedTraces} private
-            </span>
-            <a className="app-secondary-action" href="/account/traces">
-              Manage Traces <span aria-hidden="true">→</span>
-            </a>
-          </div>
-        </article>
-      </section>
-
-      <section className="app-record-tools" aria-labelledby="record-tools-title">
-        <div>
-          <span className="app-kicker">THE RECORD</span>
-          <h2 id="record-tools-title">Work with the evidence, not around it.</h2>
-        </div>
-        <nav aria-label="Record tools">
-          <a href="/account">
-            <span>Account</span>
-            <small>Devices, plan, and settings</small>
-          </a>
-          <a href="/verify">
-            <span>Verify a Trace</span>
-            <small>Inspect a record independently</small>
-          </a>
-          <a href="/registry">
-            <span>Notary registry</span>
-            <small>See the public notaries</small>
-          </a>
-        </nav>
-      </section>
-    </main>
-  );
-}
-
 export function Footer() {
   return (
     <footer className="app-footer">
-      <span className="footer-copyright">
-        <b>Exalto Seal</b> <span>· Evidence stays yours</span>
-      </span>
+      <a className="footer-copyright" href="https://exalto.ai">
+        Exalto
+      </a>
       <nav aria-label="Footer">
-        <a href="https://exalto.ai">About Exalto</a>
-        <a href="/docs">Docs</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/verify">Verify</a>
-        <a href="/traces">Traces</a>
-        <a href="/registry">Registry</a>
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
       </nav>
@@ -589,8 +483,10 @@ export function App({
     return () => media.removeEventListener('change', applyTheme);
   }, [theme]);
   useEffect(() => {
-    migrateLegacyRoute();
-    const update = () => setRoute(currentRoute());
+    const update = () => {
+      migrateLegacyRoute();
+      setRoute(currentRoute());
+    };
     update();
     window.addEventListener('popstate', update);
     window.addEventListener('hashchange', update);
@@ -651,7 +547,7 @@ export function App({
     await logoutBrowser();
     setUser(null);
     rememberSession(false);
-    if (section === 'account') navigateTo('/');
+    if (section === 'app') navigateTo('/');
   };
   const accountDeleted = () => {
     setUser(null);
@@ -664,23 +560,19 @@ export function App({
   const directTraceId = directShare ? decodeURIComponent(directShare[1]) : null;
   const routePath = path.split('?')[0];
   const [requestedSection, requestedPage] = routePath.split('/');
-  const section = requestedSection === 'dashboard' ? 'account' : requestedSection;
+  const section = ['dashboard', 'account'].includes(requestedSection) ? 'app' : requestedSection;
   const page =
     requestedSection === 'dashboard' && requestedPage === 'credits' ? 'usage' : requestedPage;
   const routeQuery = path.includes('?') ? `?${path.split('?').slice(1).join('?')}` : '';
   const canonicalPath = `${section}${page ? `/${page}` : ''}${routeQuery}`;
   const sectionAnchor = new URLSearchParams(path.split('?')[1] || '').get('section');
   const isPublicTraces = section === 'traces';
-  const accountLoading = section === 'account' && authPending;
-  // A visitor this browser has never signed in on gets the public landing at
-  // once. Only a browser that has held a session waits for the workspace, and
-  // a hint that turns out to be stale simply resolves to the landing.
-  const workspaceLoading = !section && authPending && hadSession();
-  const placeholderVisible = useSettledWait(accountLoading || workspaceLoading);
+  const accountLoading = section === 'app' && authPending;
+  const placeholderVisible = useSettledWait(accountLoading);
   useEffect(() => {
     const titles: Record<string, string> = {
       authorize: 'Connect device',
-      account: 'Account',
+      app: 'Dashboard',
       docs: 'Docs',
       registry: 'Registry',
       pricing: 'Pricing',
@@ -694,11 +586,11 @@ export function App({
       page === 'traces'
         ? 'Traces'
         : page === 'usage'
-          ? 'Plan & usage'
+          ? 'Usage'
           : page === 'settings'
             ? 'Settings'
-            : 'Account';
-    const sectionTitle = section === 'account' ? accountTitle : titles[section];
+            : 'Overview';
+    const sectionTitle = section === 'app' ? accountTitle : titles[section];
     document.title = directTraceId
       ? 'Shared trace · Exalto Seal'
       : sectionTitle
@@ -729,15 +621,11 @@ export function App({
         <RegistryPage />
       ) : section === 'pricing' ? (
         <LandingPage />
-      ) : workspaceLoading ? (
-        placeholderVisible && <WorkspacePlaceholder />
-      ) : !section && user ? (
-        <AppWorkspace user={user} />
       ) : !section ? (
         <LandingPage />
       ) : accountLoading ? (
         placeholderVisible && <AccountPlaceholder />
-      ) : section === 'account' && user ? (
+      ) : section === 'app' && user ? (
         <Dashboard
           user={user}
           view={page}
@@ -746,7 +634,7 @@ export function App({
           onThemeChange={setTheme}
           onAccountDeleted={accountDeleted}
         />
-      ) : section === 'account' ? (
+      ) : section === 'app' ? (
         <SignInPage
           route={`signin?return_to=${encodeURIComponent(`/${canonicalPath}`)}`}
           user={null}
@@ -756,7 +644,7 @@ export function App({
       ) : (
         <SignInPage route="signin" user={user} />
       )}
-      {!isPublicTraces && !accountLoading && !workspaceLoading && <Footer />}
+      {!isPublicTraces && !accountLoading && <Footer />}
     </>
   );
 }

@@ -24,6 +24,11 @@ website, billing, or hosted-admission code.
 
 ## Identity and authorization flows
 
+The root `/` always shows the public landing page, including when signed in.
+Browser sign-in defaults to `/app/`, which opens `/app/overview`. Dashboard
+sections are `/app/overview`, `/app/traces`, `/app/usage`, and `/app/settings`.
+Old `/account` and `/dashboard` links redirect to their dashboard equivalents.
+
 Browser sign-in uses Google or GitHub OAuth when the corresponding provider is
 configured. The callback resolves a provider-neutral identity and establishes
 an HttpOnly browser session. Provider access tokens are not retained. Browser
