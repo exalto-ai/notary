@@ -47,7 +47,7 @@ if test "$actual_identity" != "$expected_identity"; then
   exit 1
 fi
 diff \
-  <(find "$first" -path "$first/.git" -prune -o \( -type f -o -type l \) -printf '%P\n' | sort) \
+  <(cd "$first" && find . -path ./.git -prune -o \( -type f -o -type l \) -print | sed 's|^./||' | sort) \
   <(git -C "$checkout" ls-files | sort)
 
 chmod -x "$checkout/runtime/tooling/check-boundary.sh"
@@ -66,4 +66,21 @@ scripts/publish-public-runtime.sh \
   "$second" "$checkout" "$second_sha" "$export_name" "$export_email" >/dev/null
 test "$(git --git-dir="$bare" rev-list --count main)" -eq 3
 test "$(git --git-dir="$bare" show main:.notary-source.json | jq -r .canonical_source_sha)" = "$source_sha"
+# Equal size and timestamps must not hide changed source bytes from rsync.
+python3 - "$second/README.md" "$checkout/README.md" <<'PYTEST'
+import os
+import pathlib
+import sys
+source, published = map(pathlib.Path, sys.argv[1:])
+data = source.read_bytes()
+source.write_bytes(data.replace(b"Notary", b"NOTARY", 1))
+assert source.stat().st_size == published.stat().st_size
+stamp = published.stat()
+os.utime(source, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+PYTEST
+scripts/publish-public-runtime.sh \
+  "$second" "$checkout" "$second_sha" "$export_name" "$export_email" >/dev/null
+cmp "$second/README.md" "$checkout/README.md"
+test "$(git --git-dir="$bare" rev-list --count main)" -eq 4
+test "$(git --git-dir="$bare" show main:.notary-source.json | jq -r .canonical_source_sha)" = "$second_sha"
 echo "Public Runtime export tests passed."
