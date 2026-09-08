@@ -35,7 +35,10 @@ if test "$(git -C "$source_root" rev-parse HEAD)" != "$source_sha"; then
 fi
 
 paths_file="$source_root/scripts/public-runtime-paths.txt"
-mapfile -t paths < <(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$paths_file")
+paths=()
+while IFS= read -r path; do
+  paths+=("$path")
+done < <(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$paths_file")
 if test "${#paths[@]}" -eq 0; then
   echo "public Runtime allowlist is empty" >&2
   exit 1

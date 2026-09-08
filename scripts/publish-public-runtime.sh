@@ -18,20 +18,17 @@ if ! [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
   exit 1
 fi
 
-changes="$(rsync --archive --checksum --no-times --omit-dir-times \
-  --dry-run --itemize-changes --delete --exclude=.git --exclude=.notary-source.json \
-  "$projection/" "$public_checkout/")"
-if test -z "$changes"; then
-  echo "Public Runtime projection is unchanged; export is a no-op."
-  exit 0
-fi
-
-rsync --archive --delete --exclude=.git "$projection/" "$public_checkout/"
+# Compare the publishable Git tree before changing provenance. Filesystem-only
+# metadata (for example directory permissions) must not create an export.
+rsync --archive --checksum --delete --exclude=.git --exclude=.notary-source.json \
+  "$projection/" "$public_checkout/"
 git -C "$public_checkout" add --all --force -- .
 if git -C "$public_checkout" diff --cached --quiet; then
   echo "Public Runtime projection is unchanged; export is a no-op."
   exit 0
 fi
+install -m 0644 "$projection/.notary-source.json" "$public_checkout/.notary-source.json"
+git -C "$public_checkout" add --force -- .notary-source.json
 GIT_AUTHOR_NAME="$expected_name" \
   GIT_AUTHOR_EMAIL="$expected_email" \
   GIT_COMMITTER_NAME="$expected_name" \
