@@ -41,5 +41,5 @@ the exact canonical private source SHA recorded in `.notary-source.json`;
 installable clients are published separately through the signed `latest`
 channel at `seal.exalto.ai`.
 
-The source is licensed under MIT or Apache-2.0 at your option. Vendored
+Exalto-authored source is licensed under MIT. Vendored
 components retain their own notices and licences.

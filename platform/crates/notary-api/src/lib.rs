@@ -324,7 +324,10 @@ fn hosted_router() -> OpenApiRouter<NotaryApiState> {
 
 /// Returns the deterministic public hosted-platform contract.
 pub fn openapi_document() -> utoipa::openapi::OpenApi {
-    hosted_router().into_openapi()
+    let mut document = hosted_router().into_openapi();
+    // The hosted implementation does not carry an open-source license.
+    document.info.license = None;
+    document
 }
 
 /// Runs the private stdin/stdout verifier used by both anonymous verification

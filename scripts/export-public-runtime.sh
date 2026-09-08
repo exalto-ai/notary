@@ -54,6 +54,7 @@ fi
   git ls-files -z -- "${paths[@]}" | tar --null --files-from=- --create --file=-
 ) | tar --extract --directory "$destination"
 
+install -m 0644 "$source_root/runtime/LICENSE-MIT" "$destination/LICENSE-MIT"
 mkdir -p "$destination/.github/workflows"
 install -m 0644 "$source_root/scripts/public-runtime/README.md" "$destination/README.md"
 install -m 0644 "$source_root/scripts/public-runtime/gitignore" "$destination/.gitignore"

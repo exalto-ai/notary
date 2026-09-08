@@ -1,8 +1,9 @@
 # Third-party notices
 
-Notary is distributed under either of the licenses in `LICENSE-MIT` and
-`LICENSE-APACHE`, at your option. The release archives include both license
-texts and this notice.
+Exalto’s hosted product code is proprietary. This notice does not grant a
+license to it. The runtime and desktop application are MIT licensed under
+`runtime/LICENSE-MIT` and `apps/notary-app/LICENSE-MIT`. Third-party components
+retain their own licenses; see `runtime/THIRD-PARTY-NOTICES.md`.
 
 The CLI and services link third-party Rust crates. Their exact, reproducible
 set is recorded in the committed `Cargo.lock`; each crate's declared SPDX

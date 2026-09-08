@@ -1,7 +1,5 @@
 # Explicit tracked paths copied into the public source projection.
 runtime
 apps/notary-app
-LICENSE-APACHE
-LICENSE-MIT
 rust-toolchain.toml
 .gitleaks.toml

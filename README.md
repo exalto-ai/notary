@@ -16,13 +16,15 @@ A **Trace** is the evidence primitive. A trace is **Captured** while only its pr
 
 ## Repository boundary
 
-This private monorepo owns both the publishable runtime and Exalto's hosted product.
+This private monorepo owns both the MIT-licensed runtime and desktop app and
+Exalto's proprietary hosted product. It has no repository-wide open-source
+license. Third-party components retain their own licenses.
 
-- [`runtime/`](runtime/README.md) is the complete public runtime: `notaryd`, the thin `notaryctl` REST client, the generic remote notary, protocol/evidence contracts, local dashboard, updater, documentation, CI, and pinned TLSNotary sources. It builds on its own and is the only tree projected into the public runtime repository.
+- [`runtime/`](runtime/README.md) is the complete public runtime: `notaryd`, the thin `notaryctl` REST client, the generic remote notary, protocol/evidence contracts, local dashboard, updater, documentation, CI, and pinned TLSNotary sources. It builds on its own and is projected into the public runtime repository alongside `apps/notary-app`.
 - `platform/crates/notary-api` owns accounts, credits, billing, uploads, sharing, and the hosted HTTP API.
 - `platform/crates/notary-server-platform-adapter` injects private platform admission and usage settlement policy into the generic runtime notary.
 - `platform/migrations` contains forward-only hosted database migrations.
-- `platform/web` is the public website and hosted Account frontend; `apps/notary-app` is the private native wrapper around `notaryd`.
+- `platform/web` is the public website and hosted Account frontend; `apps/notary-app` is the public MIT-licensed native wrapper around `notaryd`.
 - `deploy`, `compose.yml`, and the root `Dockerfile` define Exalto's hosted deployment.
 
 The public runtime must never import the platform, website, desktop wrapper, billing, account, or hosted-admission trees. Enforce that boundary with:

@@ -9,7 +9,7 @@ fi
 root="$(cd "$root" && pwd)"
 
 for required in \
-  runtime apps/notary-app README.md LICENSE-APACHE LICENSE-MIT \
+  runtime apps/notary-app README.md LICENSE-MIT \
   rust-toolchain.toml .gitleaks.toml .gitignore .notary-source.json \
   .github/workflows/ci.yml; do
   if test ! -e "$root/$required"; then
@@ -22,7 +22,7 @@ shopt -s dotglob nullglob
 for entry in "$root"/*; do
   name="$(basename "$entry")"
   case "$name" in
-    .git|.github|.gitignore|.gitleaks.toml|.notary-source.json|apps|runtime|README.md|LICENSE-APACHE|LICENSE-MIT|rust-toolchain.toml) ;;
+    .git|.github|.gitignore|.gitleaks.toml|.notary-source.json|apps|runtime|README.md|LICENSE-MIT|rust-toolchain.toml) ;;
     *) echo "public projection contains unapproved root entry: $name" >&2; exit 1 ;;
   esac
 done
