@@ -14,11 +14,16 @@ run_validator() {
 }
 
 run_validator >/dev/null
+FAKE_RELATION=identical run_validator >/dev/null
+FAKE_MAIN_SHA=2222222222222222222222222222222222222222 \
+  FAKE_RELATION=ahead run_validator >/dev/null
 
-if FAKE_RELATION=diverged run_validator >/dev/null 2>&1; then
-  echo "validator accepted a commit outside main" >&2
-  exit 1
-fi
+for relation in diverged behind; do
+  if FAKE_RELATION="$relation" run_validator >/dev/null 2>&1; then
+    echo "validator accepted a commit outside main: $relation" >&2
+    exit 1
+  fi
+done
 if FAKE_RUN_RESULT=missing run_validator >/dev/null 2>&1; then
   echo "validator accepted a missing workflow run" >&2
   exit 1

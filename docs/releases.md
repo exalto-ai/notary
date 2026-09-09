@@ -114,11 +114,11 @@ Watch it through completion:
 gh run watch <run-id> --repo exalto-ai/notary
 ```
 
-Do not merge or push another change to `main` until the **Validate and tag
-release sources** job finishes. The workflow deliberately fails if `main`
-advances before it has tagged the exact private and public sources. Plan for
-this freeze to last up to six hours: the job may wait for both Main validation
-and the corresponding public Runtime export.
+Keep `main` stable until **Create release commit** finishes. After that, later
+merges may continue while release validation and export run. The release stays
+pinned to its version commit: tagging rechecks that this exact commit passed
+Main validation and remains in `main`'s history. Later commits are not included
+in that release.
 
 The workflow performs these steps:
 
@@ -235,9 +235,10 @@ again: the version commit has already advanced `main`, and releases must be
 strictly increasing. Fix the cause and release the next patch version from the
 current green `main` instead.
 
-If `main` advanced before source tagging, do not force the old run through. The
-workflow rejects it by design; choose the next stable version and release from
-the new green `main` head.
+If the release commit is no longer in `main`'s history, do not force the old run
+through. Choose the next stable version and release from the new green `main`
+head. Ordinary fast-forward merges do not invalidate an already validated
+release commit.
 
 The workflow moves public pointers only after verifying the complete immutable
 build, so a failure during build, signing, upload, or verification leaves the
