@@ -8,6 +8,8 @@
 platform/**
 !platform/crates/
 !platform/crates/**
+!platform/migrations/
+!platform/migrations/**
 !deploy/
 deploy/**
 !deploy/notary-server-entrypoint.sh
