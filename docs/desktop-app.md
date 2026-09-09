@@ -88,12 +88,15 @@ It then guides the user through six stages:
 3. **Choose a sealing service** recommends Exalto Seal and explains what the service
    can and cannot see. Alternate compatible-notary configuration remains
    administrator-managed in this build.
-4. **Connect an AI tool** starts with Codex CLI, Claude Code, or an API and SDK
-   client.
-5. **Capture a disposable trace** temporarily enables capture, provides one
-   low-cost test prompt, checks that the expected new trace appeared locally,
-   and restores the user's previous capture setting before leaving the step.
+4. **Configure your harnesses** offers Built-in, Codex, and Claude. Built-in
+   explicitly links a ChatGPT plan or saves an OpenAI/Anthropic API key. External
+   harness setup detects desktop links, then offers a copyable prompt and manual
+   configuration. External credentials stay in the harness.
+5. **Optional test** opens normal multi-turn built-in chat, or prepares one
+   disposable request in the external harness. Either can be skipped.
 6. **Ready** offers an optional Exalto account, then opens Capture or Traces.
+   Choosing **Try a chat** finishes setup and opens the persistent chat view;
+   hosted-account connection remains available in Settings.
 
 Each disposable test generates a fresh 96-bit marker. The prompt follows this
 shape:
@@ -120,72 +123,112 @@ If a passphrase vault is still locked or the service is absent, the app may clos
 or quit while preserving the marker for the next unlocked launch. The app never
 temporarily enables capture on a service started outside Exalto Capture.
 
-For Codex CLI, Claude Code, and client-managed API keys, the check requires a
+For Codex CLI and Claude Code, the optional test check requires a
 trace ID that was not present before the test, the expected provider, a
 captured or sealed state, a successful 2xx provider response, and the exact
 marker in the response preview. The native layer reads full details only for
 plausible new candidates and returns only the matching trace ID to the webview.
-
-For the optional in-app API test, the pasted provider key remains in webview
-memory only for the current setup session. A native command sends it in the
-provider's normal authentication header through the selected fixed loopback
-route, with redirects and inherited proxies disabled. It returns only status
-fields plus a trace ID that the local metadata path confirms against the
-pre-request baseline, provider, successful state, and exact marker. The key is
-not saved to Keychain, disk, app settings, or daemon configuration. The response
-header alone is not accepted. The provider response body does not enter the
-webview. The user can skip either test if they are not ready to spend provider
-usage.
 
 Local capture can work before an Exalto account is connected. The Capture
 screen warns the user not to rely on new evidence when no sealing service is reachable.
 
 ## AI connections
 
-Connection setup is client-first. A developer first chooses the tool they
-already use. Provider-specific routes appear only for API and SDK clients.
+Onboarding detects registered Codex, Claude Code CLI, and Claude Desktop links
+through macOS Launch Services. It does not inspect login caches or run the
+clients during detection. Choose **Open in Codex** or **Open in Claude Code** to
+prefill a setup prompt. Review and send it in the tool. Claude Desktop's Code composer is
+preferred; a CLI-only installation gets an explicitly labeled Terminal button. Detection runs again
+when Capture regains focus. A registered handler does not establish version
+compatibility, authentication, or working capture.
 
-Current direct client support is:
+If detection or opening fails, **Copy setup prompt** provides the same request
+for a local coding session. The prompt is reviewable and selectable if clipboard
+access fails. **Manual configuration** is collapsed below it. Setup asks the
+agent to preserve existing settings, prepare an opt-in capture session, and
+return to Capture before making a provider request. The disposable test uses
+the same open/copy/manual order and still requires Capture's matching-Trace
+check. Opening a link never marks a client connected or a test complete.
 
-- **Codex CLI** uses the ChatGPT sign-in already saved by Codex CLI through the
-  local `/codex` route. Exalto Capture changes the named base URL, not the
-  saved login or model selection.
-- **Claude Code** uses the claude.ai sign-in already saved by Claude Code
-  through the local `/anthropic` route. The setup command removes API-key
-  overrides so Claude Code can use that saved sign-in.
-- **OpenAI, Anthropic, and OpenRouter API or SDK clients** use their fixed local
-  provider route and an environment key supplied by the originating client.
+Guided routes keep authentication in the originating tool:
 
-Native Claude Desktop cannot currently use the required loopback route. Codex
-desktop is not yet an end-to-end supported capture client. xAI and Grok remain
-marked Not yet supported until a fixed xAI route and validation path exist.
-Setup links to the official xAI API-key guide without implying that Grok
-capture works in this build.
-Browser, Slack, remote, and cloud sessions run outside this Mac's loopback
-proxy and are not intercepted automatically.
+- **Codex:** the setup prompt checks `codex login status` and keeps the current
+  authentication method. A named `exalto-capture` profile uses `/codex` with
+  `requires_openai_auth = true` for ChatGPT, or `/openai/v1` with
+  `env_key = "OPENAI_API_KEY"` for API billing. Sign-in, when needed, happens in
+  Codex. No credentials are imported into Capture. Launch with
+  `codex --profile exalto-capture`.
+- **Claude:** Desktop helps configure a separate CLI launch using `/anthropic`
+  and `ANTHROPIC_API_KEY`, removing bearer/OAuth environment overrides for that
+  process. API usage is billed separately from the subscription.
 
-See [Provider and agent setup](../runtime/docs/provider-setup.md) for the exact
-supported commands and configuration.
+Desktop apps act as setup assistants; opening one does not route its own
+conversations through capture. Browser, remote, and cloud sessions cannot
+configure this Mac's loopback route without local access. Only implemented
+providers appear in onboarding.
 
-## Provider API keys
+## Built-in chat and saved connections
 
-The existing SDK, CLI, shell, or secret manager remains the credential owner.
-The client sends the real provider key with its request to the fixed loopback
-route. Exalto Capture does not store a second provider credential or substitute
-one inside the daemon.
+The **Chat** sidebar entry is separate from external harness setup.
+Its connections survive restart. Chat history stays in memory during this app
+session; starting a new chat or closing the window clears that history. The
+normal captured Traces remain in the local store until explicitly deleted.
 
-For a quick onboarding demo, the developer can paste a key into the optional
-password field. React holds that value only in memory for the current setup
-session. One native command sends it through the normal fixed provider route.
-The key is cleared when setup finishes, is cancelled, or the setup window
-closes. It is never written to Keychain, disk, app configuration, process
-arguments, logs, activity events, previews, iframe messages, analytics, local
-browser storage, the clipboard, or daemon configuration.
+- **ChatGPT plan:** the native layer starts the installed Codex app-server with
+  an isolated `CODEX_HOME` under the desktop connection directory. It uses
+  `account/login/start` with `chatgptDeviceCode`, displays the returned code, and
+  opens an allowlisted OpenAI verification page only on request. Codex owns
+  token storage and refresh using its default credential store in Capture’s
+  isolated `CODEX_HOME`; Capture does not force Keychain or import the user’s
+  usual Codex session. Codex may store this login in its local `auth.json`,
+  independently of Capture’s encrypted Trace vault. An installed compatible Codex runtime and account permission for
+  device-code login are required.
+- **OpenAI and Anthropic API keys:** users deliberately enter a key into a
+  password field. The native connection manager encrypts it with the existing
+  local vault and atomically writes a private envelope. Passphrase-backed
+  connections require an unlocked vault. After submission the input clears;
+  the renderer retains only a connection ID and status. Keys never enter
+  browser storage, URLs, command arguments, daemon configuration, or logs.
+- **Claude subscription:** no third-party subscription linking is offered.
+  Select Anthropic API for built-in Claude requests.
 
-If a compatible `notaryd` was launched separately, the app reuses it rather
-than starting another instance. The app does not stop, restart, or temporarily
-change capture on that process. The disposable test can use it when capture is
-already enabled.
+The user chooses a connection and model ID, acknowledges provider usage and
+private-capture retention, and explicitly turns on capture before sending.
+API requests stream through fixed `/openai/v1/responses` and
+`/anthropic/v1/messages` loopback routes. ChatGPT requests use the supported
+Codex runtime through a per-session loopback relay to `/codex/responses`.
+That relay accepts only the expected response route while a chat is active,
+records the daemon's returned Trace IDs, and streams the response unchanged.
+There is no direct-provider fallback and no arbitrary upstream URL input.
+
+Built-in chat requires the bundled supervised service. Each request includes
+`x-exalto-require-capture: 1`; the daemon strips this local header and rejects
+an off-capture request with HTTP 409 before contacting a provider. External
+clients that omit the header retain existing direct-mode behavior. This proxy
+header does not change the versioned administration API or its generated schema.
+
+Each provider exchange creates its own Trace. A Codex turn may make multiple
+exchanges; each returned Trace ID is shown separately. A response is marked
+Captured only after its exact ID and provider match retained local metadata.
+Response completion, capture completion, sealing, and sharing stay separate.
+Missing, failed, and pending captures are never presented as successful.
+
+The chat supports multi-turn text conversations, streaming, Stop, and opening
+an exact Trace. It does not support coding tools, attachments, or agent actions.
+Codex receives ephemeral threads with environment access disabled; command,
+patch, image, app, web-search, and multi-agent features are disabled, and native
+tool/approval requests are rejected. The transcript is provided as conversation
+history for each exchange, without writing a Codex transcript file.
+
+Closing the window cancels active chat work. Failed or stopped responses retain
+any partial text and any known Trace IDs; start a new chat before continuing.
+Provider-authentication failures require reconnecting. Removing a connection
+removes its saved credential (or logs out the isolated Codex account); it does
+not revoke the credential at the provider or delete existing evidence.
+
+See [agent onboarding and subscription policy](agent-onboarding-policy.md)
+for official sources and the distinction between supported authentication
+mechanisms and provider endorsement of capture artifacts.
 
 The selected sealing service sees encrypted protocol records, not the provider
 key in plaintext.
@@ -445,17 +488,62 @@ cargo test -p notary-app
 npm --prefix apps/notary-app run tauri:build:debug
 ```
 
+Check the installed Codex against the exact app-server launch settings before
+shipping authentication changes:
+
+```sh
+cargo test -p notary-app --lib installed_codex_accepts_exact_capture_startup_and_history -- --ignored
+```
+
+This opt-in check uses a fresh isolated home and never signs in or sends a
+provider request. It checks initialization, account isolation, and conversation
+history setup, including the launch-time approval policy.
+
 Exercise the native lifecycle with clean config, data, and vault directories:
 
 - Complete all six onboarding stages.
 - Exercise Keychain and passphrase vault protection, including rejection of an
   empty or whitespace-only passphrase.
-- Test Codex CLI and Claude Code saved-sign-in setup.
+- Test Codex and Claude open/copy/manual setup, launch failures, Codex ChatGPT sign-in, and Claude API-key capture sessions.
 - Test one supported API provider with a client-owned environment key.
-- Test the optional in-app request with a temporary key, then confirm the key
-  is cleared on finish, cancel, and window close and is absent after relaunch.
+- Test saved API connections across restart and removal, and locked-vault errors.
+- Link and cancel a ChatGPT device code, reconnect an expired login, stream a
+  multi-turn chat, stop a response, and open each exact local Trace.
+- Confirm unsaved inputs clear on window close and no credential is stored in
+  browser storage, plaintext config, logs, or public artifacts.
 - Capture the exact disposable test trace, then review and seal it in Traces.
 - Confirm the private `.llmcapture` stays encrypted and the resulting
   `.llmtrace` contains only the intended disclosure.
 - Restart and stop the service, relaunch and unlock a passphrase vault, and
   confirm that quitting Exalto Capture terminates its managed child.
+
+### Chat model selection and diagnostics
+
+Chat loads the connection’s model catalog and selects its default automatically.
+ChatGPT uses the managed Codex `model/list` API, including pagination. API-key
+connections read metadata from the fixed OpenAI or Anthropic `/v1/models` endpoint
+using the native credential owner. These metadata requests contain no conversation
+and do not create Traces; all chat exchanges still require the capture proxy.
+The picker filters non-chat OpenAI model families, with the newest returned chat
+model selected initially. Provider access is finally checked when sending.
+A failed catalog request offers a retry and leaves sending disabled.
+
+Chat distinguishes local proxy failures, authentication rejection, usage limits,
+and unavailable models without displaying raw provider errors or credentials.
+A registry redirect loop or unavailable sealing service can prevent the local
+capture service from starting; reconnecting ChatGPT does not repair that transport.
+
+The opt-in `linked_account_model_catalog` native test reads the catalog for the
+account explicitly linked to Capture. `live_capture_diagnostic` requires a running
+capture service and sends one short greeting using the catalog default, producing
+a private Trace if capture succeeds. Neither runs in the ordinary offline suite.
+
+Capture now keeps its unlocked vault in native session memory and reuses the
+managed Codex process between completed turns. This avoids reopening Keychain
+for every API-key operation, service restart, or ChatGPT response. The vault session lasts until Capture quits, matching the existing passphrase
+session lifetime; credentials remain encrypted on disk. Codex continues to own its credential storage. Capture no longer forces the
+Keychain backend; an existing Keychain-backed Capture login may need to be linked
+again using Codex’s default store. Capture does not copy or delete the old item. Biometric access for Capture-owned
+items requires a data-protection Keychain storage migration; it is not enabled
+by this session-reuse change. Unsigned development rebuilds can also cause macOS
+to request access again because the requesting executable changes.

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { FileCheck2, Radio, RefreshCw, Settings, Square } from 'lucide-react';
+import { FileCheck2, MessageSquare, Radio, RefreshCw, Settings, Square } from 'lucide-react';
 import type { DesktopState } from './bridge';
 import notaryMark from './notary-mark.svg';
 import {
@@ -19,6 +19,7 @@ export function Sidebar({ state, view, onNavigate }: {
   const traceCount = state.counts.captured + state.counts.notarized + state.counts.capturing + state.counts.capture_failed;
   const items: Array<{ view: View; label: string; icon: typeof Radio; count?: number }> = [
     { view: 'home', label: 'Overview', icon: Radio },
+    { view: 'chat', label: 'Chat', icon: MessageSquare },
     {
       view: 'traces',
       label: 'Traces',
