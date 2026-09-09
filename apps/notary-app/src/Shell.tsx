@@ -54,6 +54,8 @@ export function Sidebar({ state, view, onNavigate }: {
 
 export function WorkspaceFrame({
   route,
+  active = true,
+  navigationRequest = 0,
   constraint = null,
   traceTarget = null,
   running,
@@ -69,6 +71,8 @@ export function WorkspaceFrame({
   allowLegacyFrameLoadFallback = false,
 }: {
   route: WorkspaceView;
+  active?: boolean;
+  navigationRequest?: number;
   constraint?: TraceConstraint | null;
   traceTarget?: TraceTarget | null;
   running: boolean;
@@ -94,7 +98,7 @@ export function WorkspaceFrame({
     : `${route}${constraint ? `?${constraint}` : ''}`;
   const requestedSource = workspaceSource
     ?? `${workspaceOrigin}/dashboard?embedded=desktop#/${traceDestination}`;
-  const lastParentRequest = useRef({ route, source: requestedSource });
+  const lastParentRequest = useRef({ route, source: requestedSource, navigationRequest });
   const [navigation, setNavigation] = useState({ source: requestedSource, revision: 0 });
 
   const sendDesktopSettings = () => {
@@ -109,26 +113,29 @@ export function WorkspaceFrame({
     if (
       lastParentRequest.current.route === route
       && lastParentRequest.current.source === requestedSource
+      && lastParentRequest.current.navigationRequest === navigationRequest
       && embeddedRoute.current === null
     ) {
       return;
     }
-    lastParentRequest.current = { route, source: requestedSource };
-    if (embeddedRoute.current === route) {
+    const explicitNavigation = lastParentRequest.current.navigationRequest !== navigationRequest;
+    lastParentRequest.current = { route, source: requestedSource, navigationRequest };
+    if (!explicitNavigation && embeddedRoute.current === route) {
       embeddedRoute.current = null;
       return;
     }
     embeddedRoute.current = null;
-    setNavigation((current) => ({
-      source: requestedSource,
-      revision: current.source === requestedSource ? current.revision + 1 : current.revision,
-    }));
-  }, [requestedSource, route]);
+    // Reassigning the same hash also returns from an internally opened trace detail.
+    // Keep the browsing context: changing only the fragment is SPA navigation.
+    if (frame.current && frame.current.src === requestedSource) frame.current.src = requestedSource;
+    setNavigation((current) => ({ ...current, source: requestedSource }));
+  }, [requestedSource, route, navigationRequest]);
+  const documentSource = navigation.source.split('#')[0];
   useEffect(() => {
     setLoaded(false);
     setFrameLoaded(false);
     setLoadFailed(false);
-  }, [navigation, running]);
+  }, [documentSource, navigation.revision, running]);
   useEffect(() => {
     if (!allowLegacyFrameLoadFallback || !running || !frameLoaded || loaded || loadFailed) return;
     const delay = Math.min(1500, Math.max(100, Math.floor(loadTimeoutMs / 2)));
@@ -159,7 +166,7 @@ export function WorkspaceFrame({
       ) {
         onDesktopSettingsAction(event.data.payload);
       }
-      if (event.data?.type === 'notary:desktop-route-change' && onRouteChange) {
+      if (active && event.data?.type === 'notary:desktop-route-change' && onRouteChange) {
         const nextView = desktopViewFromDashboardRoute(event.data.payload);
         if (!nextView || nextView === route) return;
         embeddedRoute.current = nextView;
@@ -176,7 +183,7 @@ export function WorkspaceFrame({
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [desktopSettings, onDesktopSettingsAction, onRouteChange, onTraceActionConsumed, route]);
+  }, [active, desktopSettings, onDesktopSettingsAction, onRouteChange, onTraceActionConsumed, route]);
 
   if (!running) {
     return <EmptyPanel
@@ -212,7 +219,7 @@ export function WorkspaceFrame({
     {!loaded && <div className="workspace-loading"><span className="spinner" />Loading local workspace…</div>}
     <iframe
       ref={frame}
-      key={`${navigation.source}:${navigation.revision}`}
+      key={`${documentSource}:${navigation.revision}`}
       src={navigation.source}
       title={`${viewMeta[route].title} workspace`}
       onError={() => setLoadFailed(true)}

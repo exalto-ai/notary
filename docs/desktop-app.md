@@ -547,3 +547,8 @@ again using Codex’s default store. Capture does not copy or delete the old ite
 items requires a data-protection Keychain storage migration; it is not enabled
 by this session-reuse change. Unsigned development rebuilds can also cause macOS
 to request access again because the requesting executable changes.
+
+The desktop shell keeps one local workspace mounted while switching between
+Traces, Settings, and Chat. Workspace routes change within that document, preserving
+its cache and avoiding a page reload on each tab click. Closing the native window
+still resets the embedded document to clear unsaved sensitive inputs.

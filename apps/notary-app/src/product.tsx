@@ -55,6 +55,7 @@ export const viewMeta: Record<View, { title: string; subtitle: string }> = {
 };
 
 export const workspaceRoutes: Partial<Record<View, WorkspaceView>> = {
+  settings: 'settings',
   traces: 'traces',
   activity: 'activity',
   providers: 'providers',
