@@ -69,7 +69,7 @@ export async function createReleaseManifest({
   if (origin.protocol !== 'https:' || origin.pathname !== '/' || origin.search || origin.hash) {
     throw new Error('publicOrigin must be an HTTPS origin');
   }
-  const buildUrl = `${origin.origin}/downloads/releases/builds/${buildId}`;
+  const buildUrl = `${origin.origin}/releases/builds/${buildId}`;
   const updaterName = 'Exalto-Capture-macos-arm64.app.tar.gz';
   const updaterSignature = requireTauriSignature(
     (await readFile(path.join(releaseDir, `${updaterName}.sig`), 'utf8')).trim(),

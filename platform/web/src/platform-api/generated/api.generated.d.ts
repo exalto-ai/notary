@@ -1477,6 +1477,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -1523,6 +1530,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             500: {
                 headers: {
@@ -1571,6 +1585,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -1618,6 +1639,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -1654,6 +1682,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1689,6 +1724,13 @@ export interface operations {
                 headers: {
                     Location?: string;
                     "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -1741,6 +1783,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -1776,6 +1825,13 @@ export interface operations {
                 headers: {
                     Location?: string;
                     "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -1871,6 +1927,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -1897,6 +1960,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AuthProvidersResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1936,6 +2006,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             409: {
                 headers: {
@@ -1988,6 +2065,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2039,6 +2123,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -2075,6 +2166,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             404: {
                 headers: {
@@ -2121,6 +2219,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             502: {
                 headers: {
@@ -2177,6 +2282,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2227,6 +2339,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             500: {
                 headers: {
@@ -2328,6 +2447,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -2367,6 +2493,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -2405,6 +2538,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             404: {
                 headers: {
@@ -2460,6 +2600,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             410: {
                 headers: {
                     [name: string]: unknown;
@@ -2504,6 +2651,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             410: {
                 headers: {
@@ -2594,6 +2748,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -2632,6 +2793,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             500: {
                 headers: {
@@ -2680,6 +2848,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -2716,6 +2891,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2750,6 +2932,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Health"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2797,6 +2986,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             409: {
                 headers: {
@@ -2868,6 +3064,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2929,6 +3132,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             409: {
                 headers: {
@@ -3052,6 +3262,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3080,6 +3297,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PublicTraceDetail"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             404: {
                 headers: {
@@ -3116,6 +3340,13 @@ export interface operations {
         responses: {
             /** @description Access established */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3166,6 +3397,13 @@ export interface operations {
                     "application/json": components["schemas"]["PublicTraceContent"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3210,6 +3448,13 @@ export interface operations {
                 content: {
                     "application/vnd.exalto.notary.trace-package+zip": number[];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             404: {
                 headers: {
@@ -3268,6 +3513,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3313,6 +3565,13 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3356,6 +3615,13 @@ export interface operations {
                     "application/json": components["schemas"]["Health"];
                 };
             };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3382,6 +3648,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RegistryResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -3421,6 +3694,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             500: {
                 headers: {
@@ -3947,6 +4227,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["VerificationResponse"];
                 };
+            };
+            /** @description Browser origin denied (browser_origin_denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             408: {
                 headers: {

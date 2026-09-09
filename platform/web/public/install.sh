@@ -2,7 +2,7 @@
 # Install the latest Exalto Notary Protocol command-line tools for Apple silicon macOS or Linux.
 set -eu
 
-download_root="${NOTARY_DOWNLOAD_ROOT:-https://seal.exalto.ai/downloads/releases}"
+download_root="${NOTARY_DOWNLOAD_ROOT:-https://notary-prod-downloads.t3.tigrisfiles.io/releases}"
 install_dir="${NOTARY_INSTALL_DIR:-${HOME}/.local/bin}"
 
 system="$(uname -s)"

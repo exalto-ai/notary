@@ -670,7 +670,7 @@ async fn create_hosted_trace(
     Ok((
         status,
         Json(CreateHostedTraceResponse {
-            trace: hosted_trace_response(&job, &state.public_origin),
+            trace: hosted_trace_response(&job, &state.origins.website),
             upload,
         }),
     )
@@ -725,7 +725,7 @@ async fn get_hosted_trace(
         expire_upload(&state, &job, now).await?;
         job = load_owned_trace(&state, &account_id, &trace_id).await?;
     }
-    Ok(Json(hosted_trace_response(&job, &state.public_origin)))
+    Ok(Json(hosted_trace_response(&job, &state.origins.website)))
 }
 
 #[utoipa::path(
@@ -813,7 +813,7 @@ async fn update_trace_access(
         return Err(ApiError::not_found("hosted Trace was not found"));
     }
     let trace = load_owned_trace(&state, &account_id, &trace_id).await?;
-    Ok(Json(hosted_trace_response(&trace, &state.public_origin)))
+    Ok(Json(hosted_trace_response(&trace, &state.origins.website)))
 }
 
 #[utoipa::path(
@@ -870,7 +870,7 @@ async fn list_web_traces(
     .await
     .map_err(database_error)?
     .into_iter()
-    .map(|trace| hosted_trace_response(&trace, &state.public_origin))
+    .map(|trace| hosted_trace_response(&trace, &state.origins.website))
     .collect();
     let page = Page::from_limit_plus_one(traces, limit, &scope, |trace| HostedTracePagePosition {
         created_at: trace.created_at,
@@ -918,7 +918,7 @@ async fn complete_hosted_trace_upload(
         ));
     }
     if job.status == "queued" {
-        return Ok(Json(hosted_trace_response(&job, &state.public_origin)));
+        return Ok(Json(hosted_trace_response(&job, &state.origins.website)));
     }
     if job.status != "uploading" {
         return Err(ApiError::conflict(
@@ -956,7 +956,10 @@ async fn complete_hosted_trace_upload(
     {
         let current = load_owned_trace(&state, &account_id, &job.trace_id).await?;
         if current.status == "queued" && current.upload_generation == job.upload_generation {
-            return Ok(Json(hosted_trace_response(&current, &state.public_origin)));
+            return Ok(Json(hosted_trace_response(
+                &current,
+                &state.origins.website,
+            )));
         }
         if current.upload_generation != job.upload_generation || current.status != "uploading" {
             return Err(ApiError::conflict(
@@ -995,7 +998,7 @@ async fn complete_hosted_trace_upload(
     }
 
     let job = queue_completed_attempt(&state, &account_id, &job, now).await?;
-    Ok(Json(hosted_trace_response(&job, &state.public_origin)))
+    Ok(Json(hosted_trace_response(&job, &state.origins.website)))
 }
 
 #[utoipa::path(
@@ -1637,13 +1640,13 @@ mod tests {
             http: reqwest::Client::new(),
             github_client_id: "client-id".to_owned(),
             github_client_secret: "secret".to_owned(),
-            github_callback_url: Url::parse("https://notary.exalto.ai/api/auth/github/callback")
+            github_callback_url: Url::parse("https://api.exalto.ai/api/auth/github/callback")
                 .expect("callback"),
             google_client_id: "google-client-id".to_owned(),
             google_client_secret: "google-secret".to_owned(),
-            google_callback_url: Url::parse("https://notary.exalto.ai/api/auth/google/callback")
+            google_callback_url: Url::parse("https://api.exalto.ai/api/auth/google/callback")
                 .expect("Google callback"),
-            public_origin: Url::parse("https://notary.exalto.ai").expect("app"),
+            origins: crate::config::PublicOrigins::for_test("https://api.exalto.ai"),
             secure_cookies: true,
             registry: crate::tests::test_registry(),
             traces: TraceService::mock(storage.clone()),

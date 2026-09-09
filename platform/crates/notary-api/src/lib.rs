@@ -37,6 +37,7 @@ mod api_keys;
 mod auth;
 mod billing;
 mod browser_auth;
+mod browser_transport;
 mod config;
 mod credits;
 mod devices;
@@ -86,7 +87,7 @@ pub struct NotaryApiState {
     google_client_id: String,
     google_client_secret: String,
     google_callback_url: Url,
-    public_origin: Url,
+    origins: config::PublicOrigins,
     secure_cookies: bool,
     registry: Registry,
     traces: traces::owner::TraceService,
@@ -237,7 +238,7 @@ type ApiResult<T> = std::result::Result<T, ApiError>;
         version = "1.0.0",
         description = "Account, Device, hosted Trace, public Trace, Registry, verification, admission, usage, credits, and billing API for Exalto Seal. This contract is separate from the loopback local administration API."
     ),
-    servers((url = "https://seal.exalto.ai", description = "Exalto Seal")),
+    servers((url = "https://api.exalto.ai", description = "Exalto Seal")),
     modifiers(&SecurityAddon),
     tags(
         (name = "health", description = "Exalto Seal platform health"),
@@ -327,6 +328,31 @@ pub fn openapi_document() -> utoipa::openapi::OpenApi {
     let mut document = hosted_router().into_openapi();
     // The hosted implementation does not carry an open-source license.
     document.info.license = None;
+    // Browser transport applies to every hosted route before its handler.
+    for path in document.paths.paths.values_mut() {
+        for operation in [
+            &mut path.get,
+            &mut path.post,
+            &mut path.put,
+            &mut path.patch,
+            &mut path.delete,
+            &mut path.head,
+            &mut path.options,
+        ]
+        .into_iter()
+        .flatten()
+        {
+            operation
+                .responses
+                .responses
+                .entry("403".into())
+                .or_insert_with(|| {
+                    utoipa::openapi::Response::new("Browser origin denied (browser_origin_denied)")
+                        .into()
+                });
+        }
+    }
+
     document
 }
 
@@ -419,8 +445,11 @@ pub async fn build_state(config: &NotaryApiConfig) -> Result<NotaryApiState> {
 /// Builds the exact OpenAPI-backed hosted application.
 pub fn router(state: NotaryApiState) -> Router {
     hosted_router()
-        .route("/metrics", get(metrics))
         .layer(middleware::from_fn(observe_http_request))
+        .layer(middleware::from_fn_with_state(
+            state.origins.clone(),
+            browser_transport::browser_access,
+        ))
         .with_state(state)
         .into()
 }
@@ -435,8 +464,30 @@ where
     let state = build_state(&config).await?;
     let app = router(state.clone());
     let listener = tokio::net::TcpListener::bind(listen).await?;
+    let metrics_listener = if let Some(address) = config.metrics_listen {
+        Some(
+            tokio::net::TcpListener::bind(address)
+                .await
+                .context("binding private metrics listener")?,
+        )
+    } else {
+        None
+    };
     let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
     let mut workers = tokio::task::JoinSet::new();
+    if let Some(listener) = metrics_listener {
+        let mut stop = shutdown_rx.clone();
+        workers.spawn(async move {
+            let result = axum::serve(listener, Router::new().route("/metrics", get(metrics)))
+                .with_graceful_shutdown(async move {
+                    let _ = stop.wait_for(|stop| *stop).await;
+                })
+                .await;
+            if let Err(error) = result {
+                tracing::error!(%error, "private metrics listener failed");
+            }
+        });
+    }
     workers.spawn(traces::owner::run_cleanup_worker(
         state.clone(),
         shutdown_rx.clone(),
@@ -579,7 +630,7 @@ impl NotaryApiState {
             .context("building hosted API HTTP client")?;
         let billing = billing::BillingService::from_config(
             &config.billing,
-            &config.public_origin,
+            &config.origins.capture,
             http.clone(),
         )?;
         let database = PgPoolOptions::new()
@@ -606,8 +657,8 @@ impl NotaryApiState {
             google_client_id: config.browser_auth.google_client_id.clone(),
             google_client_secret: config.browser_auth.google_client_secret.clone(),
             google_callback_url: config.browser_auth.google_callback_url.clone(),
-            secure_cookies: config.public_origin.scheme() == "https",
-            public_origin: config.public_origin.clone(),
+            secure_cookies: config.origins.api.scheme() == "https",
+            origins: config.origins.clone(),
             registry: config.registry.registry.clone(),
             traces: trace_service,
             admission: Arc::new(config.admission.clone()),
@@ -926,13 +977,13 @@ mod tests {
             http: reqwest::Client::new(),
             github_client_id: "client-id".to_owned(),
             github_client_secret: "secret".to_owned(),
-            github_callback_url: Url::parse("https://notary.exalto.ai/api/auth/github/callback")
+            github_callback_url: Url::parse("https://api.exalto.ai/api/auth/github/callback")
                 .expect("callback URL"),
             google_client_id: "google-client-id".to_owned(),
             google_client_secret: "google-secret".to_owned(),
-            google_callback_url: Url::parse("https://notary.exalto.ai/api/auth/google/callback")
+            google_callback_url: Url::parse("https://api.exalto.ai/api/auth/google/callback")
                 .expect("Google callback URL"),
-            public_origin: Url::parse("https://notary.exalto.ai").expect("app URL"),
+            origins: crate::config::PublicOrigins::for_test("https://api.exalto.ai"),
             secure_cookies: true,
             registry: test_registry(),
             traces: traces::owner::TraceService::disabled_for_test(),
@@ -1149,7 +1200,7 @@ mod tests {
             500
         );
         assert_eq!(document["info"]["title"], "Exalto Seal API");
-        assert_eq!(document["servers"][0]["url"], "https://seal.exalto.ai");
+        assert_eq!(document["servers"][0]["url"], "https://api.exalto.ai");
         for removed in [
             "/api/me",
             "/api/cli/authorizations",
@@ -1174,6 +1225,7 @@ mod tests {
     async fn retired_hosted_routes_return_not_found() {
         let app = router(lazy_test_state());
         for (method, path) in [
+            (Method::GET, "/metrics"),
             (Method::GET, "/api/me"),
             (Method::GET, "/api/me/credit-offers"),
             (Method::GET, "/api/notary"),
@@ -1214,7 +1266,7 @@ mod tests {
                 .any(|(key, value)| key == "state" && value == "state-token")
         );
         assert!(url.query_pairs().any(|(key, value)| {
-            key == "redirect_uri" && value == "https://notary.exalto.ai/api/auth/github/callback"
+            key == "redirect_uri" && value == "https://api.exalto.ai/api/auth/github/callback"
         }));
         assert!(!url.query_pairs().any(|(key, _)| key == "scope"));
 
@@ -1230,7 +1282,7 @@ mod tests {
             ("client_id", "google-client-id"),
             (
                 "redirect_uri",
-                "https://notary.exalto.ai/api/auth/google/callback",
+                "https://api.exalto.ai/api/auth/google/callback",
             ),
             ("response_type", "code"),
             ("scope", "openid email profile"),
@@ -1307,13 +1359,13 @@ mod tests {
             http: reqwest::Client::new(),
             github_client_id: "client-id".to_owned(),
             github_client_secret: "secret".to_owned(),
-            github_callback_url: Url::parse("https://notary.exalto.ai/api/auth/github/callback")
+            github_callback_url: Url::parse("https://api.exalto.ai/api/auth/github/callback")
                 .expect("GitHub callback URL"),
             google_client_id: "google-client-id".to_owned(),
             google_client_secret: "google-secret".to_owned(),
-            google_callback_url: Url::parse("https://notary.exalto.ai/api/auth/google/callback")
+            google_callback_url: Url::parse("https://api.exalto.ai/api/auth/google/callback")
                 .expect("Google callback URL"),
-            public_origin: Url::parse("https://notary.exalto.ai").expect("app URL"),
+            origins: crate::config::PublicOrigins::for_test("https://api.exalto.ai"),
             secure_cookies: true,
             registry: test_registry(),
             traces: traces::owner::TraceService::disabled_for_test(),
@@ -1362,13 +1414,13 @@ mod tests {
             http: reqwest::Client::new(),
             github_client_id: "client-id".to_owned(),
             github_client_secret: "secret".to_owned(),
-            github_callback_url: Url::parse("https://notary.exalto.ai/api/auth/github/callback")
+            github_callback_url: Url::parse("https://api.exalto.ai/api/auth/github/callback")
                 .expect("callback URL"),
             google_client_id: "google-client-id".to_owned(),
             google_client_secret: "google-secret".to_owned(),
-            google_callback_url: Url::parse("https://notary.exalto.ai/api/auth/google/callback")
+            google_callback_url: Url::parse("https://api.exalto.ai/api/auth/google/callback")
                 .expect("Google callback URL"),
-            public_origin: Url::parse("https://notary.exalto.ai").expect("app URL"),
+            origins: crate::config::PublicOrigins::for_test("https://api.exalto.ai"),
             secure_cookies: true,
             registry: test_registry(),
             traces: traces::owner::TraceService::disabled_for_test(),
@@ -1455,13 +1507,13 @@ mod tests {
             http: reqwest::Client::new(),
             github_client_id: "client-id".to_owned(),
             github_client_secret: "secret".to_owned(),
-            github_callback_url: Url::parse("https://notary.exalto.ai/api/auth/github/callback")
+            github_callback_url: Url::parse("https://api.exalto.ai/api/auth/github/callback")
                 .expect("callback URL"),
             google_client_id: "google-client-id".to_owned(),
             google_client_secret: "google-secret".to_owned(),
-            google_callback_url: Url::parse("https://notary.exalto.ai/api/auth/google/callback")
+            google_callback_url: Url::parse("https://api.exalto.ai/api/auth/google/callback")
                 .expect("Google callback URL"),
-            public_origin: Url::parse("https://notary.exalto.ai").expect("app URL"),
+            origins: crate::config::PublicOrigins::for_test("https://api.exalto.ai"),
             secure_cookies: true,
             registry: test_registry(),
             traces: traces::owner::TraceService::disabled_for_test(),
@@ -1549,13 +1601,13 @@ mod tests {
             http: reqwest::Client::new(),
             github_client_id: "client-id".to_owned(),
             github_client_secret: "secret".to_owned(),
-            github_callback_url: Url::parse("https://notary.exalto.ai/api/auth/github/callback")
+            github_callback_url: Url::parse("https://api.exalto.ai/api/auth/github/callback")
                 .expect("callback URL"),
             google_client_id: "google-client-id".to_owned(),
             google_client_secret: "google-secret".to_owned(),
-            google_callback_url: Url::parse("https://notary.exalto.ai/api/auth/google/callback")
+            google_callback_url: Url::parse("https://api.exalto.ai/api/auth/google/callback")
                 .expect("Google callback URL"),
-            public_origin: Url::parse("https://notary.exalto.ai").expect("app URL"),
+            origins: crate::config::PublicOrigins::for_test("https://api.exalto.ai"),
             secure_cookies: true,
             registry: test_registry(),
             traces: traces::owner::TraceService::disabled_for_test(),
@@ -1700,13 +1752,13 @@ mod tests {
             http: reqwest::Client::new(),
             github_client_id: "client-id".to_owned(),
             github_client_secret: "secret".to_owned(),
-            github_callback_url: Url::parse("https://notary.exalto.ai/api/auth/github/callback")
+            github_callback_url: Url::parse("https://api.exalto.ai/api/auth/github/callback")
                 .unwrap(),
             google_client_id: "google-client-id".to_owned(),
             google_client_secret: "google-secret".to_owned(),
-            google_callback_url: Url::parse("https://notary.exalto.ai/api/auth/google/callback")
+            google_callback_url: Url::parse("https://api.exalto.ai/api/auth/google/callback")
                 .unwrap(),
-            public_origin: Url::parse("https://notary.exalto.ai").unwrap(),
+            origins: crate::config::PublicOrigins::for_test("https://api.exalto.ai"),
             secure_cookies: true,
             registry: test_registry(),
             traces: traces::owner::TraceService::disabled_for_test(),

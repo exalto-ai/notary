@@ -30,6 +30,7 @@ import {
 import type { CreditHistoryEntry } from '../creditUtilization';
 import { loadRecentDebits } from '../creditUtilization';
 import {
+  apiHref,
   claimCreditOffer,
   createApiKey,
   createBillingPortalSession,
@@ -1907,7 +1908,7 @@ export function Dashboard({
                               </button>
                             )}
                             {share.owner_package_url && (
-                              <a href={share.owner_package_url} download>
+                              <a href={apiHref(share.owner_package_url)} download>
                                 Export .llmtrace
                               </a>
                             )}

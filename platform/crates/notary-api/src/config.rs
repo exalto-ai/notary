@@ -20,7 +20,8 @@ pub(crate) const DEFAULT_ADMISSION_TICKET_TTL_SECS: i64 = 45;
 /// opens network connections or starts background workers.
 pub struct NotaryApiConfig {
     pub listen: SocketAddr,
-    pub public_origin: Url,
+    pub origins: PublicOrigins,
+    pub metrics_listen: Option<SocketAddr>,
     pub database: DatabaseConfig,
     pub storage: TraceStorageConfig,
     pub browser_auth: BrowserAuthConfig,
@@ -110,13 +111,16 @@ pub struct S3TraceStorageConfig {
 
 impl NotaryApiConfig {
     pub fn from_env() -> Result<Self> {
-        let public_origin = public_origin()?;
+        let origins = PublicOrigins::from_env()?;
         Ok(Self {
             listen: socket_addr_or_default("NOTARY_API_LISTEN", "127.0.0.1:8080")?,
-            public_origin: public_origin.clone(),
+            origins: origins.clone(),
+            metrics_listen: optional_env("NOTARY_API_METRICS_LISTEN")?
+                .map(|value| value.parse().context("invalid NOTARY_API_METRICS_LISTEN"))
+                .transpose()?,
             database: DatabaseConfig::from_env()?,
             storage: TraceStorageConfig::from_env()?,
-            browser_auth: BrowserAuthConfig::from_env(&public_origin)?,
+            browser_auth: BrowserAuthConfig::from_env(&origins.api)?,
             registry: RegistryConfig::from_env()?,
             admission: NotaryAdmissionConfig::from_env()?,
             billing: BillingConfig::from_env()?,
@@ -366,31 +370,69 @@ impl AdmissionTierLimits {
     }
 }
 
-fn public_origin() -> Result<Url> {
-    parse_public_origin(&env_or_default(
-        "NOTARY_PUBLIC_ORIGIN",
-        "http://localhost:4173",
-    )?)
+#[derive(Clone, Debug)]
+pub struct PublicOrigins {
+    pub api: Url,
+    pub capture: Url,
+    pub website: Url,
+    pub additional_browser_origins: Vec<Url>,
+}
+
+impl PublicOrigins {
+    fn from_env() -> Result<Self> {
+        let additional_browser_origins = optional_env("NOTARY_API_ADDITIONAL_BROWSER_ORIGINS")?
+            .unwrap_or_default()
+            .split(',')
+            .filter(|value| !value.trim().is_empty())
+            .map(|value| parse_public_origin(value.trim()))
+            .collect::<Result<Vec<_>>>()?;
+        Ok(Self {
+            additional_browser_origins,
+            api: parse_public_origin(&env_or_default(
+                "NOTARY_API_PUBLIC_ORIGIN",
+                "http://localhost:8080",
+            )?)?,
+            capture: parse_public_origin(&env_or_default(
+                "NOTARY_CAPTURE_PUBLIC_ORIGIN",
+                "http://localhost:4174",
+            )?)?,
+            website: parse_public_origin(&env_or_default(
+                "NOTARY_WEBSITE_PUBLIC_ORIGIN",
+                "http://localhost:4175",
+            )?)?,
+        })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(origin: &str) -> Self {
+        let url = Url::parse(origin).unwrap();
+        Self {
+            api: url.clone(),
+            capture: url.clone(),
+            website: url,
+            additional_browser_origins: Vec::new(),
+        }
+    }
 }
 
 fn parse_public_origin(value: &str) -> Result<Url> {
-    let origin = Url::parse(value).context("NOTARY_PUBLIC_ORIGIN must be an absolute URL")?;
+    let origin = Url::parse(value).context("public origins must be an absolute URL")?;
     if origin.username() != ""
         || origin.password().is_some()
         || origin.path() != "/"
         || origin.query().is_some()
         || origin.fragment().is_some()
     {
-        bail!("NOTARY_PUBLIC_ORIGIN must be an origin without a path, query, or fragment");
+        bail!("public origins must be an origin without a path, query, or fragment");
     }
     let loopback = match origin.host() {
         Some(Host::Domain(host)) => host.eq_ignore_ascii_case("localhost"),
         Some(Host::Ipv4(address)) => address.is_loopback(),
         Some(Host::Ipv6(address)) => address.is_loopback(),
-        None => return Err(anyhow!("NOTARY_PUBLIC_ORIGIN must include a host")),
+        None => return Err(anyhow!("public origins must include a host")),
     };
     if origin.scheme() != "https" && !(origin.scheme() == "http" && loopback) {
-        bail!("NOTARY_PUBLIC_ORIGIN must use HTTPS except on loopback");
+        bail!("public origins must use HTTPS except on loopback");
     }
     Ok(origin)
 }
@@ -702,8 +744,8 @@ mod tests {
     #[test]
     fn public_origin_requires_https_except_for_loopback_development() {
         for accepted in [
-            "https://notary.exalto.ai",
-            "https://notary.exalto.ai:8443",
+            "https://api.exalto.ai",
+            "https://api.exalto.ai:8443",
             "http://localhost:4173",
             "http://127.0.0.1:4173",
             "http://[::1]:4173",
@@ -711,12 +753,12 @@ mod tests {
             assert!(parse_public_origin(accepted).is_ok(), "{accepted}");
         }
         for rejected in [
-            "http://notary.exalto.ai",
-            "ftp://notary.exalto.ai",
-            "https://user:not-secret@notary.exalto.ai",
-            "https://notary.exalto.ai/path",
-            "https://notary.exalto.ai?query=yes",
-            "https://notary.exalto.ai/#fragment",
+            "http://api.exalto.ai",
+            "ftp://api.exalto.ai",
+            "https://user:not-secret@api.exalto.ai",
+            "https://api.exalto.ai/path",
+            "https://api.exalto.ai?query=yes",
+            "https://api.exalto.ai/#fragment",
         ] {
             assert!(parse_public_origin(rejected).is_err(), "{rejected}");
         }

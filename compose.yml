@@ -41,7 +41,9 @@ services:
       NOTARY_API_GITHUB_CLIENT_ID: ${NOTARY_API_GITHUB_CLIENT_ID:?Set NOTARY_API_GITHUB_CLIENT_ID}
       NOTARY_API_GITHUB_CLIENT_SECRET_FILE: /run/secrets/github_oauth_client_secret
       NOTARY_API_LISTEN: 0.0.0.0:8080
-      NOTARY_PUBLIC_ORIGIN: ${NOTARY_PUBLIC_ORIGIN:?Set NOTARY_PUBLIC_ORIGIN to the public site origin}
+      NOTARY_API_PUBLIC_ORIGIN: ${NOTARY_API_PUBLIC_ORIGIN:-http://localhost:8080}
+      NOTARY_CAPTURE_PUBLIC_ORIGIN: ${NOTARY_CAPTURE_PUBLIC_ORIGIN:-http://localhost:4174}
+      NOTARY_WEBSITE_PUBLIC_ORIGIN: ${NOTARY_WEBSITE_PUBLIC_ORIGIN:-http://localhost:4175}
       NOTARY_API_REGISTRY_FILE: /run/secrets/notary_registry
       NOTARY_API_S3_ACCESS_KEY_ID: ${NOTARY_API_S3_ACCESS_KEY_ID:?Set NOTARY_API_S3_ACCESS_KEY_ID to the bucket-scoped access key}
       NOTARY_API_S3_SECRET_ACCESS_KEY: ${NOTARY_API_S3_SECRET_ACCESS_KEY:?Set NOTARY_API_S3_SECRET_ACCESS_KEY to the bucket-scoped secret key}
@@ -55,9 +57,9 @@ services:
       NOTARY_API_ADMISSION_SERVICE_TOKEN_FILE: /run/secrets/admission_service_token
       NOTARY_API_ADMISSION_ANONYMOUS_SUBJECT_HMAC_KEY_FILE: /run/secrets/anonymous_subject_hmac_key
       NOTARY_API_ADMISSION_ANONYMOUS_SUBJECT_HMAC_KEY_VERSION: ${NOTARY_API_ADMISSION_ANONYMOUS_SUBJECT_HMAC_KEY_VERSION:-1}
-      # The API is internal to this Compose network; only the stable Caddy
-      # gateway may supply x-notary-client-ip.
-      NOTARY_API_ADMISSION_TRUSTED_PROXY_CIDRS: ${NOTARY_API_ADMISSION_TRUSTED_PROXY_CIDRS:-172.16.0.0/12}
+      NOTARY_API_ADMISSION_TRUSTED_PROXY_CIDRS: ""
+    ports:
+      - "127.0.0.1:8080:8080"
     read_only: true
     tmpfs:
       - /tmp
@@ -87,27 +89,6 @@ services:
           - notary-api.internal
     restart: unless-stopped
 
-  site:
-    image: ${WEB_IMAGE:-notary-web:local}
-    build:
-      context: ./platform/web
-      dockerfile: Dockerfile
-      args:
-        NOTARY_PUBLIC_ORIGIN: ${NOTARY_PUBLIC_ORIGIN:?Set NOTARY_PUBLIC_ORIGIN to the public site origin}
-    restart: unless-stopped
-
-  web:
-    # Pinned so normal application deployments never replace the tunnel origin.
-    image: caddy@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
-    depends_on:
-      - notary-api
-      - site
-    ports:
-      - "127.0.0.1:${WEB_HTTP_PORT:-80}:80"
-    volumes:
-      - ./deploy/gateway.Caddyfile:/etc/caddy/Caddyfile:ro
-    restart: unless-stopped
-
   notary-server:
     image: ${NOTARY_SERVER_IMAGE:-notary-server:local}
     build:
@@ -125,7 +106,7 @@ services:
       NOTARY_SERVER_INSTANCE_ID: ${NOTARY_SERVER_INSTANCE_ID:-notary-compose-1}
       NOTARY_SERVER_USAGE_OUTBOX_DIR: /var/lib/notary-server/usage-outbox
       NOTARY_SERVER_SHUTDOWN_GRACE_SECS: ${NOTARY_SERVER_SHUTDOWN_GRACE_SECS:-15}
-      # Internal-only scrape endpoint. Do not publish it through the gateway.
+      # Internal-only scrape endpoint. Do not publish this port.
       NOTARY_SERVER_METRICS_LISTEN: 0.0.0.0:9090
     ports:
       - "${NOTARY_SERVER_PORT:-7047}:7047"
@@ -152,15 +133,6 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-
-  tunnel:
-    image: cloudflare/cloudflared:2026.7.3
-    command: tunnel --no-autoupdate run
-    environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Set CLOUDFLARE_TUNNEL_TOKEN to the named Cloudflare Tunnel token}
-    depends_on:
-      - web
-    restart: unless-stopped
 
 secrets:
   notary_signing_key:

@@ -1,12 +1,5 @@
-// The website resolves the macOS download at runtime so a new Runtime release
-// reaches visitors without redeploying the site. The Caddy gateway proxies
-// /downloads/* to the public release bucket; the plain-text pointer names the
-// immutable build directory, and that build's manifest names the exact DMG.
-//
-// The manifest's own artifact URLs are not used: they can name a retired
-// hostname, and a download offered by this site must come from this origin.
-
-const DOWNLOAD_ROOT = '/downloads/releases';
+// Fetch published release metadata directly from the public artifact bucket.
+const DOWNLOAD_ROOT = 'https://notary-prod-downloads.t3.tigrisfiles.io/releases';
 const MACOS_TARGET = 'darwin-aarch64';
 
 export type MacosDownload = {

@@ -1,6 +1,10 @@
 @import "tailwindcss";
+
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+/* Both Vite roots use components from this shared source directory. */
+@source "./";
 
 @custom-variant dark (&:is(.dark *, [data-theme="dark"] *, [data-mantine-color-scheme="dark"] *));
 

@@ -1,7 +1,10 @@
 import createClient from 'openapi-fetch';
 import type { components, paths } from './generated/api.generated';
 
-const client = createClient<paths>({ credentials: 'same-origin' });
+export const apiOrigin =
+  typeof __API_ORIGIN__ === 'string' ? __API_ORIGIN__ : 'https://api.exalto.ai';
+export const apiHref = (path: string) => new URL(path, apiOrigin || window.location.origin).href;
+const client = createClient<paths>({ baseUrl: apiOrigin, credentials: 'include' });
 
 export class PlatformApiError extends Error {
   constructor(
@@ -111,8 +114,8 @@ export async function getPublicTraceOtlp(traceId: string) {
 
 export async function downloadPublicTracePackage(traceId: string) {
   const response = await fetch(
-    `/api/public/traces/${encodeURIComponent(traceId)}/package.llmtrace`,
-    { credentials: 'same-origin' },
+    apiHref(`/api/public/traces/${encodeURIComponent(traceId)}/package.llmtrace`),
+    { credentials: 'include' },
   );
   if (!response.ok) {
     const error = await response.json().catch(() => null);
@@ -459,7 +462,7 @@ export async function deleteCurrentAccount() {
 export type HostedVerificationResult = components['schemas']['VerificationResponse'];
 
 export async function verifyTracePackage(file: File): Promise<HostedVerificationResult> {
-  const response = await fetch('/api/verify', {
+  const response = await fetch(apiHref('/api/verify'), {
     method: 'POST',
     credentials: 'omit',
     cache: 'no-store',

@@ -67,7 +67,6 @@ jobs:
               echo "IMAGE_LABEL=$image_label"
               echo "NOTARY_SERVER_IMAGE_TAG=registry.fly.io/llm-notary-prod-server:$image_label"
               echo "NOTARY_API_IMAGE_TAG=registry.fly.io/llm-notary-prod-api:$image_label"
-              echo "WEB_IMAGE_TAG=registry.fly.io/llm-notary-prod-web:$image_label"
             } >> "$GITHUB_ENV"
             exit 0
           fi
@@ -87,10 +86,10 @@ jobs:
             --name production-rollout --dir "$rollback_dir"
           manifest="$rollback_dir/production-rollout.json"
           jq -e '
-            .schema_version == "notary/production-rollout/v1" and
+            .schema_version == "notary/production-rollout/v2" and
             .status == "success" and
             (.source_sha | test("^[0-9a-f]{40}$")) and
-            ([.images.notary_server, .images.notary_api, .images.web]
+            ([.images.notary_server, .images.notary_api]
               | all(test("^[^@[:space:]]+@sha256:[0-9a-f]{64}$")))
           ' "$manifest" >/dev/null
           {
@@ -99,7 +98,6 @@ jobs:
             echo "rollback_run_id=$ROLLBACK_RUN_ID"
             echo "notary_server=$(jq -r .images.notary_server "$manifest")"
             echo "notary_api=$(jq -r .images.notary_api "$manifest")"
-            echo "web=$(jq -r .images.web "$manifest")"
           } >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v6
         with:
@@ -147,26 +145,11 @@ jobs:
           flyctl auth docker
           digest="$(bash deploy/fly/resolve-image-digest.sh "$NOTARY_API_IMAGE_TAG")"
           echo "ref=${NOTARY_API_IMAGE_TAG%:*}@$digest" >> "$GITHUB_OUTPUT"
-      - name: Build web image on Fly
-        id: web-image
-        if: steps.selection.outputs.mode == 'promote'
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_WEB_DEPLOY_TOKEN }}
-        run: |
-          set -euo pipefail
-          flyctl deploy platform/web --remote-only --build-only --push \
-            --image-label "$IMAGE_LABEL" \
-            --config "$GITHUB_WORKSPACE/deploy/fly/web.fly.toml"
-          flyctl auth docker
-          digest="$(bash deploy/fly/resolve-image-digest.sh "$WEB_IMAGE_TAG")"
-          echo "ref=${WEB_IMAGE_TAG%:*}@$digest" >> "$GITHUB_OUTPUT"
-
       - name: Record rollback images
         id: previous
         env:
           NOTARY_SERVER_TOKEN: ${{ secrets.FLY_NOTARY_DEPLOY_TOKEN }}
           NOTARY_API_TOKEN: ${{ secrets.FLY_API_DEPLOY_TOKEN }}
-          WEB_TOKEN: ${{ secrets.FLY_WEB_DEPLOY_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -191,7 +174,6 @@ jobs:
           {
             echo "notary_server=$(current_image llm-notary-prod-server "$NOTARY_SERVER_TOKEN")"
             echo "notary_api=$(current_image llm-notary-prod-api "$NOTARY_API_TOKEN")"
-            echo "web=$(current_image llm-notary-prod-web "$WEB_TOKEN")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Resolve target digest set
@@ -200,22 +182,18 @@ jobs:
           MODE: ${{ steps.selection.outputs.mode }}
           BUILT_NOTARY_SERVER: ${{ steps.notary-server-image.outputs.ref }}
           BUILT_NOTARY_API: ${{ steps.notary-api-image.outputs.ref }}
-          BUILT_WEB: ${{ steps.web-image.outputs.ref }}
           RECORDED_NOTARY_SERVER: ${{ steps.selection.outputs.notary_server }}
           RECORDED_NOTARY_API: ${{ steps.selection.outputs.notary_api }}
-          RECORDED_WEB: ${{ steps.selection.outputs.web }}
         run: |
           set -euo pipefail
           if test "$MODE" = promote; then
             notary_server="$BUILT_NOTARY_SERVER"
             notary_api="$BUILT_NOTARY_API"
-            web="$BUILT_WEB"
           else
             notary_server="$RECORDED_NOTARY_SERVER"
             notary_api="$RECORDED_NOTARY_API"
-            web="$RECORDED_WEB"
           fi
-          for image in "$notary_server" "$notary_api" "$web"; do
+          for image in "$notary_server" "$notary_api"; do
             if ! [[ "$image" =~ ^[^@[:space:]]+@sha256:[0-9a-f]{64}$ ]]; then
               echo "target image is not digest-pinned: $image" >&2
               exit 1
@@ -224,20 +202,10 @@ jobs:
           {
             echo "notary_server=$notary_server"
             echo "notary_api=$notary_api"
-            echo "web=$web"
           } >> "$GITHUB_OUTPUT"
 
       # A requested rollback restores the recorded set in reverse rollout
       # order and never runs the older API image's release command.
-      - name: Roll back web gateway image
-        if: steps.selection.outputs.mode == 'rollback'
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_WEB_DEPLOY_TOKEN }}
-          WEB_IMAGE: ${{ steps.target.outputs.web }}
-        run: |
-          touch "$RUNNER_TEMP/web-rollout-attempted"
-          flyctl deploy platform/web --image "$WEB_IMAGE" --ha=false --strategy rolling \
-            --skip-release-command --config "$GITHUB_WORKSPACE/deploy/fly/web.fly.toml"
       - name: Roll back notary-api image
         if: steps.selection.outputs.mode == 'rollback'
         env:
@@ -278,10 +246,10 @@ jobs:
           touch "$RUNNER_TEMP/notary-api-rollout-attempted"
           flyctl deploy --image "$NOTARY_API_IMAGE" --ha=true --strategy rolling \
             --config deploy/fly/notary-api.fly.toml
-      - name: Verify web to API compatibility
+      - name: Verify public API readiness
         run: >-
           curl --fail --retry 5 --retry-all-errors --retry-delay 2
-          --max-time 20 https://seal.exalto.ai/api/readyz
+          --max-time 20 https://api.exalto.ai/api/readyz
       # Deliberately present a capture ticket as a notarization. The notary
       # must reach the authenticated platform API and return admission_denied,
       # but it must not admit the operation or consume the ticket.
@@ -295,7 +263,7 @@ jobs:
           import urllib.error
           import urllib.request
 
-          api_url = "https://seal.exalto.ai/api/notary/admissions"
+          api_url = "https://api.exalto.ai/api/notary/admissions"
           hostname = "alice.notary.exalto.ai"
           target = (hostname, 443)
           last_error = None
@@ -342,32 +310,6 @@ jobs:
           else:
               raise last_error or RuntimeError("notary did not become ready")
           PY
-      - name: Deploy web gateway image
-        if: steps.selection.outputs.mode == 'promote'
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_WEB_DEPLOY_TOKEN }}
-          WEB_IMAGE: ${{ steps.target.outputs.web }}
-        run: |
-          touch "$RUNNER_TEMP/web-rollout-attempted"
-          flyctl deploy platform/web --image "$WEB_IMAGE" --ha=false --strategy rolling \
-            --config "$GITHUB_WORKSPACE/deploy/fly/web.fly.toml"
-      - name: Verify new web to API readiness
-        run: >-
-          curl --fail --retry 5 --retry-all-errors --retry-delay 2
-          --max-time 20 https://seal.exalto.ai/api/readyz
-      - name: Verify website download proxy
-        # Hosted promotion and Runtime publication are independent. Require the
-        # existing public pointer to remain readable after the gateway change.
-        run: |
-          set -euo pipefail
-          pointer="$(curl --fail --silent --show-error --location \
-            --retry 15 --retry-all-errors --retry-delay 2 --retry-max-time 60 \
-            https://seal.exalto.ai/downloads/releases/latest)"
-          case "$pointer" in
-            *" "*) ;;
-            *) echo "the website latest pointer is malformed" >&2; exit 1 ;;
-          esac
-
       - name: Record successful rollout
         env:
           MODE: ${{ steps.selection.outputs.mode }}
@@ -375,10 +317,8 @@ jobs:
           ROLLBACK_RUN_ID: ${{ steps.selection.outputs.rollback_run_id }}
           NOTARY_SERVER_IMAGE: ${{ steps.target.outputs.notary_server }}
           NOTARY_API_IMAGE: ${{ steps.target.outputs.notary_api }}
-          WEB_IMAGE: ${{ steps.target.outputs.web }}
           PREVIOUS_NOTARY_SERVER_IMAGE: ${{ steps.previous.outputs.notary_server }}
           PREVIOUS_NOTARY_API_IMAGE: ${{ steps.previous.outputs.notary_api }}
-          PREVIOUS_WEB_IMAGE: ${{ steps.previous.outputs.web }}
         run: |
           set -euo pipefail
           completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -386,7 +326,7 @@ jobs:
           if test "$MODE" = rollback; then migration_action=skipped_for_rollback; fi
           mkdir -p rollout
           jq -n \
-            --arg schema_version notary/production-rollout/v1 \
+            --arg schema_version notary/production-rollout/v2 \
             --arg status success \
             --arg rollout_id "$ROLLOUT_ID" \
             --arg operation "$MODE" \
@@ -397,10 +337,8 @@ jobs:
             --arg migration_action "$migration_action" \
             --arg notary_server "$NOTARY_SERVER_IMAGE" \
             --arg notary_api "$NOTARY_API_IMAGE" \
-            --arg web "$WEB_IMAGE" \
             --arg previous_notary_server "$PREVIOUS_NOTARY_SERVER_IMAGE" \
             --arg previous_notary_api "$PREVIOUS_NOTARY_API_IMAGE" \
-            --arg previous_web "$PREVIOUS_WEB_IMAGE" \
             '{
               schema_version: $schema_version,
               status: $status,
@@ -413,13 +351,11 @@ jobs:
               migration: {action: $migration_action, down_migration: false},
               images: {
                 notary_server: $notary_server,
-                notary_api: $notary_api,
-                web: $web
+                notary_api: $notary_api
               },
               previous_images: {
                 notary_server: $previous_notary_server,
-                notary_api: $previous_notary_api,
-                web: $previous_web
+                notary_api: $previous_notary_api
               }
             }' > rollout/production-rollout.json
           {
@@ -429,7 +365,6 @@ jobs:
             echo "- Source: $SOURCE_SHA"
             echo "- Notary: $NOTARY_SERVER_IMAGE"
             echo "- API: $NOTARY_API_IMAGE"
-            echo "- Web: $WEB_IMAGE"
             echo "- Migration: $migration_action; no down-migration"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
@@ -444,21 +379,13 @@ jobs:
         env:
           PREVIOUS_NOTARY_SERVER_IMAGE: ${{ steps.previous.outputs.notary_server }}
           PREVIOUS_NOTARY_API_IMAGE: ${{ steps.previous.outputs.notary_api }}
-          PREVIOUS_WEB_IMAGE: ${{ steps.previous.outputs.web }}
           NOTARY_SERVER_TOKEN: ${{ secrets.FLY_NOTARY_DEPLOY_TOKEN }}
           NOTARY_API_TOKEN: ${{ secrets.FLY_API_DEPLOY_TOKEN }}
-          WEB_TOKEN: ${{ secrets.FLY_WEB_DEPLOY_TOKEN }}
         run: |
           set +e
           rollback_failed=0
           api_rollback_succeeded=1
 
-          if test -e "$RUNNER_TEMP/web-rollout-attempted"; then
-            FLY_API_TOKEN="$WEB_TOKEN" flyctl deploy platform/web \
-              --image "$PREVIOUS_WEB_IMAGE" --ha=false --strategy rolling \
-              --skip-release-command \
-              --config "$GITHUB_WORKSPACE/deploy/fly/web.fly.toml" || rollback_failed=1
-          fi
 
           if test -e "$RUNNER_TEMP/notary-api-rollout-attempted"; then
             if ! FLY_API_TOKEN="$NOTARY_API_TOKEN" flyctl deploy \

@@ -61,15 +61,8 @@ impl BrowserAuthProvider {
 }
 
 fn allowed_return_to(value: String) -> Option<String> {
-    (value.starts_with("/authorize?")
-        || value == "/app"
-        || value.starts_with("/app/")
-        || value == "/account"
-        || value.starts_with("/account/")
-        || value.starts_with("#/authorize?")
-        || value == "#/account"
-        || value.starts_with("#/account/"))
-    .then_some(value)
+    (value.starts_with("/authorize?") || value == "/app" || value.starts_with("/app/"))
+        .then_some(value)
 }
 
 #[derive(Serialize, ToSchema)]
@@ -240,9 +233,9 @@ pub(super) async fn finish_github_login(
         Redirect::to(
             return_to
                 .as_deref()
-                .and_then(|value| state.public_origin.join(value).ok())
+                .and_then(|value| state.origins.capture.join(value).ok())
                 .unwrap_or_else(|| {
-                    let mut url = state.public_origin.clone();
+                    let mut url = state.origins.capture.clone();
                     url.set_path("/app/");
                     url
                 })
@@ -391,9 +384,9 @@ pub(super) async fn finish_google_login(
         Redirect::to(
             return_to
                 .as_deref()
-                .and_then(|value| state.public_origin.join(value).ok())
+                .and_then(|value| state.origins.capture.join(value).ok())
                 .unwrap_or_else(|| {
-                    let mut url = state.public_origin.clone();
+                    let mut url = state.origins.capture.clone();
                     url.set_path("/app/");
                     url
                 })
@@ -727,15 +720,13 @@ mod tests {
             "/app/traces",
             "/app/usage?checkout=success",
             "/app/settings",
-            "/account",
-            "/account/traces",
-            "#/authorize?request_id=legacy-request-1",
-            "#/account",
-            "#/account/traces",
         ] {
             assert_eq!(allowed_return_to(route.to_owned()).as_deref(), Some(route));
         }
         for route in [
+            "/account/traces",
+            "#/account",
+            "#/authorize?request_id=legacy-request-1",
             "https://attacker.example",
             "//attacker.example",
             "/traces",

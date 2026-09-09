@@ -8,7 +8,7 @@ This file is the source of truth for agent instructions. `CLAUDE.md` is a symlin
 - `platform/crates/notary-api/` owns the hosted account, credit, billing, upload, and sharing API. `platform/crates/notary-server-platform-adapter/` is the private admission and settlement adapter around the generic notary.
 - `runtime/vendor/tlsn/` is a pinned, locally patched TLSNotary dependency. Treat it as third-party code; change it only when the protocol requires it and explain the patch.
 - `apps/notary-app/` is the desktop application that bundles and supervises `notaryd`.
-- `platform/web/` is the hosted Vite/React website. `runtime/apps/admin-dashboard/` is the daemon dashboard. Follow [`DESIGN.md`](DESIGN.md) for UI work.
+- `platform/web/` is the Vercel-hosted Capture Vite/React app. The sibling `website` repository owns exalto.ai and public Trace, Registry, and verification pages. `runtime/apps/admin-dashboard/` is the daemon dashboard. Follow [`DESIGN.md`](DESIGN.md) for UI work.
 - `docs/README.md` indexes user, operator, and contributor documentation. `compose.yml`, `deploy/`, and `.github/workflows/` define the container configuration and Fly.io deployment.
 
 ## Non-negotiable trust boundaries
@@ -67,7 +67,7 @@ gh stack view --json
 
 - Keep ordinary tests deterministic and offline. Real-provider and large proof profiles are explicit opt-in checks.
 - Preserve HTTP/1.1 and streaming behavior unless intentionally expanding the documented prototype scope.
-- The Cloudflare tunnel targets the stable `web` gateway. Do not rename or routinely recreate that service; replaceable SPA/API containers belong behind it.
+- Vercel serves Capture and the Exalto website. Fly serves the API and notary directly; do not add a web gateway or frontend API proxy.
 - Treat deployment-compatibility dual writes as temporary migration scaffolding. Before merging any change that introduces one, file a follow-up issue to remove it and link that issue from the migration, ADR, or pull request. The issue must name both data paths, the condition that makes removal safe, and the cleanup and validation required; do not leave an untracked second source of truth.
 - Treat generated OpenAPI as the exact HTTP contract. Regenerate clients and update every affected guide when a route, status, field, or authentication rule changes.
 - Use the settled product model: Exalto is the family, Exalto Capture is the macOS capture app, Exalto Seal is the hosted sealing and verification service, and Exalto Notary Protocol is the protocol. A Trace is the evidence primitive. User-facing states are Captured and Sealed; runtime APIs retain Notarized and notarization for protocol compatibility. A generic or third-party notary remains a technical role, never a replacement product name. `node scripts/check-terminology.mjs` enforces this repository-wide. When a retired name must stay, such as a negative test, anti-regression rule, or historical material, classify it in that script with the reason rather than weakening the rule.

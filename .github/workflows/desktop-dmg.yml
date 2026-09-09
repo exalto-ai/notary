@@ -24,8 +24,8 @@ on:
         description: Exact source ref to build
         required: false
         type: string
-      public_origin:
-        description: Public application origin embedded in the app and sidecar
+      api_origin:
+        description: Hosted API origin embedded in the app and sidecar
         required: false
         type: string
       updates_enabled:
@@ -50,7 +50,9 @@ jobs:
       ASSET: macos-arm64
       TARGET: aarch64-apple-darwin
       NOTARY_BUILD_ID: ${{ inputs.build_id || format('{0}-{1}-{2}', github.sha, github.run_id, github.run_attempt) }}
-      NOTARY_PUBLIC_ORIGIN: ${{ inputs.public_origin || vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
+      NOTARY_API_PUBLIC_ORIGIN: ${{ inputs.api_origin || vars.NOTARY_API_PUBLIC_ORIGIN || 'https://api.exalto.ai' }}
+      NOTARY_DOWNLOAD_PUBLIC_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_PUBLIC_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
+      NOTARY_CAPTURE_PUBLIC_ORIGIN: ${{ vars.NOTARY_CAPTURE_PUBLIC_ORIGIN || 'https://capture.exalto.ai' }}
       NOTARY_UPDATES_ENABLED: ${{ inputs.updates_enabled && '1' || '0' }}
     defaults:
       run:

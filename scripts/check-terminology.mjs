@@ -146,11 +146,6 @@ const classified = [
     reason: 'the provisioned Fly application names',
   },
   {
-    file: 'deploy/fly/web.fly.toml',
-    contains: 'llm-notary-prod-web',
-    reason: 'the provisioned Fly application name',
-  },
-  {
     file: 'deploy/fly/preflight-notary-api.sh',
     contains: 'llm-notary-prod-api',
     reason: 'defaults to the provisioned Fly application name',
@@ -169,11 +164,6 @@ const classified = [
     file: 'deploy/fly/test-preflight-notary-server.sh',
     contains: 'llm-notary-prod-server',
     reason: 'fixture for the provisioned Fly application name',
-  },
-  {
-    file: 'platform/web/Caddyfile.fly',
-    contains: 'llm-notary-prod-api.flycast',
-    reason: 'the provisioned Fly application name',
   },
   {
     file: '.github/workflows/deploy.yml',

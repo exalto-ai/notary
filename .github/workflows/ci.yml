@@ -409,7 +409,6 @@ jobs:
             NOTARY_API_GOOGLE_CLIENT_SECRET_FILE="$RUNNER_TEMP/google-oauth-secret" \
             NOTARY_API_GITHUB_CLIENT_SECRET_FILE="$RUNNER_TEMP/github-oauth-secret" \
             NOTARY_SERVER_PUBLIC_KEY=0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 \
-            CLOUDFLARE_TUNNEL_TOKEN=ci-placeholder \
             NOTARY_API_GITHUB_CLIENT_ID=ci-placeholder \
             NOTARY_API_GOOGLE_CLIENT_ID=ci-placeholder \
             NOTARY_API_DATABASE_URL=postgresql://ci-placeholder:ci-placeholder@db.example.com/notary_api?sslmode=require \
@@ -419,7 +418,7 @@ jobs:
             NOTARY_API_S3_BUCKET=notary-api-ci \
             NOTARY_API_S3_ENDPOINT=https://sfo3.digitaloceanspaces.com \
             NOTARY_API_S3_REGION=sfo3 \
-            NOTARY_PUBLIC_ORIGIN=https://example.com \
+            NOTARY_API_PUBLIC_ORIGIN=https://api.example.com \
             docker compose config --quiet
       - name: Validate standalone daemon cluster bundle
         run: |

@@ -12,11 +12,7 @@ const captureTile = readFileSync(
   'utf8',
 );
 const preview = readFileSync(resolve(root, 'public/social-preview.png'));
-const siteCaddy = readFileSync(resolve(root, 'Caddyfile'), 'utf8');
-const flyCaddy = readFileSync(resolve(root, 'Caddyfile.fly'), 'utf8');
-const gatewayCaddy = readFileSync(resolve(root, '../../deploy/gateway.Caddyfile'), 'utf8');
-const siteApp = readFileSync(resolve(root, 'src/site/SiteApp.tsx'), 'utf8');
-const publicTracePages = readFileSync(resolve(root, 'src/site/PublicTracePages.tsx'), 'utf8');
+const siteApp = readFileSync(resolve(root, 'src/site/CaptureApp.tsx'), 'utf8');
 const accountDashboard = readFileSync(resolve(root, 'src/site/AccountDashboard.tsx'), 'utf8');
 
 function requireText(source, expected, label) {
@@ -24,15 +20,8 @@ function requireText(source, expected, label) {
     throw new Error(`${label} is missing ${JSON.stringify(expected)}`);
 }
 
-requireText(html, '<title>Exalto Seal</title>', 'default browser title');
-requireText(html, 'property="og:site_name" content="Exalto Seal"', 'Open Graph identity');
-requireText(
-  html,
-  'content="Exalto Seal · Verifiable intelligence · Sealed traces for independent verification"',
-  'social-preview alt text',
-);
-requireText(html, '"name": "Exalto Seal"', 'structured metadata');
-if (!llms.startsWith('# Exalto Seal\n')) {
+requireText(html, '<title>Exalto Capture</title>', 'default browser title');
+if (!llms.startsWith('# Exalto Capture\n')) {
   throw new Error('llms.txt must begin with the formal endorsed identity');
 }
 requireText(mark, '<title id="title">Exalto Seal</title>', 'public mark title');
@@ -42,22 +31,19 @@ requireText(favicon, '<title id="title">Exalto Seal</title>', 'favicon title');
 for (const geometry of captureTile.match(/<(?:g|circle|path|rect)[^>]*>/g) ?? []) {
   requireText(favicon, geometry, 'favicon Exalto Capture mark');
 }
-requireText(html, 'rel="icon" href="/favicon.ico', 'icon link');
-requireText(html, 'rel="apple-touch-icon" href="/apple-touch-icon-180.png', 'touch icon link');
 for (const icon of ['favicon.ico', 'apple-touch-icon-180.png', 'icon-192.png', 'icon-512.png']) {
   if (!readFileSync(resolve(root, `public/${icon}`)).length) {
     throw new Error(`public/${icon} is empty`);
   }
 }
-requireText(siteApp, 'aria-label="Exalto Seal home"', 'site header identity');
-requireText(siteApp, '<span>Seal</span>', 'site header product wordmark');
+requireText(siteApp, 'aria-label="Exalto Capture home"', 'site header identity');
+requireText(siteApp, '<span>Capture</span>', 'site header product wordmark');
 requireText(siteApp, '<small>BY EXALTO</small>', 'site header family attribution');
 requireText(
-  siteApp,
+  readFileSync(resolve(root, 'src/site/SharedShell.tsx'), 'utf8'),
   '<a className="footer-copyright" href="https://exalto.ai">',
   'site footer identity',
 );
-requireText(publicTracePages, "'Shared trace · Exalto Seal'", 'shared Trace title identity');
 requireText(
   accountDashboard,
   'Sealed traces you’ve shared through Exalto Seal.',
@@ -67,7 +53,6 @@ for (const [label, source] of [
   ['HTML metadata', html],
   ['llms.txt', llms],
   ['site app', siteApp],
-  ['public Trace pages', publicTracePages],
   ['account dashboard', accountDashboard],
 ]) {
   for (const retired of ['Notary by Exalto', 'Continue to Notary', 'aria-label="Notary home"']) {
@@ -80,18 +65,4 @@ if (packageJson.name !== '@exalto/notary-web') {
 if (preview.readUInt32BE(16) !== 1200 || preview.readUInt32BE(20) !== 630) {
   throw new Error('social preview must be 1200x630');
 }
-for (const [label, caddy] of [
-  ['site Caddyfile', siteCaddy],
-  ['Fly Caddyfile', flyCaddy],
-  ['gateway Caddyfile', gatewayCaddy],
-]) {
-  requireText(caddy, '@shared path /s/*', label);
-  requireText(caddy, 'X-Robots-Tag "noindex, nofollow, noarchive"', label);
-}
-requireText(
-  flyCaddy,
-  'redir @retired_notary https://seal.exalto.ai{uri} permanent',
-  'Seal hostname redirect',
-);
-
 process.stdout.write('Hosted identity metadata and assets are consistent.\n');

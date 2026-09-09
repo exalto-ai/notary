@@ -279,7 +279,8 @@ pub(super) async fn start_device_authorization(
         .map_err(database_error)?;
         if inserted.rows_affected() == 1 {
             let mut verification_uri_complete = state
-                .public_origin
+                .origins
+                .capture
                 .join("authorize")
                 .map_err(|error| ApiError::internal(error.into()))?;
             verification_uri_complete

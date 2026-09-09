@@ -1,67 +1,53 @@
-import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-
-const brandAssetVersion = createHash('sha256')
-  .update(readFileSync(new URL('./public/notary-mark.svg', import.meta.url)))
-  .update(readFileSync(new URL('./public/favicon.svg', import.meta.url)))
-  .update(readFileSync(new URL('./public/social-preview.png', import.meta.url)))
-  .digest('hex')
-  .slice(0, 12);
-const publicOriginUrl = new URL(process.env.VITE_PUBLIC_ORIGIN ?? 'https://seal.exalto.ai');
-if (
-  !['http:', 'https:'].includes(publicOriginUrl.protocol) ||
-  publicOriginUrl.pathname !== '/' ||
-  publicOriginUrl.search ||
-  publicOriginUrl.hash
-) {
-  throw new Error(
-    'VITE_PUBLIC_ORIGIN must be an HTTP(S) origin without a path, query, or fragment',
-  );
-}
-const publicOrigin = publicOriginUrl.origin;
-const apiProxyOrigin = process.env.VITE_API_ORIGIN ?? 'http://127.0.0.1:8080';
-
-export default defineConfig({
-  resolve: {
-    alias: {
-      '@': resolve(process.cwd(), 'src'),
+import { localPreviewApi } from './scripts/local-preview-api.mjs';
+export default defineConfig(({ command }) => {
+  const local = command === 'serve';
+  const sample = local && process.env.EXALTO_LOCAL_PREVIEW === '1';
+  const capture =
+    process.env.VITE_CAPTURE_ORIGIN ??
+    (local ? 'http://localhost:4174' : 'https://capture.exalto.ai');
+  const website =
+    process.env.VITE_WEBSITE_ORIGIN ?? (local ? 'http://localhost:4175' : 'https://exalto.ai');
+  const api = sample
+    ? ''
+    : (process.env.VITE_API_ORIGIN ?? (local ? 'http://localhost:8080' : 'https://api.exalto.ai'));
+  for (const value of [capture, website, ...(api ? [api] : [])]) {
+    const url = new URL(value);
+    if (!['https:', 'http:'].includes(url.protocol) || url.origin !== value)
+      throw new Error('Site and API URLs must be canonical HTTP(S) origins');
+  }
+  return {
+    resolve: { alias: { '@': resolve(import.meta.dirname, 'src') } },
+    define: {
+      __CAPTURE_ORIGIN__: JSON.stringify(capture),
+      __WEBSITE_ORIGIN__: JSON.stringify(website),
+      __API_ORIGIN__: JSON.stringify(api),
+      __LOCAL_PREVIEW__: JSON.stringify(sample),
+      __BRAND_ASSET_VERSION__: JSON.stringify('capture'),
     },
-  },
-  define: {
-    __BRAND_ASSET_VERSION__: JSON.stringify(brandAssetVersion),
-    __PUBLIC_ORIGIN__: JSON.stringify(publicOrigin),
-  },
-  plugins: [
-    react(),
-    tailwindcss(),
-    {
-      name: 'brand-asset-version',
-      transformIndexHtml(html) {
-        return html
-          .replaceAll('%BRAND_ASSET_VERSION%', brandAssetVersion)
-          .replaceAll('%PUBLIC_ORIGIN%', publicOrigin);
+    plugins: [
+      react(),
+      tailwindcss(),
+      ...(sample ? [localPreviewApi({ capture, website })] : []),
+      {
+        name: 'site-html',
+        transformIndexHtml: (html) =>
+          html
+            .replaceAll('%CAPTURE_ORIGIN%', capture)
+            .replaceAll('%BRAND_ASSET_VERSION%', 'capture'),
+        closeBundle() {
+          if (command !== 'build') return;
+          const file = resolve(import.meta.dirname, 'dist/llms.txt');
+          writeFileSync(file, readFileSync(file, 'utf8').replaceAll('%CAPTURE_ORIGIN%', capture));
+        },
       },
-      closeBundle() {
-        const llmsPath = new URL('./dist/llms.txt', import.meta.url);
-        writeFileSync(
-          llmsPath,
-          readFileSync(llmsPath, 'utf8').replaceAll('%PUBLIC_ORIGIN%', publicOrigin),
-        );
-      },
-    },
-  ],
-  server: {
-    allowedHosts: true,
-    port: 4173,
-    proxy: {
-      '/api': { target: apiProxyOrigin, changeOrigin: true },
-      // The release bucket is only mounted by the deployed gateway, so proxy it
-      // in development to exercise the real macOS download resolution.
-      '/downloads': { target: publicOrigin, changeOrigin: true },
-    },
-  },
+    ],
+
+    server: { host: 'localhost', port: 4174, strictPort: true },
+    preview: { host: 'localhost', port: 4174, strictPort: true },
+  };
 });

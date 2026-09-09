@@ -1316,7 +1316,7 @@ mod tests {
             google_client_secret: "google-secret".to_owned(),
             google_callback_url: Url::parse("https://example.test/api/auth/google/callback")
                 .unwrap(),
-            public_origin: Url::parse("https://example.test").unwrap(),
+            origins: crate::config::PublicOrigins::for_test("https://example.test"),
             secure_cookies: true,
             registry: super::super::tests::test_registry(),
             traces: super::super::traces::owner::TraceService::disabled_for_test(),

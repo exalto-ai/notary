@@ -27,7 +27,7 @@ use notary_core::sha256_hex;
 
 const MAX_TICKET_BYTES: usize = 512;
 const MAX_INSTANCE_ID_BYTES: usize = 128;
-const CLIENT_IP_HEADER: &str = "x-notary-client-ip";
+const CLIENT_IP_HEADER: &str = "fly-client-ip";
 const PUBLIC_SUBJECT_PURPOSE: &str = "hosted-notarization-public-subject";
 const ACTIVATION_RECOVERY_INTERVAL_SECS: u64 = 15;
 const ACTIVATION_WINDOW_SECS: i64 = 60;
@@ -1002,7 +1002,7 @@ mod tests {
             google_client_secret: "google-secret".to_owned(),
             google_callback_url: Url::parse("https://example.test/api/auth/google/callback")
                 .unwrap(),
-            public_origin: Url::parse("https://example.test").unwrap(),
+            origins: crate::config::PublicOrigins::for_test("https://example.test"),
             secure_cookies: true,
             registry: super::super::tests::test_registry(),
             traces: super::super::traces::owner::TraceService::disabled_for_test(),
@@ -1077,6 +1077,10 @@ mod tests {
         let config = NotaryAdmissionConfig::for_test();
         let mut headers = HeaderMap::new();
         headers.insert(CLIENT_IP_HEADER, "203.0.113.7".parse().unwrap());
+        headers.insert("x-notary-client-ip", "192.0.2.99".parse().unwrap());
+        headers.insert("x-forwarded-for", "192.0.2.99".parse().unwrap());
+        headers.insert("cf-connecting-ip", "192.0.2.99".parse().unwrap());
+
         let untrusted: SocketAddr = "198.51.100.9:443".parse().unwrap();
         assert_eq!(
             resolve_client_ip(&headers, Some(untrusted), &config).unwrap(),

@@ -82,7 +82,7 @@ internal reference, and external user journey agree.
   export and cover passwords, expiry, stop sharing, discovery, reports, and
   cache policy.
 - [x] Hosted deployment: Fly, database, development, and architecture guides
-  cover the stable gateway, API/site/notary ownership, migration ordering,
+  cover Vercel frontends, direct Fly API/notary ownership, migration ordering,
   object storage, secrets, health/readiness, scaling, usage outbox, and signing
   key/directory preservation.
 - [x] Desktop wrapper: desktop and provider guides cover five-stage onboarding,
