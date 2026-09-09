@@ -576,7 +576,7 @@ fn validate_platform_origin(value: &str) -> Result<Url> {
                 host == "localhost"
                     || host == "127.0.0.1"
                     || host == "::1"
-                    || host == "notary-api.internal"
+                    || host.ends_with(".internal")
                     || host.ends_with(".flycast")
             }))
     {
@@ -687,6 +687,7 @@ mod tests {
             "https://platform.example.com",
             "http://localhost:8080",
             "http://notary-api.internal:8080",
+            "http://llm-notary-prod-api.internal:8080",
             "http://notary-api.internal.flycast",
         ] {
             assert!(
@@ -696,6 +697,7 @@ mod tests {
         }
         for invalid in [
             "http://platform.example.com",
+            "http://api.internal.attacker.example:8080",
             "https://user:secret@platform.example.com",
             "https://platform.example.com/api",
             "https://platform.example.com?query=1",

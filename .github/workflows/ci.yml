@@ -350,6 +350,8 @@ jobs:
         run: bash deploy/fly/test-preflight-notary-api.sh
       - name: Test Fly notary-server preflight
         run: bash deploy/fly/test-preflight-notary-server.sh
+      - name: Test Fly rollback configuration and order
+        run: bash deploy/fly/test-restore-previous.sh
       - name: Test notary-server secret materialization
         run: |
           set -euo pipefail
