@@ -29,20 +29,20 @@ jobs:
     name: Validate release origin
     runs-on: ubuntu-24.04
     env:
-      PUBLIC_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
+      DOWNLOAD_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_PUBLIC_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
     steps:
       - name: Verify the public download origin
         run: |
           set -euo pipefail
           node -e '
-            const origin = new URL(process.env.PUBLIC_ORIGIN);
+            const origin = new URL(process.env.DOWNLOAD_ORIGIN);
             if (origin.protocol !== "https:" || origin.pathname !== "/" || origin.search || origin.hash) {
-              throw new Error("NOTARY_DOWNLOAD_ORIGIN must be an HTTPS origin");
+              throw new Error("NOTARY_DOWNLOAD_PUBLIC_ORIGIN must be an HTTPS origin");
             }
           '
           curl --fail --silent --show-error --location \
             --retry 3 --retry-all-errors --connect-timeout 5 --max-time 20 \
-            "$PUBLIC_ORIGIN/releases/latest" >/dev/null
+            "$DOWNLOAD_ORIGIN/releases/latest" >/dev/null
 
   commit:
     name: Create release commit
@@ -295,9 +295,9 @@ jobs:
     needs: prepare
     timeout-minutes: 90
     env:
-      NOTARY_PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://api.exalto.ai' }}
-      NOTARY_DOWNLOAD_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
-      NOTARY_CAPTURE_ORIGIN: ${{ vars.NOTARY_CAPTURE_ORIGIN || 'https://capture.exalto.ai' }}
+      NOTARY_API_PUBLIC_ORIGIN: ${{ vars.NOTARY_API_PUBLIC_ORIGIN || 'https://api.exalto.ai' }}
+      NOTARY_DOWNLOAD_PUBLIC_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_PUBLIC_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
+      NOTARY_CAPTURE_PUBLIC_ORIGIN: ${{ vars.NOTARY_CAPTURE_PUBLIC_ORIGIN || 'https://capture.exalto.ai' }}
       NOTARY_BUILD_ID: ${{ needs.prepare.outputs.build_id }}
       NOTARY_UPDATES_ENABLED: 1
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
@@ -401,7 +401,7 @@ jobs:
       sign: true
       source_ref: ${{ needs.prepare.outputs.private_tag }}
       build_id: ${{ needs.prepare.outputs.build_id }}
-      public_origin: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://api.exalto.ai' }}
+      api_origin: ${{ vars.NOTARY_API_PUBLIC_ORIGIN || 'https://api.exalto.ai' }}
       updates_enabled: true
     secrets: inherit
 
@@ -413,7 +413,7 @@ jobs:
     env:
       BUILD_ID: ${{ needs.prepare.outputs.build_id }}
       CHANNEL: latest
-      PUBLIC_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
+      DOWNLOAD_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_PUBLIC_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
       PUBLIC_SHA: ${{ needs.prepare.outputs.public_sha }}
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -441,7 +441,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends minisign
-          channel_url="$PUBLIC_ORIGIN/releases/channels/latest.json"
+          channel_url="$DOWNLOAD_ORIGIN/releases/channels/latest.json"
           status="$(curl --silent --show-error --location \
             --retry 3 --retry-all-errors --connect-timeout 5 --max-time 20 \
             --output "$RUNNER_TEMP/current-channel.json" \
@@ -484,7 +484,7 @@ jobs:
             --public-source-sha "$PUBLIC_SHA" \
             --version "$VERSION" \
             --published-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --public-origin "$PUBLIC_ORIGIN" \
+            --public-origin "$DOWNLOAD_ORIGIN" \
             --output release/release.json
           npm --prefix apps/notary-app exec -- tauri signer sign "$(pwd)/release/release.json"
           test -s release/release.json.sig
@@ -497,7 +497,7 @@ jobs:
             --channel latest \
             --revision "$CHANNEL_REVISION" \
             --manifest release/release.json \
-            --manifest-url "$PUBLIC_ORIGIN/releases/builds/$BUILD_ID/release.json" \
+            --manifest-url "$DOWNLOAD_ORIGIN/releases/builds/$BUILD_ID/release.json" \
             --signature release/release.json.sig \
             --output release/channel.payload.json
           npm --prefix apps/notary-app exec -- tauri signer sign "$(pwd)/release/channel.payload.json"

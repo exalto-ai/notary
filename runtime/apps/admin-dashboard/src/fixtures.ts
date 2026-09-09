@@ -745,10 +745,10 @@ export function createFixtureApi({
       },
     },
     links: {
-      account: 'https://capture.exalto.ai/account',
-      usage: 'https://capture.exalto.ai/account/usage',
-      plans: 'https://capture.exalto.ai/account/usage',
-      settings: 'https://capture.exalto.ai/account/settings',
+      account: 'https://capture.exalto.ai/app/overview',
+      usage: 'https://capture.exalto.ai/app/usage',
+      plans: 'https://capture.exalto.ai/app/usage',
+      settings: 'https://capture.exalto.ai/app/settings',
     },
   };
   let nextEventId = Math.max(...events.map((event) => event.event_id)) + 1;

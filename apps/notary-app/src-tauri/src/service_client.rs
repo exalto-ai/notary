@@ -29,13 +29,7 @@ const INITIAL_WINDOW_GENERATION: u64 = 1;
 const DISPOSABLE_TEST_CANCELLED: &str = "The disposable capture test is no longer active.";
 const DISPOSABLE_TEST_SETUP_CANCELLED: &str =
     "Setup closed before the disposable test could start.";
-const OFFICIAL_EXALTO_REGISTRY_SOURCES: [&str; 3] = [
-    "https://api.exalto.ai/api/registry",
-    // Keep the retired hostname trusted for installed clients that have not
-    // yet refreshed their hosted service configuration.
-    "https://notary.exalto.ai/api/registry",
-    "https://exalto.ai/api/registry",
-];
+const OFFICIAL_EXALTO_REGISTRY_SOURCES: [&str; 1] = ["https://api.exalto.ai/api/registry"];
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -983,8 +977,8 @@ mod tests {
 
         for source in [
             "https://seal.example/api/registry",
-            "https://notary.exalto.ai.evil.example/api/registry",
-            "https://notary.exalto.ai/api/registry?mirror=1",
+            "https://api.exalto.ai.evil.example/api/registry",
+            "https://api.exalto.ai/api/registry?mirror=1",
         ] {
             let third_party = trust(
                 "registry",

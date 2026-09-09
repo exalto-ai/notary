@@ -201,7 +201,7 @@ test('holds the Account layout with a placeholder while authentication loads', a
 test('offers Google first and preserves a local-service return route', async () => {
   render(
     <SignInPage
-      route="signin?return_to=%23%2Fauthorize%3Frequest_id%3Drequest-123"
+      route="signin?return_to=%2Fauthorize%3Frequest_id%3Drequest-123"
       loadProviders={async () => ({ google: true, github: true })}
     />,
   );
@@ -212,7 +212,7 @@ test('offers Google first and preserves a local-service return route', async () 
     .element(google)
     .toHaveAttribute(
       'href',
-      'https://api.exalto.ai/api/auth/google?return_to=%23%2Fauthorize%3Frequest_id%3Drequest-123',
+      'https://api.exalto.ai/api/auth/google?return_to=%2Fauthorize%3Frequest_id%3Drequest-123',
     );
   await expect.element(page.getByRole('link', { name: 'Continue with GitHub' })).toBeVisible();
   expect(document.querySelectorAll('[data-auth-provider-icon]')).toHaveLength(2);
@@ -258,16 +258,13 @@ test('resolves the macOS download from the release pointer and manifest', async 
 test('returns signed-out Account visitors to the requested Account route', async () => {
   render(
     <SignInPage
-      route="signin?return_to=%23%2Faccount%2Ftraces"
+      route="signin?return_to=%2Fapp%2Ftraces"
       loadProviders={async () => ({ google: true, github: true })}
     />,
   );
   await expect
     .element(page.getByRole('link', { name: 'Continue with Google' }))
-    .toHaveAttribute(
-      'href',
-      'https://api.exalto.ai/api/auth/google?return_to=%23%2Faccount%2Ftraces',
-    );
+    .toHaveAttribute('href', 'https://api.exalto.ai/api/auth/google?return_to=%2Fapp%2Ftraces');
 });
 
 test('shows only the configured sign-in provider', async () => {

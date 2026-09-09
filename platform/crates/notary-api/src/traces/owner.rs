@@ -1640,13 +1640,13 @@ mod tests {
             http: reqwest::Client::new(),
             github_client_id: "client-id".to_owned(),
             github_client_secret: "secret".to_owned(),
-            github_callback_url: Url::parse("https://notary.exalto.ai/api/auth/github/callback")
+            github_callback_url: Url::parse("https://api.exalto.ai/api/auth/github/callback")
                 .expect("callback"),
             google_client_id: "google-client-id".to_owned(),
             google_client_secret: "google-secret".to_owned(),
-            google_callback_url: Url::parse("https://notary.exalto.ai/api/auth/google/callback")
+            google_callback_url: Url::parse("https://api.exalto.ai/api/auth/google/callback")
                 .expect("Google callback"),
-            origins: crate::config::PublicOrigins::for_test("https://notary.exalto.ai"),
+            origins: crate::config::PublicOrigins::for_test("https://api.exalto.ai"),
             secure_cookies: true,
             registry: crate::tests::test_registry(),
             traces: TraceService::mock(storage.clone()),

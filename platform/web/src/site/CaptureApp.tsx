@@ -220,12 +220,7 @@ export function SignInPage({
   const returnTo =
     requestedReturn?.startsWith('/authorize?') ||
     requestedReturn === '/app' ||
-    requestedReturn?.startsWith('/app/') ||
-    requestedReturn === '/account' ||
-    requestedReturn?.startsWith('/account/') ||
-    requestedReturn?.startsWith('#/authorize?') ||
-    requestedReturn === '#/account' ||
-    requestedReturn?.startsWith('#/account/')
+    requestedReturn?.startsWith('/app/')
       ? requestedReturn
       : null;
   const providerHref = (provider: AuthProvider) =>

@@ -38,8 +38,8 @@ impl ApiOrigin {
     }
 
     pub(crate) fn default_public() -> Self {
-        Self::parse(super::DEFAULT_PUBLIC_ORIGIN)
-            .expect("NOTARYD_PUBLIC_ORIGIN must be a secure API origin")
+        Self::parse(super::DEFAULT_API_ORIGIN)
+            .expect("NOTARY_API_PUBLIC_ORIGIN must be a secure API origin")
     }
 
     /// Builds an absolute URL for an API path rooted at `/api/`.
@@ -127,7 +127,7 @@ mod tests {
                 .api_url("/api/account")
                 .origin()
                 .ascii_serialization(),
-            notary_updater::DEFAULT_PUBLIC_ORIGIN
+            notary_updater::DEFAULT_API_ORIGIN
         );
         assert_eq!(
             origin.web_url("/app/settings").as_str(),

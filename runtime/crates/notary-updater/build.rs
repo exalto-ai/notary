@@ -1,14 +1,21 @@
 use std::env;
 
-const DEFAULT_PUBLIC_ORIGIN: &str = "https://api.exalto.ai";
+const DEFAULT_API_ORIGIN: &str = "https://api.exalto.ai";
 const DEVELOPMENT_BUILD_ID: &str = "dev";
 
 fn main() {
+    let api_origin =
+        env::var("NOTARY_API_PUBLIC_ORIGIN").unwrap_or_else(|_| DEFAULT_API_ORIGIN.to_owned());
+    let capture_fallback = if api_origin.trim_end_matches('/') == DEFAULT_API_ORIGIN {
+        "https://capture.exalto.ai"
+    } else {
+        api_origin.trim_end_matches('/')
+    };
     for (name, fallback) in [
-        ("NOTARY_PUBLIC_ORIGIN", DEFAULT_PUBLIC_ORIGIN),
-        ("NOTARY_CAPTURE_ORIGIN", "https://capture.exalto.ai"),
+        ("NOTARY_API_PUBLIC_ORIGIN", DEFAULT_API_ORIGIN),
+        ("NOTARY_CAPTURE_PUBLIC_ORIGIN", capture_fallback),
         (
-            "NOTARY_DOWNLOAD_ORIGIN",
+            "NOTARY_DOWNLOAD_PUBLIC_ORIGIN",
             "https://notary-prod-downloads.t3.tigrisfiles.io",
         ),
     ] {

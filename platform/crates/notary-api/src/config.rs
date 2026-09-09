@@ -744,8 +744,8 @@ mod tests {
     #[test]
     fn public_origin_requires_https_except_for_loopback_development() {
         for accepted in [
-            "https://notary.exalto.ai",
-            "https://notary.exalto.ai:8443",
+            "https://api.exalto.ai",
+            "https://api.exalto.ai:8443",
             "http://localhost:4173",
             "http://127.0.0.1:4173",
             "http://[::1]:4173",
@@ -753,12 +753,12 @@ mod tests {
             assert!(parse_public_origin(accepted).is_ok(), "{accepted}");
         }
         for rejected in [
-            "http://notary.exalto.ai",
-            "ftp://notary.exalto.ai",
-            "https://user:not-secret@notary.exalto.ai",
-            "https://notary.exalto.ai/path",
-            "https://notary.exalto.ai?query=yes",
-            "https://notary.exalto.ai/#fragment",
+            "http://api.exalto.ai",
+            "ftp://api.exalto.ai",
+            "https://user:not-secret@api.exalto.ai",
+            "https://api.exalto.ai/path",
+            "https://api.exalto.ai?query=yes",
+            "https://api.exalto.ai/#fragment",
         ] {
             assert!(parse_public_origin(rejected).is_err(), "{rejected}");
         }

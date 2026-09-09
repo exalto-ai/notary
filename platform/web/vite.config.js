@@ -26,25 +26,23 @@ export default defineConfig(({ command }) => {
       __CAPTURE_ORIGIN__: JSON.stringify(capture),
       __WEBSITE_ORIGIN__: JSON.stringify(website),
       __API_ORIGIN__: JSON.stringify(api),
-      __PUBLIC_ORIGIN__: JSON.stringify(capture),
       __LOCAL_PREVIEW__: JSON.stringify(sample),
       __BRAND_ASSET_VERSION__: JSON.stringify('capture'),
     },
     plugins: [
       react(),
       tailwindcss(),
-      ...(sample ? [localPreviewApi({ capture, seal: website })] : []),
+      ...(sample ? [localPreviewApi({ capture, website })] : []),
       {
         name: 'site-html',
         transformIndexHtml: (html) =>
           html
-            .replaceAll('%PRODUCT_ORIGIN%', capture)
-            .replaceAll('%PUBLIC_ORIGIN%', capture)
+            .replaceAll('%CAPTURE_ORIGIN%', capture)
             .replaceAll('%BRAND_ASSET_VERSION%', 'capture'),
         closeBundle() {
           if (command !== 'build') return;
           const file = resolve(import.meta.dirname, 'dist/llms.txt');
-          writeFileSync(file, readFileSync(file, 'utf8').replaceAll('%PUBLIC_ORIGIN%', capture));
+          writeFileSync(file, readFileSync(file, 'utf8').replaceAll('%CAPTURE_ORIGIN%', capture));
         },
       },
     ],

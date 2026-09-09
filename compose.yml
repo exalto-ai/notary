@@ -106,7 +106,7 @@ services:
       NOTARY_SERVER_INSTANCE_ID: ${NOTARY_SERVER_INSTANCE_ID:-notary-compose-1}
       NOTARY_SERVER_USAGE_OUTBOX_DIR: /var/lib/notary-server/usage-outbox
       NOTARY_SERVER_SHUTDOWN_GRACE_SECS: ${NOTARY_SERVER_SHUTDOWN_GRACE_SECS:-15}
-      # Internal-only scrape endpoint. Do not publish it through the gateway.
+      # Internal-only scrape endpoint. Do not publish this port.
       NOTARY_SERVER_METRICS_LISTEN: 0.0.0.0:9090
     ports:
       - "${NOTARY_SERVER_PORT:-7047}:7047"

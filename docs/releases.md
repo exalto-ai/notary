@@ -54,9 +54,9 @@ The repository must have:
 - Zero required reviewers on both environments. Branch or tag policies may
   still restrict where the workflow runs.
 
-`NOTARY_PUBLIC_ORIGIN` selects the API origin compiled into clients (default
-`https://api.exalto.ai`). `NOTARY_CAPTURE_ORIGIN` selects account navigation
-(default `https://capture.exalto.ai`). `NOTARY_DOWNLOAD_ORIGIN` selects the
+`NOTARY_API_PUBLIC_ORIGIN` selects the API origin compiled into clients (default
+`https://api.exalto.ai`). `NOTARY_CAPTURE_PUBLIC_ORIGIN` selects account navigation
+(default `https://capture.exalto.ai`). `NOTARY_DOWNLOAD_PUBLIC_ORIGIN` selects the
 public release bucket origin used by signed manifests and the updater
 (default `https://notary-prod-downloads.t3.tigrisfiles.io`). The bucket must
 allow Capture's origin to GET release metadata. Release URLs use `/releases`.
