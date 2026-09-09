@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import CreditUtilizationChart from './CreditUtilizationChart';
 import { ProviderIdentity } from './ProviderIdentity';
@@ -19,6 +19,7 @@ import { initialThemePreference } from './theme';
 
 afterEach(async () => {
   cleanup();
+  vi.unstubAllGlobals();
   document.querySelectorAll('[data-test-metadata]').forEach((element) => {
     element.remove();
   });
@@ -253,6 +254,53 @@ test('resolves the macOS download from the release pointer and manifest', async 
     await fetchLatestMacosDownload(async () => ({ ok: true, text: async () => '../evil 9.9.9' })),
   ).toBe(null);
   expect(await fetchLatestMacosDownload(async () => ({ ok: false }))).toBe(null);
+});
+
+test('offers the published macOS download on the install page without sign-in', async () => {
+  const build = 'runtime-v9.9.9-abc-1';
+  const root = 'https://notary-prod-downloads.t3.tigrisfiles.io/releases';
+  const request = vi.fn(async (url) => {
+    if (url === `${root}/latest`) return { ok: true, text: async () => `${build} 9.9.9` };
+    if (url === `${root}/builds/${build}/release.json`) {
+      return {
+        ok: true,
+        json: async () => ({
+          version: '9.9.9',
+          desktop: {
+            'darwin-aarch64': {
+              dmg: { name: 'Exalto-Capture-macos-arm64.dmg', size_bytes: 24_500_000 },
+            },
+          },
+        }),
+      };
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  });
+  vi.stubGlobal('fetch', request);
+  window.history.replaceState({}, '', '/docs/getting-started');
+  render(<App loadCurrentUser={async () => null} />);
+
+  await expect
+    .element(page.getByRole('link', { name: 'Download for macOS' }))
+    .toHaveAttribute('href', `${root}/builds/${build}/Exalto-Capture-macos-arm64.dmg`);
+  await expect.element(page.getByText('v9.9.9 · Apple silicon · 25 MB')).toBeVisible();
+  expect(request).toHaveBeenCalledTimes(2);
+});
+
+test('keeps release discovery available when download metadata fails', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({ ok: false })),
+  );
+  window.history.replaceState({}, '', '/docs/getting-started');
+  render(<App loadCurrentUser={async () => null} />);
+
+  await expect
+    .element(page.getByRole('link', { name: 'View published releases' }))
+    .toHaveAttribute('href', 'https://github.com/exalto-ai/notary-runtime/releases');
+  await expect
+    .element(page.getByRole('link', { name: 'Download for macOS' }))
+    .not.toBeInTheDocument();
 });
 
 test('returns signed-out Account visitors to the requested Account route', async () => {
