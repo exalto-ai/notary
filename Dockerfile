@@ -3,7 +3,7 @@ FROM rust:1.95-slim-bookworm AS builder
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY runtime ./runtime
-COPY platform ./platform
+COPY platform/crates ./platform/crates
 COPY apps/notary-app/src-tauri/Cargo.toml ./apps/notary-app/src-tauri/Cargo.toml
 COPY apps/notary-app/src-tauri/src/lib.rs ./apps/notary-app/src-tauri/src/lib.rs
 RUN cargo build --locked --release \
