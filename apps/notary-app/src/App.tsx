@@ -24,8 +24,9 @@ import {
   type TraceConstraint,
   type TraceTarget,
   type View,
+  type WorkspaceView,
 } from './product';
-import { Sidebar, WorkspaceFrame } from './Shell';
+import { Sidebar } from './Shell';
 import { SettingsView } from './SettingsView';
 
 export const SENSITIVE_INPUT_RESET_EVENT = 'exalto:sensitive-input-reset';
@@ -45,6 +46,7 @@ function App() {
   const [captureToast, setCaptureToast] = useState<string | null>(null);
   const [serviceStartError, setServiceStartError] = useState<string | null>(null);
   const [setupOpen, setSetupOpen] = useState(false);
+  const lastWorkspaceRoute = useRef<WorkspaceView | null>(null);
   const [workspaceNavigationRevision, setWorkspaceNavigationRevision] = useState(0);
   const [sensitiveInputGeneration, setSensitiveInputGeneration] = useState(0);
   const [setupResumeError, setSetupResumeError] = useState<string | null>(null);
@@ -323,6 +325,7 @@ function App() {
   }
 
   const route = workspaceRoutes[view];
+  if (route) lastWorkspaceRoute.current = route;
   const navigate = (next: View) => {
     setTraceConstraint(null);
     setTraceTarget(null);
@@ -397,7 +400,17 @@ function App() {
               onRetryConnections={() => void refresh(true)}
             />
           )}
-          {view === 'settings' && <SettingsView
+          {lastWorkspaceRoute.current && <div className="workspace-view-container" hidden={!route}><SettingsView
+            route={lastWorkspaceRoute.current}
+            active={Boolean(route)}
+            navigationRequest={workspaceNavigationRevision}
+            constraint={route === 'traces' ? traceConstraint : null}
+            traceTarget={route === 'traces' ? traceTarget : null}
+            onTraceActionConsumed={(traceId, action) => {
+              if (action !== 'first-proof' || traceTarget?.action !== action || traceTarget.traceId !== traceId) return;
+              persistPendingFirstProof(null);
+              setTraceTarget(null);
+            }}
             state={state}
             updateState={updateState}
             busy={busy}
@@ -408,30 +421,7 @@ function App() {
             onStartService={startLocalServiceFromWorkspace}
             onNavigate={syncWorkspaceRoute}
             allowLegacyWorkspace={allowLegacyWorkspace}
-          />}
-          {route && (
-            <WorkspaceFrame
-              key={workspaceNavigationRevision}
-              route={route}
-              constraint={route === 'traces' ? traceConstraint : null}
-              traceTarget={route === 'traces' ? traceTarget : null}
-              running={state.running}
-              serviceError={serviceStartError ?? state.message}
-              onStartService={startLocalServiceFromWorkspace}
-              serviceStarting={busy === 'service-start'}
-              onRouteChange={syncWorkspaceRoute}
-              onTraceActionConsumed={(traceId, action) => {
-                if (
-                  action !== 'first-proof'
-                  || traceTarget?.action !== action
-                  || traceTarget.traceId !== traceId
-                ) return;
-                persistPendingFirstProof(null);
-                setTraceTarget(null);
-              }}
-              allowLegacyFrameLoadFallback={allowLegacyWorkspace}
-            />
-          )}
+          /></div>}
         </main>
       </section>
     </div>

@@ -125,6 +125,25 @@ describe('Exalto Capture desktop shell', () => {
       .toContain('/dashboard?embedded=desktop#/activity');
   });
 
+  test('keeps one ready workspace through Traces, Settings, and Chat navigation', async () => {
+    renderApp('?screen=capture-on&view=traces');
+    await expect.poll(() => document.querySelector('.workspace-frame iframe')).toBeTruthy();
+    const frame = document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')!;
+    const contentWindow = frame.contentWindow;
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: 'http://127.0.0.1:8788', source: contentWindow,
+      data: { type: 'notary:desktop-settings-ready' },
+    }));
+    await expect.element(page.getByText('Loading local workspace…')).not.toBeInTheDocument();
+    for (const label of ['Settings', 'Chat', 'Traces', 'Settings', 'Traces']) {
+      await userEvent.click(page.getByRole('button', { name: new RegExp(`^${label}`) }));
+      expect(document.querySelector('.workspace-frame iframe')).toBe(frame);
+      expect(frame.contentWindow).toBe(contentWindow);
+      await expect.element(page.getByText('Loading local workspace…')).not.toBeInTheDocument();
+    }
+    expect(frame.src).toContain('#/traces');
+  });
+
   test('replaces an unresponsive local workspace spinner with a retry action', async () => {
     render(
       <WorkspaceFrame
@@ -220,7 +239,7 @@ describe('Exalto Capture desktop shell', () => {
     await userEvent.click(page.getByRole('button', { name: /^Traces/ }));
     await expect
       .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe'))
-      .not.toBe(frame);
+      .toBe(frame);
     await expect
       .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')?.src)
       .toMatch(/#\/traces$/);
@@ -248,7 +267,7 @@ describe('Exalto Capture desktop shell', () => {
     await userEvent.click(page.getByRole('button', { name: /^Traces/ }));
     await expect
       .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe'))
-      .not.toBe(frame);
+      .toBe(frame);
     await expect
       .poll(() => document.querySelector<HTMLIFrameElement>('.workspace-frame iframe')?.src)
       .toMatch(/#\/traces$/);
