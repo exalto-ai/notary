@@ -19,12 +19,11 @@ with open(sys.argv[2], encoding="utf-8") as source:
     workflow = source.read()
 server_deploy = workflow.index("- name: Deploy notary-server image")
 api_deploy = workflow.index("- name: Deploy notary-api image")
-assert server_deploy < api_deploy
+assert api_deploy < server_deploy
 rollback = workflow.index("- name: Restore previous images after a failed rollout")
-assert workflow.index("api_rollback_succeeded=0", rollback) < workflow.index(
-    'if test -e "$RUNNER_TEMP/notary-server-rollout-attempted"', rollback
-)
-assert "retaining the V2 server because it is compatible with both API contracts" in workflow
+assert "run: bash deploy/fly/restore-previous.sh" in workflow[rollback:]
+assert workflow.index("flyctl config save --yes") < api_deploy
+
 PY
 
 cat >"$test_dir/bin/flyctl" <<'MOCK'

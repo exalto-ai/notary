@@ -44,8 +44,8 @@ Flycast's HTTP-only routing and the public HTTPS redirect.
 2. Register `https://api.exalto.ai/api/auth/google/callback` and, if enabled,
    `https://api.exalto.ai/api/auth/github/callback` with the OAuth providers.
    Point Stripe's webhook to `https://api.exalto.ai/api/billing/stripe/webhook`.
-3. Deploy the API and notary configuration together through the Fly deployment
-   workflow. Check `/api/readyz`, `/api/registry`, browser sign-in, device
+3. Deploy the API before the notary through the Fly deployment workflow.
+   The API must listen on `[::]:8080` before the notary switches to `.internal`. Check `/api/readyz`, `/api/registry`, browser sign-in, device
    approval, billing returns, and private admission/settlement.
 4. In Vercel, create a Capture project with root directory `platform/web`,
    install `npm ci`, build `npm run build:site`, output `dist`. Assign
@@ -66,7 +66,8 @@ Flycast's HTTP-only routing and the public HTTPS redirect.
 rollout run. It builds and records digest-pinned API and notary images, runs
 forward database migrations before replacing API Machines, checks readiness
 and the notary TLS path, and records a `notary/production-rollout/v2` manifest.
-On failure it restores attempted images. Requested rollback uses a recorded
+On failure it restores attempted images and their saved live configuration,
+starting with the notary before the API. Requested rollback uses a recorded
 v2 image set and skips old release commands. Never run a down-migration as
 part of rollback. Frontend deployments and rollbacks are managed in Vercel.
 
