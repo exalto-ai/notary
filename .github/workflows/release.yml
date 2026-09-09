@@ -217,11 +217,9 @@ jobs:
             echo "the exact release commit was not exported to the public Runtime" >&2
             exit 1
           fi
-          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)"
-          if test "$main_sha" != "$RELEASE_SHA"; then
-            echo "main advanced to $main_sha before release source tagging" >&2
-            exit 1
-          fi
+          # Later merges do not change this release's source. Recheck exact CI
+          # validation and main ancestry before tagging the immutable commits.
+          .github/scripts/require-main-validation.sh "$RELEASE_SHA"
 
           resolve_tag_commit() {
             local repository="$1"
