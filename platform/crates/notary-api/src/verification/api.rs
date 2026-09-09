@@ -3,7 +3,7 @@
 use std::{
     collections::HashSet,
     future::Future,
-    net::IpAddr,
+    net::SocketAddr,
     sync::{LazyLock, Mutex},
     time::Duration,
 };
@@ -11,7 +11,7 @@ use std::{
 use axum::{
     body::{Body, to_bytes},
     extract::{Request, State},
-    http::{HeaderMap, StatusCode, header},
+    http::{StatusCode, header},
     response::{IntoResponse, Response},
 };
 use tokio::sync::OwnedSemaphorePermit;
@@ -230,7 +230,15 @@ where
         return error_response(StatusCode::PAYLOAD_TOO_LARGE, "package_too_large");
     }
 
-    let client = client_ip(request.headers());
+    let peer = request
+        .extensions()
+        .get::<axum::extract::ConnectInfo<SocketAddr>>()
+        .map(|peer| peer.0);
+    let client =
+        match crate::admissions::resolve_client_ip(request.headers(), peer, &state.admission) {
+            Ok(client) => client.to_string(),
+            Err(_) => return error_response(StatusCode::BAD_REQUEST, "client_address_unavailable"),
+        };
     let permits = match VerificationPermits::acquire(&state.database, client).await {
         Ok(permits) => permits,
         Err(PermitError::InFlight) => {
@@ -307,27 +315,6 @@ fn stable_code(code: &str) -> &'static str {
     }
 }
 
-fn client_ip(headers: &HeaderMap) -> String {
-    ["x-notary-client-ip", "fly-client-ip", "cf-connecting-ip"]
-        .into_iter()
-        .filter_map(|name| headers.get(name))
-        .filter_map(|value| value.to_str().ok())
-        .find_map(parse_ip)
-        .or_else(|| {
-            headers
-                .get("x-forwarded-for")
-                .and_then(|value| value.to_str().ok())
-                .and_then(|value| value.split(',').next())
-                .and_then(parse_ip)
-        })
-        .map(|ip| ip.to_string())
-        .unwrap_or_else(|| "unknown".to_owned())
-}
-
-fn parse_ip(value: &str) -> Option<IpAddr> {
-    value.trim().parse().ok()
-}
-
 fn error_response(status: StatusCode, code: &'static str) -> Response {
     (
         status,
@@ -363,22 +350,13 @@ mod tests {
             google_client_secret: "google-secret".to_owned(),
             google_callback_url: Url::parse("https://example.com/api/auth/google/callback")
                 .unwrap(),
-            public_origin: Url::parse("https://example.com").unwrap(),
+            origins: crate::config::PublicOrigins::for_test("https://example.com"),
             secure_cookies: true,
             registry: crate::tests::test_registry(),
             traces: TraceService::disabled_for_test(),
             admission: std::sync::Arc::new(crate::config::NotaryAdmissionConfig::for_test()),
             billing: crate::billing::BillingService::disabled_for_test(),
         }
-    }
-
-    #[test]
-    fn client_identity_accepts_only_ip_addresses() {
-        let mut headers = HeaderMap::new();
-        headers.insert("fly-client-ip", "203.0.113.7".parse().unwrap());
-        assert_eq!(client_ip(&headers), "203.0.113.7");
-        headers.insert("fly-client-ip", "not-an-ip".parse().unwrap());
-        assert_eq!(client_ip(&headers), "unknown");
     }
 
     #[tokio::test]
@@ -499,6 +477,10 @@ mod tests {
             safety_override_applied: None,
         };
         let request = Request::builder()
+            .extension(axum::extract::ConnectInfo(SocketAddr::from((
+                [127, 0, 0, 1],
+                41000,
+            ))))
             .method("POST")
             .uri("/api/verify")
             .header(header::CONTENT_TYPE, ARCHIVE_CONTENT_TYPE)

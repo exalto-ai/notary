@@ -30,7 +30,7 @@ const DISPOSABLE_TEST_CANCELLED: &str = "The disposable capture test is no longe
 const DISPOSABLE_TEST_SETUP_CANCELLED: &str =
     "Setup closed before the disposable test could start.";
 const OFFICIAL_EXALTO_REGISTRY_SOURCES: [&str; 3] = [
-    "https://seal.exalto.ai/api/registry",
+    "https://api.exalto.ai/api/registry",
     // Keep the retired hostname trusted for installed clients that have not
     // yet refreshed their hosted service configuration.
     "https://notary.exalto.ai/api/registry",
@@ -432,13 +432,13 @@ pub(super) fn validate_account_link(value: &str) -> Result<Url, String> {
         && url.query().is_none()
         && matches!(
             url.path(),
-            "/account" | "/account/traces" | "/account/usage" | "/pricing" | "/account/settings"
+            "/app" | "/app/" | "/app/overview" | "/app/traces" | "/app/usage" | "/app/settings"
         );
     let legacy_allowed_route = url.path() == "/"
         && url.query().is_none()
         && matches!(
             legacy_route,
-            "/account" | "/account/traces" | "/account/usage" | "/pricing" | "/account/settings"
+            "/app" | "/app/" | "/app/overview" | "/app/traces" | "/app/usage" | "/app/settings"
         );
     let allowed_route =
         clean_route || clean_authorization || legacy_allowed_route || legacy_authorization;
@@ -463,8 +463,8 @@ pub(super) fn open_account_link(url: String) -> Result<(), String> {
 
 pub(super) fn product_link(destination: &str) -> Option<&'static str> {
     match destination {
-        "public_traces" => Some("https://seal.exalto.ai/traces"),
-        "guide" => Some("https://seal.exalto.ai/docs"),
+        "public_traces" => Some("https://exalto.ai/traces"),
+        "guide" => Some("https://capture.exalto.ai/docs"),
         "report" => Some("https://github.com/exalto-ai/notary/issues/new"),
         "openai_key" => Some("https://platform.openai.com/api-keys"),
         "anthropic_key" => Some("https://console.anthropic.com/settings/keys"),
@@ -969,7 +969,7 @@ mod tests {
     fn sealing_service_brand_requires_an_exact_official_registry() {
         let official = trust(
             "registry",
-            Some("https://seal.exalto.ai/api/registry"),
+            Some("https://api.exalto.ai/api/registry"),
             Some("key-1"),
             &[("Legacy hosted name", "key-1")],
         );

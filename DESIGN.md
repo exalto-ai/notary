@@ -103,7 +103,7 @@ apply to the other.
   the hero closes with it) · "Verification wants to be free." (pricing
   doctrine; it heads the plans on the Exalto Seal landing under the label
   "WHAT IT COSTS"). Plans are sold where the product is: exalto.ai carries no
-  prices and links to `seal.exalto.ai/pricing`.
+  prices and links to `capture.exalto.ai/app/usage`.
 - **Product names (frozen):** Exalto Notary Protocol (**ENP**), **Exalto
   Capture** (the macOS capture app), **Exalto Seal** (the hosted sealing and
   verification product), **Proof of Thought**
@@ -135,7 +135,7 @@ and the center of the Seal stamp. All marks are drawn in brand blue `#0C1622`
 - **Exalto Seal — "The Round Stamp"** — a circular `EXALTO · VERIFIED` ring
   (IBM Plex Mono 500, rotated −8°) around the quote glyph. Kit in
   `brand/exalto-seal/`. The Seal mark names the hosted product inside the
-  interface; the seal.exalto.ai favicon is the Capture kit, because the site
+  interface; the capture.exalto.ai favicon is the Capture kit, because the site
   leads with the macOS download and the tab should match the app it offers.
   **Raster caveat:** the raw Seal SVG's ring text references IBM Plex Mono via
   textPath, which `<img>` and SVG-image contexts do not resolve — use the
@@ -292,14 +292,14 @@ unevenness with the shared seed, not the palette.
 - **Trust model:** the two lists stay on the homepage — filled blue ✓ squares
   for what a trace proves, hairline ✕ squares for what it cannot. This is the
   credibility strategy, not a compliance page.
-- **Plan ledger** (`seal.exalto.ai`, anchored at `/pricing`): three plan cards
+- **Plan ledger** (`capture.exalto.ai/app/usage`): plan choices
   in one ruled grid, the middle plan carrying a blue rail rather than a badge
   or a lift, then the additional-sealing strip and the fine print. Every
   number is enforced by the platform, not chosen for the page: plan allowances
   live in `platform/crates/notary-api` (`credits.rs`, `config.rs`) and the
   amounts in `billing/stripe.rs`. Change the page only when those change, and
   keep `docs/hosted-credits.md` in step.
-- **Docs shell** (`seal.exalto.ai/docs/*`, `platform/web`): grouped sticky sidebar (Start / Understand /
+- **Docs shell** (`capture.exalto.ai/docs/*`, `platform/web`): grouped sticky sidebar (Start / Understand /
   Share), prev/next footer navigation, chip TOC on long pages, definition
   tables and participant cards in the card style, code blocks in the dark
   editor treatment. Prose uses the Part I vocabulary; commands and API routes

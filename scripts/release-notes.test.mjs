@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const build = 'https://seal.exalto.ai/downloads/releases/builds/runtime-v1.2.3-test/';
+const build = 'https://notary-prod-downloads.t3.tigrisfiles.io/releases/builds/runtime-v1.2.3-test/';
 const manifest = {
   version: '1.2.3', build_id: 'runtime-v1.2.3-test',
   commit_sha: 'a'.repeat(40), public_source_sha: 'b'.repeat(40),

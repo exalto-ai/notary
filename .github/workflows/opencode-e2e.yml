@@ -62,15 +62,16 @@ jobs:
 
       - name: Install the published Runtime release
         env:
-          PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
+          PUBLIC_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
         run: |
           set -euo pipefail
-          release_root="$PUBLIC_ORIGIN/downloads/releases"
+          release_root="$PUBLIC_ORIGIN/releases"
+          capture_origin="${{ vars.NOTARY_CAPTURE_ORIGIN || 'https://capture.exalto.ai' }}"
           pointer="$(curl --fail --silent --show-error --location "$release_root/latest")"
           build_id="${pointer%% *}"
           test -n "$build_id"
           installer="$RUNNER_TEMP/install-notary.sh"
-          curl --fail --silent --show-error --location "$PUBLIC_ORIGIN/install.sh" --output "$installer"
+          curl --fail --silent --show-error --location "$capture_origin/install.sh" --output "$installer"
           runtime_bin="$RUNNER_TEMP/notary-runtime/bin"
           NOTARY_DOWNLOAD_ROOT="$release_root" NOTARY_INSTALL_DIR="$runtime_bin" sh "$installer"
           {
@@ -83,7 +84,7 @@ jobs:
 
       - name: Run production canary
         env:
-          NOTARYD_PLATFORM_API_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
+          NOTARYD_PLATFORM_API_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://api.exalto.ai' }}
           OPENROUTER_FREE_TIER_API_KEY: ${{ secrets.OPENROUTER_FREE_TIER_API_KEY }}
           NOTARYD_E2E_API_KEY: ${{ secrets.NOTARY_E2E_API_KEY }}
         run: |

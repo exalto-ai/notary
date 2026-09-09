@@ -1059,7 +1059,8 @@ pub(super) async fn load_public_bytes(
 
 fn canonical_public_trace_url(state: &NotaryApiState, trace_id: &str) -> String {
     state
-        .public_origin
+        .origins
+        .website
         .join(&format!("/s/{trace_id}"))
         .expect("trace path is a valid same-origin URL")
         .to_string()
@@ -1134,7 +1135,7 @@ mod tests {
             google_client_secret: "google-secret".to_owned(),
             google_callback_url: Url::parse("https://notary.exalto.ai/api/auth/google/callback")
                 .unwrap(),
-            public_origin: Url::parse("https://notary.exalto.ai").unwrap(),
+            origins: crate::config::PublicOrigins::for_test("https://notary.exalto.ai"),
             secure_cookies: true,
             registry: crate::tests::test_registry(),
             traces,
@@ -1606,7 +1607,7 @@ mod tests {
             google_client_id: String::new(),
             google_client_secret: String::new(),
             google_callback_url: Url::parse("https://example.test/auth/google").unwrap(),
-            public_origin: Url::parse("https://example.test").unwrap(),
+            origins: crate::config::PublicOrigins::for_test("https://example.test"),
             secure_cookies: true,
             registry: crate::tests::test_registry(),
             traces: TraceService::disabled_for_test(),

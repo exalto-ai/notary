@@ -240,9 +240,9 @@ pub(super) async fn finish_github_login(
         Redirect::to(
             return_to
                 .as_deref()
-                .and_then(|value| state.public_origin.join(value).ok())
+                .and_then(|value| state.origins.capture.join(value).ok())
                 .unwrap_or_else(|| {
-                    let mut url = state.public_origin.clone();
+                    let mut url = state.origins.capture.clone();
                     url.set_path("/app/");
                     url
                 })
@@ -391,9 +391,9 @@ pub(super) async fn finish_google_login(
         Redirect::to(
             return_to
                 .as_deref()
-                .and_then(|value| state.public_origin.join(value).ok())
+                .and_then(|value| state.origins.capture.join(value).ok())
                 .unwrap_or_else(|| {
-                    let mut url = state.public_origin.clone();
+                    let mut url = state.origins.capture.clone();
                     url.set_path("/app/");
                     url
                 })

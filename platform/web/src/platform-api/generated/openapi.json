@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://seal.exalto.ai",
+      "url": "https://api.exalto.ai",
       "description": "Exalto Seal"
     }
   ],
@@ -39,6 +39,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "500": {
             "description": "",
@@ -103,6 +106,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "500": {
             "description": "",
@@ -182,6 +188,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -246,6 +255,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -294,6 +306,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "404": {
             "description": "",
@@ -356,6 +371,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "500": {
             "description": "",
@@ -439,6 +457,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -495,6 +516,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "500": {
             "description": "",
@@ -629,6 +653,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -665,6 +692,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           }
         }
       }
@@ -716,6 +746,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "409": {
             "description": "",
@@ -783,6 +816,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "404": {
             "description": "",
             "content": {
@@ -849,6 +885,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -904,6 +943,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "404": {
             "description": "",
@@ -963,6 +1005,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "502": {
             "description": "",
@@ -1035,6 +1080,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "409": {
             "description": "",
             "content": {
@@ -1100,6 +1148,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "500": {
             "description": "",
@@ -1255,6 +1306,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -1310,6 +1364,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "500": {
             "description": "",
@@ -1369,6 +1426,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "404": {
             "description": "",
@@ -1445,6 +1505,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "410": {
             "description": "",
             "content": {
@@ -1510,6 +1573,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "410": {
             "description": "",
@@ -1626,6 +1692,9 @@
           "204": {
             "description": "Device session revoked"
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -1676,6 +1745,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "500": {
             "description": "",
@@ -1750,6 +1822,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -1799,6 +1874,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "404": {
             "description": "",
             "content": {
@@ -1844,6 +1922,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           }
         }
       }
@@ -1905,6 +1986,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "409": {
             "description": "",
@@ -1995,6 +2079,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "409": {
             "description": "",
             "content": {
@@ -2073,6 +2160,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "409": {
             "description": "",
@@ -2283,6 +2373,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -2323,6 +2416,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "404": {
             "description": "",
@@ -2377,6 +2473,9 @@
         "responses": {
           "204": {
             "description": "Access established"
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "404": {
             "description": "",
@@ -2438,6 +2537,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "404": {
             "description": "",
@@ -2504,6 +2606,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "404": {
             "description": "",
@@ -2586,6 +2691,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "404": {
             "description": "",
             "content": {
@@ -2645,6 +2753,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "404": {
             "description": "",
             "content": {
@@ -2696,6 +2807,9 @@
               }
             }
           },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
+          },
           "500": {
             "description": "",
             "content": {
@@ -2726,6 +2840,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           }
         }
       }
@@ -2789,6 +2906,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "500": {
             "description": "",
@@ -3556,6 +3676,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Browser origin denied (browser_origin_denied)"
           },
           "408": {
             "description": "",

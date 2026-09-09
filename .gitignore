@@ -28,3 +28,7 @@ runtime/apps/*/node_modules/
 platform/web/src/__screenshots__/
 output/playwright/
 /.notary-server/
+
+# Local Vercel project links and downloaded deployment credentials.
+.vercel/
+.env*

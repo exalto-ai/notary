@@ -348,7 +348,7 @@ mod tests {
                 "https://notary.exalto.ai/api/auth/google/callback",
             )
             .unwrap(),
-            public_origin: url::Url::parse("https://notary.exalto.ai").unwrap(),
+            origins: crate::config::PublicOrigins::for_test("https://notary.exalto.ai"),
             secure_cookies: true,
             registry: super::super::tests::test_registry(),
             traces: super::super::traces::owner::TraceService::disabled_for_test(),

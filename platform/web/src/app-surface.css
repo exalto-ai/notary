@@ -125,7 +125,7 @@ body {
   text-decoration: none;
 }
 
-/* Seal is the product at this hostname; Exalto is the family it belongs to, so
+/* Each hostname leads with its product; Exalto is the family it belongs to, so
    the wordmark leads and the attribution sits quietly beside it. The two read
    as one lockup rather than a label pinned to a heading, so the attribution
    stays close to the wordmark in size and carries the contrast in weight and
@@ -1076,4 +1076,14 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
   .app-skeleton { animation: none; opacity: 1; }
+}
+
+.local-preview-banner { padding: 8px 20px; border-bottom: 1px solid var(--app-rule); font: 12px var(--app-mono); color: var(--app-ink-soft); background: var(--app-card); }
+.local-preview-banner a { margin-left: 12px; text-decoration: underline; }
+
+.app-nav-links a[aria-current='page'] { color: var(--app-blue); text-decoration: underline; text-underline-offset: 6px; }
+@media (max-width: 520px) {
+  .seal-nav { grid-template-columns: 1fr auto; gap: 10px; padding-block: 12px; }
+  .seal-nav .app-nav-actions { grid-column: 2; grid-row: 1; }
+  .seal-nav .app-nav-links { grid-column: 1 / -1; grid-row: 2; gap: 24px; }
 }

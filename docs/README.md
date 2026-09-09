@@ -4,7 +4,7 @@ Exalto has separate private product and public runtime documentation:
 
 - This directory contains hosted-product and contributor references.
 - [`runtime/docs`](../runtime/docs/README.md) contains public runtime guidance.
-- [Exalto Seal docs](https://seal.exalto.ai/docs), maintained in `platform/web`,
+- [Exalto Seal docs](https://capture.exalto.ai/docs), maintained in `platform/web`,
   is the single public user guide and trust explanation. The family landing
   site links and redirects there rather than maintaining another copy.
 - Running services expose generated OpenAPI contracts for exact HTTP schemas.
@@ -60,3 +60,5 @@ The local daemon serves OpenAPI 3.1 at
 The hosted API contract is committed at
 `platform/web/src/platform-api/generated/openapi.json`. Regenerate both through the
 npm scripts described in [Development and validation](development.md).
+
+- [Capture and Seal local frontends](capture-seal-spas.md): run and build the separate SPAs.

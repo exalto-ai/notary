@@ -13,7 +13,9 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/*"] }
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src/main.tsx", "src/site", "src/platform-api"]
+  "include": ["src/main.tsx", "src/site", "src/platform-api", "src/capture.tsx"]
 }

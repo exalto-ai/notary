@@ -727,7 +727,7 @@ function EmbeddedNotaries({ api }: { api: LocalApi }) {
   const officialExaltoRegistry =
     notaries.data?.source === 'registry' &&
     [
-      'https://seal.exalto.ai/api/registry',
+      'https://api.exalto.ai/api/registry',
       'https://notary.exalto.ai/api/registry',
       'https://exalto.ai/api/registry',
     ].includes(notaries.data.registry_source ?? '');

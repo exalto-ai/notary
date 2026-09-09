@@ -8,8 +8,8 @@ generated hosted OpenAPI document remains the exact HTTP contract.
 
 | Component | Source | State it owns | Trust boundary |
 | --- | --- | --- | --- |
-| Stable web gateway | `deploy/gateway.Caddyfile` | none | Routes public site and API traffic; it is the only component allowed to supply the trusted client-address header |
-| Hosted website | `platform/web/` | browser UI state | Renders public docs, verification, public Traces, sign-in, Account, billing, device approval, and hosted Trace management |
+| Public website | sibling `website` repository on Vercel | public browser state | Marketing, public Traces, Registry, and verification |
+| Hosted website | `platform/web/` | browser UI state | Renders Capture docs, sign-in, Account, billing, device approval, and hosted Trace management |
 | Hosted API | `platform/crates/notary-api/` | PostgreSQL accounts, sessions, keys, credits, operations, Traces, reports, and cleanup work | Authenticates public and account requests, issues admission tickets, verifies uploads, and owns hosted policy |
 | Generic notary | `runtime/crates/notary-server/` | signing key and process-local capacity | Runs the public Proxy-TLS protocol and provider allowlist without account or billing semantics |
 | Platform policy adapter | `platform/crates/notary-server-platform-adapter/` | private durable usage-settlement outbox | Injects ticket redemption and settlement through the generic `AdmissionPolicy` and `SessionLifecycle` seams |
@@ -161,8 +161,11 @@ review.
 
 ## Deployment and data ownership
 
-The production gateway is stable while website and API Machines are replaceable
-behind it. API migrations run before new API replicas and follow expand/contract
+Vercel serves the frontends. Fly exposes the API directly at `api.exalto.ai`.
+Only configured Fly proxy peers may supply `Fly-Client-IP`. Metrics use private
+port 9090. Browser requests use credentials and exact-origin CORS; cookie writes
+without an allowed Origin return `403 browser_origin_denied`.
+ API migrations run before new API replicas and follow expand/contract
 compatibility. The hosted notary image combines the generic runtime with the
 private adapter and keeps its usage outbox on a durable volume. The notary
 signing key and published directory history must survive deployments so old

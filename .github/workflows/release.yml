@@ -29,20 +29,20 @@ jobs:
     name: Validate release origin
     runs-on: ubuntu-24.04
     env:
-      PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
+      PUBLIC_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
     steps:
-      - name: Verify the compiled public origin
+      - name: Verify the public download origin
         run: |
           set -euo pipefail
           node -e '
             const origin = new URL(process.env.PUBLIC_ORIGIN);
             if (origin.protocol !== "https:" || origin.pathname !== "/" || origin.search || origin.hash) {
-              throw new Error("NOTARY_PUBLIC_ORIGIN must be an HTTPS origin");
+              throw new Error("NOTARY_DOWNLOAD_ORIGIN must be an HTTPS origin");
             }
           '
           curl --fail --silent --show-error --location \
             --retry 3 --retry-all-errors --connect-timeout 5 --max-time 20 \
-            "$PUBLIC_ORIGIN/" >/dev/null
+            "$PUBLIC_ORIGIN/releases/latest" >/dev/null
 
   commit:
     name: Create release commit
@@ -295,7 +295,9 @@ jobs:
     needs: prepare
     timeout-minutes: 90
     env:
-      NOTARY_PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
+      NOTARY_PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://api.exalto.ai' }}
+      NOTARY_DOWNLOAD_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
+      NOTARY_CAPTURE_ORIGIN: ${{ vars.NOTARY_CAPTURE_ORIGIN || 'https://capture.exalto.ai' }}
       NOTARY_BUILD_ID: ${{ needs.prepare.outputs.build_id }}
       NOTARY_UPDATES_ENABLED: 1
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
@@ -399,7 +401,7 @@ jobs:
       sign: true
       source_ref: ${{ needs.prepare.outputs.private_tag }}
       build_id: ${{ needs.prepare.outputs.build_id }}
-      public_origin: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
+      public_origin: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://api.exalto.ai' }}
       updates_enabled: true
     secrets: inherit
 
@@ -411,7 +413,7 @@ jobs:
     env:
       BUILD_ID: ${{ needs.prepare.outputs.build_id }}
       CHANNEL: latest
-      PUBLIC_ORIGIN: ${{ vars.NOTARY_PUBLIC_ORIGIN || 'https://seal.exalto.ai' }}
+      PUBLIC_ORIGIN: ${{ vars.NOTARY_DOWNLOAD_ORIGIN || 'https://notary-prod-downloads.t3.tigrisfiles.io' }}
       PUBLIC_SHA: ${{ needs.prepare.outputs.public_sha }}
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -439,7 +441,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends minisign
-          channel_url="$PUBLIC_ORIGIN/downloads/releases/channels/latest.json"
+          channel_url="$PUBLIC_ORIGIN/releases/channels/latest.json"
           status="$(curl --silent --show-error --location \
             --retry 3 --retry-all-errors --connect-timeout 5 --max-time 20 \
             --output "$RUNNER_TEMP/current-channel.json" \
@@ -495,7 +497,7 @@ jobs:
             --channel latest \
             --revision "$CHANNEL_REVISION" \
             --manifest release/release.json \
-            --manifest-url "$PUBLIC_ORIGIN/downloads/releases/builds/$BUILD_ID/release.json" \
+            --manifest-url "$PUBLIC_ORIGIN/releases/builds/$BUILD_ID/release.json" \
             --signature release/release.json.sig \
             --output release/channel.payload.json
           npm --prefix apps/notary-app exec -- tauri signer sign "$(pwd)/release/channel.payload.json"
@@ -715,11 +717,11 @@ jobs:
           cmp "$RUNNER_TEMP/channel.json" "$RUNNER_TEMP/published-channel.json"
           website="$(curl --fail --silent --show-error --location \
             --retry 30 --retry-all-errors --retry-delay 2 --retry-max-time 90 \
-            https://seal.exalto.ai/downloads/releases/latest)"
+            https://notary-prod-downloads.t3.tigrisfiles.io/releases/latest)"
           test "$website" = "$expected"
           curl --fail --silent --show-error --location \
             --retry 30 --retry-all-errors --retry-delay 2 --retry-max-time 90 \
-            https://seal.exalto.ai/downloads/releases/channels/latest.json \
+            https://notary-prod-downloads.t3.tigrisfiles.io/releases/channels/latest.json \
             -o "$RUNNER_TEMP/website-channel.json"
           cmp "$RUNNER_TEMP/channel.json" "$RUNNER_TEMP/website-channel.json"
       - name: Publish public source release

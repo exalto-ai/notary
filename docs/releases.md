@@ -54,11 +54,13 @@ The repository must have:
 - Zero required reviewers on both environments. Branch or tag policies may
   still restrict where the workflow runs.
 
-`NOTARY_PUBLIC_ORIGIN` is an optional repository variable, not a secret. It
-changes the public origin compiled into clients and written into signed
-manifests, and defaults to `https://seal.exalto.ai`. The workflow checks that
-the configured origin is reachable, but final publication verification always
-checks the production Tigris origin and `https://seal.exalto.ai`.
+`NOTARY_PUBLIC_ORIGIN` selects the API origin compiled into clients (default
+`https://api.exalto.ai`). `NOTARY_CAPTURE_ORIGIN` selects account navigation
+(default `https://capture.exalto.ai`). `NOTARY_DOWNLOAD_ORIGIN` selects the
+public release bucket origin used by signed manifests and the updater
+(default `https://notary-prod-downloads.t3.tigrisfiles.io`). The bucket must
+allow Capture's origin to GET release metadata. Release URLs use `/releases`.
+These are build settings, not secrets.
 
 The release signing private key must also be backed up outside GitHub. Its
 matching public key is committed at
@@ -154,8 +156,8 @@ Only after that directory has been publicly verified does the workflow update:
 - `releases/channels/latest.json`, the signed channel pointer used by clients
   that can authenticate updates.
 
-The website's Caddy gateway proxies `/downloads/*` to the public Tigris bucket.
-The Download button reads `/downloads/releases/latest` without caching and
+Capture fetches directly from the public Tigris bucket.
+The Download button reads the bucket's `/releases/latest` without caching and
 constructs the immutable DMG URL from its build ID. Moving the pointer therefore
 updates the button automatically; the website does not need to be rebuilt or
 deployed for a new Runtime release. The command-line installer follows the same
@@ -200,8 +202,8 @@ The workflow verifies publication before it reports success. An operator can
 also check the public state, substituting the released version:
 
 ```bash
-curl -fsSL https://seal.exalto.ai/downloads/releases/latest
-curl -fsSL https://seal.exalto.ai/downloads/releases/channels/latest.json \
+curl -fsSL https://notary-prod-downloads.t3.tigrisfiles.io/releases/latest
+curl -fsSL https://notary-prod-downloads.t3.tigrisfiles.io/releases/channels/latest.json \
   | jq -e '.schema_version == "notary/release-channel-envelope/v1"'
 gh release view vX.Y.Z --repo exalto-ai/notary-runtime
 ```
@@ -255,7 +257,7 @@ The published 0.1.0 client understands only release-manifest v1. The first v2
 release binds the public source SHA and requires a one-time manual upgrade:
 
 - macOS and Linux CLI users reinstall with
-  `curl -fsSL https://seal.exalto.ai/install.sh | sh`.
+  `curl -fsSL https://capture.exalto.ai/install.sh | sh`.
 - Windows users replace their binaries from the new ZIP.
 - Desktop users install the new signed DMG.
 
