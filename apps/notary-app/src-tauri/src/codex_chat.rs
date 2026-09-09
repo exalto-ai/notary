@@ -123,12 +123,12 @@ async fn relay(
         return Err(StatusCode::BAD_GATEWAY);
     }
     let status = response.status();
-    if !status.is_success() {
-        if let Ok(mut failure) = state.failure.lock() {
-            *failure = Some(turn_error(
-                &json!({"codexErrorInfo":{"httpConnectionFailed":{"httpStatusCode":status.as_u16()}}}),
-            ));
-        }
+    if !status.is_success()
+        && let Ok(mut failure) = state.failure.lock()
+    {
+        *failure = Some(turn_error(
+            &json!({"codexErrorInfo":{"httpConnectionFailed":{"httpStatusCode":status.as_u16()}}}),
+        ));
     }
     let mut headers = response.headers().clone();
     headers.remove("transfer-encoding");
@@ -527,7 +527,7 @@ pub(crate) async fn exchange(
             loop { let event = runtime.read().await?;
                 runtime.reject_tool_request(&event).await?;
                 if event["params"]["threadId"] != thread_id { continue; }
-                if event["method"] == "item/agentMessage/delta" { if let Some(text) = event["params"]["delta"].as_str() { events.send(ChatEvent::Delta { text:text.into() }).map_err(|_| "The chat window closed.")?; } }
+                if event["method"] == "item/agentMessage/delta" && let Some(text) = event["params"]["delta"].as_str() { events.send(ChatEvent::Delta { text:text.into() }).map_err(|_| "The chat window closed.")?; }
                 if event["method"] == "turn/completed" { turn_finished = true; return if event["params"]["turn"]["status"] == "completed" { Ok(()) } else { Err(turn_error(&event["params"]["turn"]["error"])) }; }
             }
         }) => match result { Ok(result) => result, Err(_) => Err("Codex timed out. Any partial Trace remains local.".into()) },

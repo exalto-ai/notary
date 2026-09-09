@@ -15,10 +15,10 @@ pub(crate) struct ChatState {
 }
 impl ChatState {
     pub(crate) fn cancel_all(&self) {
-        if let Ok(active) = self.active.lock() {
-            if let Some((_, cancel)) = active.as_ref() {
-                let _ = cancel.send(true);
-            }
+        if let Ok(active) = self.active.lock()
+            && let Some((_, cancel)) = active.as_ref()
+        {
+            let _ = cancel.send(true);
         }
     }
 }
@@ -75,15 +75,13 @@ pub(crate) async fn confirm_traces(ids: Vec<String>, provider: &str) -> Vec<Chat
     for _ in 0..10 {
         if let Ok(client) =
             notaryctl::client::NotarydClient::connect_loopback("127.0.0.1:8788".parse().unwrap())
-        {
-            if let Ok(Ok(probes)) =
+            && let Ok(Ok(probes)) =
                 tokio::time::timeout(Duration::from_millis(500), client.recent_trace_probes()).await
-            {
-                for trace in &mut traces {
-                    trace.captured = probes
-                        .iter()
-                        .any(|p| confirmed_trace(p, &trace.id, provider));
-                }
+        {
+            for trace in &mut traces {
+                trace.captured = probes
+                    .iter()
+                    .any(|p| confirmed_trace(p, &trace.id, provider));
             }
         }
         if traces.iter().all(|t| t.captured) {
@@ -254,14 +252,15 @@ async fn api_exchange(
 }
 #[tauri::command]
 pub(crate) fn cancel_chat(request_id: String, state: tauri::State<'_, ChatState>) {
-    if let Ok(active) = state.active.lock() {
-        if let Some((id, cancel)) = active.as_ref() {
-            if id == &request_id {
-                let _ = cancel.send(true);
-            }
-        }
+    if let Ok(active) = state.active.lock()
+        && let Some((id, cancel)) = active.as_ref()
+        && id == &request_id
+    {
+        let _ = cancel.send(true);
     }
 }
+// Tauri injects each managed state as a separate command argument.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub(crate) async fn send_chat(
     request_id: String,
@@ -300,12 +299,11 @@ pub(crate) async fn send_chat(
         let key = { let _lock = connections.lock.lock().map_err(|_| "Connections are unavailable.")?; super::connections::key(&session, provider)? };
         tokio::select! { biased; _ = cancellation.changed() => Err("Response stopped. Any partial Trace remains local.".into()), result = api_exchange(provider, &model, &messages, &key, &events, &mut ids) => result }
     }.await;
-    if let Err(error) = &result {
-        if error.starts_with("Reconnect") {
-            if let Ok(mut expired) = connections.expired.lock() {
-                expired.push(connection_id.clone());
-            }
-        }
+    if let Err(error) = &result
+        && error.starts_with("Reconnect")
+        && let Ok(mut expired) = connections.expired.lock()
+    {
+        expired.push(connection_id.clone());
     }
     let traces = confirm_traces(
         ids,
@@ -375,13 +373,12 @@ mod tests {
     fn incomplete_and_provider_errors_never_complete() {
         let mut s = Sse::default();
         assert!(
-            s.feed(
+            !s.feed(
                 b"data: {\"type\":\"error\",\"error\":\"secret-token\"}\n",
                 Provider::Anthropic
             )
             .unwrap_err()
             .contains("secret-token")
-                == false
         );
         assert!(!s.complete);
     }
