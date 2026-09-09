@@ -437,6 +437,32 @@ Start the Tauri development app with a debug `notaryd` sidecar:
 npm --prefix apps/notary-app run tauri:dev
 ```
 
+For Keychain and authentication testing on macOS, prefer a signed local bundle:
+
+```bash
+npm --prefix apps/notary-app run tauri:dev:signed
+```
+
+Quit Capture from its menu bar before running this command. It builds once,
+signs the app and sidecar with the installed Exalto Developer ID, verifies the
+bundle, and opens it. Use `tauri:build:signed:debug` to build without opening.
+Set `APPLE_SIGNING_IDENTITY` to an installed identity if using another certificate.
+The command never downloads signing secrets or publishes/notarizes a build.
+The Exalto certificate and private key are maintained in the team’s Apple Signing
+vault; install them through the normal team process on an authorized machine.
+
+A stable signature lets macOS recognize the same app across rebuilds. Existing
+items trusted to old ad-hoc binaries may still ask once when first opened by the
+signed app. “Always Allow” applies to the signed app’s stable identity. This
+password-based Keychain permission is separate from biometric protection; signing
+does not convert it to Touch ID. Released builds use the same Developer ID, with
+notarization and release verification added by CI.
+
+For fast UI-only work, use `npm --prefix apps/notary-app run dev` and browser
+fixtures. `tauri:dev` remains available for native hot reload, but each ad-hoc
+native rebuild may ask for Keychain access again. The signed command deliberately
+has no watcher; rebuild and reopen when testing native changes.
+
 Build a release application bundle and DMG with a release sidecar:
 
 ```bash
