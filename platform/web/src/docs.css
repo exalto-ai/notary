@@ -1,4 +1,17 @@
 /* Documentation is a native sibling of Traces: one reading surface, not a separate product. */
+.docs-download {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.docs-download > span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .docs-shell {
   --docs-top-offset: 32px;
   display: grid;

@@ -10,6 +10,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { navigateTo } from './navigation';
+import { downloadSize, fetchLatestMacosDownload, type MacosDownload } from './release';
 
 type DocPageKey =
   | 'overview'
@@ -33,6 +34,7 @@ type DocBlock = {
   cards?: DocCard[];
   columns?: DocColumn[];
   definitions?: DocDefinition[];
+  macosDownload?: boolean;
 };
 type DocPage = { title: string; lead: string; blocks: DocBlock[] };
 type DocOutlineItem = { block: DocBlock; children: DocBlock[] };
@@ -185,7 +187,8 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'Install the macOS app',
-        body: 'On the home page, choose Download for macOS. Open the downloaded DMG, move Exalto Capture to Applications, then launch it. The app guides first-time setup and supervises its bundled local service.',
+        body: 'Download Exalto Capture below. Open the DMG, move Exalto Capture to Applications, then launch it. The app guides first-time setup and supervises its bundled local service.',
+        macosDownload: true,
       },
       {
         heading: 'System requirements',
@@ -197,7 +200,7 @@ const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'What the app manages',
-        body: 'The app configures capture protection, helps connect a provider or coding tool, starts and stops its bundled `notaryd`, and embeds the local capture workspace. Provider credentials stay in the tool that sends the model request; the app does not ask for or store them.',
+        body: 'The app configures capture protection, helps connect a provider or coding tool, starts and stops its bundled `notaryd`, and embeds the local capture workspace. Provider credentials are handled locally; the remote notary never receives them.',
       },
       {
         heading: 'Install the CLI and local service',
@@ -746,6 +749,40 @@ function DocsInlineText({ children }: { children: ReactNode }) {
     );
 }
 
+function MacosDownloadLink() {
+  const [download, setDownload] = useState<MacosDownload | null>();
+  useEffect(() => {
+    let active = true;
+    fetchLatestMacosDownload().then((result) => {
+      if (active) setDownload(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (download === undefined) return <p role="status">Loading macOS download…</p>;
+  if (!download) {
+    return (
+      <p role="status">
+        Download information is temporarily unavailable.{' '}
+        <a href="https://github.com/exalto-ai/notary-runtime/releases">View published releases</a>.
+      </p>
+    );
+  }
+  const size = downloadSize(download.sizeBytes);
+  return (
+    <div className="docs-download">
+      <a className="app-primary-action" href={download.url}>
+        Download for macOS
+      </a>
+      <span>
+        v{download.version} · Apple silicon{size ? ` · ${size}` : ''}
+      </span>
+    </div>
+  );
+}
+
 function DocsBlock({ block, pageKey }: { block: DocBlock; pageKey: DocPageKey }) {
   const Heading = docHeadingLevel(pageKey, block) === 3 ? 'h3' : 'h2';
   const slug = docSlug(block.heading);
@@ -779,6 +816,7 @@ function DocsBlock({ block, pageKey }: { block: DocBlock; pageKey: DocPageKey })
           <DocsInlineText>{block.body}</DocsInlineText>
         </p>
       )}
+      {block.macosDownload && <MacosDownloadLink />}
       {code && (
         <div className="docs-code">
           <button
