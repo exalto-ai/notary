@@ -27,7 +27,7 @@ const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--no-deps', '--f
 const bundle = resolve(metadata.target_directory, 'debug/bundle/macos/Exalto Capture.app');
 const sidecar = resolve(bundle, 'Contents/MacOS/notaryd');
 if (!existsSync(sidecar)) throw new Error(`Missing bundled sidecar: ${sidecar}`);
-run('/usr/bin/codesign', ['--force', '--sign', identity, '--identifier', 'ai.exalto.capture.notaryd', '--options', 'runtime', '--timestamp=none', sidecar]);
+run('/usr/bin/codesign', ['--force', '--sign', identity, '--options', 'runtime', '--timestamp=none', sidecar]);
 run('/usr/bin/codesign', ['--force', '--sign', identity, '--options', 'runtime', '--timestamp=none', bundle]);
 run('/usr/bin/codesign', ['--verify', '--deep', '--strict', '--verbose=2', bundle]);
 console.log(`\nSigned local app: ${bundle}\nQuit the running Capture app before opening this bundle. This development build is not notarized or published.`);
