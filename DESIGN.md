@@ -353,6 +353,17 @@ status, provider/model strings, timestamps, counts, and code. Record titles are
 appears only where a field name or compact state aids scanning, never as
 texture. Exalto Capture ships no separate webfont payload.
 
+The desktop shell defines shared text, display, and code font tokens in
+`apps/notary-app/src/styles.css`. Its type scale is 11px captions, 12px labels
+and code, 13px body text, 14px lead text, 20px section headings, and 28px titles.
+Onboarding uses the same tokens. Natural-language setup prompts use the body
+font; commands and configuration use monospace. Nested instruction text must
+inherit the body scale and line spacing.
+
+Desktop labels and controls do not select as document text. Inputs, prompts,
+commands, identifiers, and error messages remain selectable for editing or
+copying; text selection is not disabled inside the embedded document views.
+
 ## Layout and density
 
 Product views are edge-to-edge workspaces with a 16px outer gutter (12px

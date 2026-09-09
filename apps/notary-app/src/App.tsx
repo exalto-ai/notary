@@ -14,6 +14,7 @@ import {
 } from './bridge';
 import { HomeView } from './HomeView';
 import { LoadingWindow, VaultUnlock } from './LockedState';
+import { BuiltinChat } from './BuiltinChat';
 import { Onboarding } from './Onboarding';
 import {
   pendingFirstProofTarget,
@@ -382,6 +383,7 @@ function App() {
               {view === 'providers' && <button className="settings-subnav-action" type="button" onClick={() => setSetupOpen(true)}>Connection setup</button>}
             </nav>
           )}
+          <div className="chat-view-container" hidden={view !== 'chat'}><BuiltinChat state={state} refresh={refresh} onOpenTrace={(id) => { setTraceTarget({ traceId: id }); setTraceConstraint(null); setView('traces'); }} /></div>
           {view === 'home' && (
             <HomeView
               state={state}

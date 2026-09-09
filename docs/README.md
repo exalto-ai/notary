@@ -42,6 +42,7 @@ Use the generated contract when prose and an installed service disagree.
 ## Contributors
 
 - [Development and validation](development.md)
+- [Agent onboarding and subscription policy](agent-onboarding-policy.md)
 - [Documentation coverage checklist](documentation-coverage.md)
 - [Cursor-pagination contract and array inventory](adr/0001-cursor-pagination.md)
 - [Provider-neutral account identities](adr/0002-provider-neutral-identities.md)

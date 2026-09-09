@@ -4926,6 +4926,7 @@ dependencies = [
 name = "notary-app"
 version = "0.1.7"
 dependencies = [
+ "axum",
  "notary-core",
  "notary-updater",
  "notaryctl",
@@ -4938,8 +4939,10 @@ dependencies = [
  "tauri-plugin-shell",
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
+ "tempfile",
  "tokio",
  "url",
+ "uuid",
  "zeroize",
 ]
 
