@@ -1,21 +1,33 @@
-# The Rust images require workspace sources, pinned protocol dependencies, and
-# the small assets embedded in the daemon CLI. Keeping the context narrow
-# prevents unrelated web and doc changes from invalidating cached build layers.
-*
+# Only Rust workspace inputs belong in Fly builds. SPA configuration stays local.
+**
 !Cargo.toml
 !Cargo.lock
 !runtime/
 !runtime/**
-runtime/target/
-runtime/apps/admin-dashboard/node_modules/
-runtime/apps/admin-dashboard/.vitest-attachments/
 !platform/
-!platform/**
+platform/**
+!platform/crates/
+!platform/crates/**
+!platform/migrations/
+!platform/migrations/**
 !deploy/
+deploy/**
 !deploy/notary-server-entrypoint.sh
-!js/
+!apps/
+apps/**
 !apps/notary-app/
+apps/notary-app/**
 !apps/notary-app/src-tauri/
+apps/notary-app/src-tauri/**
 !apps/notary-app/src-tauri/Cargo.toml
 !apps/notary-app/src-tauri/src/
+apps/notary-app/src-tauri/src/**
 !apps/notary-app/src-tauri/src/lib.rs
+
+# Never upload local credentials, installed dependencies, or build outputs.
+**/.env*
+**/.vercel/
+**/.git/
+**/node_modules/
+**/target/
+**/.vitest-attachments/
