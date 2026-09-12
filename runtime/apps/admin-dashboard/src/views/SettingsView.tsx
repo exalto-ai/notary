@@ -899,6 +899,8 @@ export function EmbeddedSettingsView({
           />
         </Paper>
         <Paper className="settings-panel embedded-update-settings">
+          <Text className="eyebrow">Updates</Text>
+          <Title order={2}>Software updates</Title>
           <dl className="receipt-list">
             <Fact label="Current version" value={desktopSettings?.app_version ?? status.version} />
             <Fact
