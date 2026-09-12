@@ -144,6 +144,7 @@ code, pre, .mono-id, .mono-time { font-family: var(--mono); }
 .receipt-list { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); margin: 0 0 24px; }
 .attempt-history { border-top: 1px solid var(--rule); margin: 22px 0; padding-top: 20px; }
 .safe-note { align-items: flex-start; background: var(--subtle); display: flex; gap: 10px; margin: 18px 0; padding: 13px; }
+.safe-note > svg { flex: none; margin-top: 2px; }
 
 .trace-layout { display: grid; gap: 24px; grid-template-columns: minmax(290px, .65fr) minmax(600px, 1.35fr); margin-top: 26px; }
 .trace-list { background: var(--raised); border: 1px solid var(--rule); list-style: none; margin-bottom: 0; margin-top: 0; padding: 0; }
