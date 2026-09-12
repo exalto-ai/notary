@@ -160,9 +160,20 @@ function traceDisplayStatus(trace: TraceSummary) {
   return trace.status ?? trace.state ?? 'unknown';
 }
 
+const TRACE_TITLE_LIMIT = 80;
+
 function traceTitle(trace: TraceSummary) {
-  const preview = trace.prompt_preview?.replace(/\s+/g, ' ').trim();
-  if (preview) return preview;
+  const preview = trace.prompt_preview
+    ?.replace(/\s+/g, ' ')
+    .replace(/^(system|developer|user|assistant)\s*:\s*/i, '')
+    .trim();
+  if (preview) {
+    if (preview.length <= TRACE_TITLE_LIMIT) return preview;
+    const clipped = preview.slice(0, TRACE_TITLE_LIMIT);
+    const boundary = clipped.lastIndexOf(' ');
+    const head = boundary > TRACE_TITLE_LIMIT / 2 ? clipped.slice(0, boundary) : clipped;
+    return `${head.replace(/[\s.,;:]+$/, '')}…`;
+  }
   const providerNames: Record<string, string> = {
     anthropic: 'Anthropic',
     deepseek: 'DeepSeek',
