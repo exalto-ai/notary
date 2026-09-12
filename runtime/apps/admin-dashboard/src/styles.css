@@ -152,6 +152,7 @@ code, pre, .mono-id, .mono-time { font-family: var(--mono); }
 .trace-share-status { align-items: center; background: var(--subtle); border: 1px solid var(--rule); display: flex; gap: 18px; justify-content: space-between; margin-top: 18px; padding: 14px 16px; }
 .trace-share-status > div > p:last-child { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .trace-share-dialog { width: min(960px, calc(100vw - 32px)) !important; max-width: 960px !important; max-height: calc(100dvh - 32px); overflow-y: auto; }
+.trace-share-dialog--connect { width: min(480px, calc(100vw - 32px)) !important; max-width: 480px !important; }
 .trace-share-review { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 24px; min-height: 0; }
 .trace-share-disclosure { min-width: 0; padding-right: 24px; border-right: 1px solid var(--rule); }
 .trace-share-disclosure .trace-transcript { max-height: 430px; margin-top: 8px; overflow-y: auto; }

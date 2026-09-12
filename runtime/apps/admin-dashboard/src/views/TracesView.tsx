@@ -757,7 +757,7 @@ function DeleteTraceAction({
           if (!deleteTrace.isPending) setConfirmationOpen(open);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="axis-local-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this Trace?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -768,6 +768,7 @@ function DeleteTraceAction({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteTrace.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              className="is-destructive"
               disabled={deleteTrace.isPending}
               onClick={() => deleteTrace.mutate()}
             >
@@ -1794,7 +1795,13 @@ function NotarizedTraceInspector({
           if (!open && !saveShare.isPending) setShareDialogMode(null);
         }}
       >
-        <AlertDialogContent className="trace-share-dialog">
+        <AlertDialogContent
+          className={
+            accountConnected
+              ? 'axis-local-dialog trace-share-dialog'
+              : 'axis-local-dialog trace-share-dialog--connect'
+          }
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {!accountConnected
