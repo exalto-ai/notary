@@ -99,7 +99,7 @@ body {
   top: 0;
   display: grid;
   min-height: 66px;
-  grid-template-columns: minmax(170px, 1fr) auto minmax(170px, 1fr);
+  grid-template-columns: 1fr auto;
   align-items: center;
   border-bottom: 1px solid var(--app-rule);
   background: color-mix(in srgb, var(--app-paper) 94%, transparent);
@@ -108,38 +108,53 @@ body {
   font-family: var(--app-mono);
 }
 
+/* The lockup is one segmented badge: the family fills the left cell and the
+   product sits open on the right, so "Exalto Capture" reads as the family
+   stamping its product. Both cells share one outline and one mono voice; the
+   fill carries the contrast. The pill radius is a deliberate exception to the
+   no-pills rule for controls, since this is a wordmark, not a control. */
 .app-brand {
   display: inline-flex;
   width: fit-content;
-  align-items: baseline;
-  gap: 8px;
+  justify-self: start;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--action-fill);
+  border-radius: 999px;
   color: var(--app-ink);
-  font-family: var(--app-display);
-  font-size: 24px;
+  font-family: var(--app-mono);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: -0.045em;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .app-brand:hover {
+  border-color: var(--action-fill-hover);
   color: var(--app-blue);
   text-decoration: none;
 }
 
-/* Each hostname leads with its product; Exalto is the family it belongs to, so
-   the wordmark leads and the attribution sits quietly beside it. The two read
-   as one lockup rather than a label pinned to a heading, so the attribution
-   stays close to the wordmark in size and carries the contrast in weight and
-   colour instead. */
-.app-brand small {
-  color: var(--app-muted);
-  font-family: var(--app-mono);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.1em;
+.app-brand-family,
+.app-brand-product {
+  display: flex;
+  align-items: center;
+  padding: 9px 12px;
 }
 
-.app-brand:hover small {
-  color: var(--app-blue);
+.app-brand-family {
+  padding-left: 15px;
+  background: var(--action-fill);
+  color: var(--action-contrast);
+}
+
+.app-brand:hover .app-brand-family {
+  background: var(--action-fill-hover);
+}
+
+.app-brand-product {
+  padding-right: 15px;
 }
 
 .app-nav-links,
@@ -1009,7 +1024,6 @@ html {
     padding-inline: 20px;
   }
 
-  .app-brand { align-items: flex-start; flex-direction: column; gap: 0; }
   .app-nav-links { gap: 14px; }
 
   .app-nav-actions { gap: 11px; }
@@ -1065,7 +1079,8 @@ html {
 
 @media (max-width: 460px) {
   .app-nav { padding-inline: 16px; }
-  .app-brand { font-size: 23px; }
+  .app-brand-family,
+  .app-brand-product { padding-block: 8px; }
   .app-sign-in-link { padding: 8px 10px; }
   .app-workspace { padding-inline: 16px; }
   .app-product { padding: 25px 20px; }
