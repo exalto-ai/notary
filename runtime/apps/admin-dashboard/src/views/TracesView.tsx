@@ -502,6 +502,9 @@ export function TracesView({
           <div className="trace-filter-primary">
             <TextInput
               aria-label="Search traces"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               placeholder="Search traces"
               leftSection={<Search size={15} />}
               value={query}
@@ -558,6 +561,9 @@ export function TracesView({
             <div className="trace-filter-more">
               <TextInput
                 aria-label="Model filter"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 placeholder="All models"
                 value={model}
                 onChange={(event) => setModel(event.currentTarget.value)}
