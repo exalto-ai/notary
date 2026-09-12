@@ -118,6 +118,32 @@
   color: var(--night-muted);
 }
 
+.setup-ledger li:has(> .ledger-step) { display: block; padding: 0; }
+
+.ledger-step {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ledger-step:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .06);
+  color: var(--night-ink);
+}
+
+.ledger-step:disabled { cursor: default; }
+
 .setup-ledger li.is-current {
   background: rgba(255, 255, 255, .1);
   color: #fff;
