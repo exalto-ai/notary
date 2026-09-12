@@ -81,7 +81,7 @@ export function ActivityView({
             onChange={(event) => setCaptureId(event.currentTarget.value)}
           />
           <Button
-            variant={moreOpen || operationId || eventType ? 'light' : 'default'}
+            variant={moreOpen || operationId || eventType ? 'light' : 'outline'}
             onClick={() => setMoreOpen((open) => !open)}
             aria-expanded={moreOpen}
           >

@@ -550,7 +550,7 @@ export function TracesView({
             />
             <Button
               className="trace-more-filters"
-              variant={moreOpen || operationalStatus || model || streaming ? 'light' : 'default'}
+              variant={moreOpen || operationalStatus || model || streaming ? 'light' : 'outline'}
               onClick={() => setMoreOpen((open) => !open)}
               aria-expanded={moreOpen}
             >
