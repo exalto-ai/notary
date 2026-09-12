@@ -1791,7 +1791,20 @@ function NotarizedTraceInspector({
               />
               <Fact label="Trace SHA-256" value={traceDigest} />
             </dl>
-            <pre className="json-view">{JSON.stringify(trace.data.trace, null, 2)}</pre>
+            <details className="notary-details otlp-details">
+              <summary>Raw OpenTelemetry trace</summary>
+              <Button
+                variant="outline"
+                size="xs"
+                leftSection={<Copy size={13} />}
+                onClick={() =>
+                  void navigator.clipboard.writeText(JSON.stringify(trace.data.trace, null, 2))
+                }
+              >
+                Copy JSON
+              </Button>
+              <pre className="json-view">{JSON.stringify(trace.data.trace, null, 2)}</pre>
+            </details>
           </div>
         </Tabs.Panel>
       </Tabs>

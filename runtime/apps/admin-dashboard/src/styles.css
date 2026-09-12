@@ -315,6 +315,8 @@ code, pre, .mono-id, .mono-time { font-family: var(--mono); }
 .embedded-notaries .receipt-list, .embedded-update-settings .receipt-list { margin-top: 20px; }
 .notary-details { border-top: 1px solid var(--rule); margin-top: 20px; padding-top: 12px; }
 .notary-details summary { cursor: pointer; font-size: 12px; font-weight: 700; }
+.otlp-details > .mantine-Button-root { margin-top: 12px; }
+.otlp-details .json-view { margin-top: 12px; max-height: none; }
 .notary-detail-record { border-top: 1px solid var(--rule); margin-top: 12px; padding-top: 16px; }
 .notary-detail-record h3 { font-size: 16px; letter-spacing: -.02em; margin: 0; }
 .notary-detail-record p { color: var(--muted); font-size: 11px; }
