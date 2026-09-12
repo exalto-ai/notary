@@ -99,7 +99,7 @@ code, pre, .mono-id, .mono-time { font-family: var(--mono); }
 .inspector { padding: 25px; }
 .inspector-head { align-items: flex-start; border-bottom: 1px solid var(--rule); display: flex; gap: 20px; justify-content: space-between; padding-bottom: 23px; }
 .inspector h2 { font-size: 27px; letter-spacing: -.025em; margin: 7px 0; }
-.capture-inspector h2, .trace-inspector h2 { -webkit-box-orient: vertical; display: -webkit-box; font-size: 20px; letter-spacing: -.03em; line-height: 1.25; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 2; }
+.inspector.capture-inspector h2, .trace-inspector h2 { -webkit-box-orient: vertical; display: -webkit-box; font-size: 20px; letter-spacing: -.03em; line-height: 1.25; overflow: hidden; overflow-wrap: anywhere; -webkit-line-clamp: 2; }
 .mono-id { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
 .trace-head-facts { color: var(--muted); font-size: 11px; margin: 8px 0 3px; }
 .trace-id-row { margin-top: 4px; }
