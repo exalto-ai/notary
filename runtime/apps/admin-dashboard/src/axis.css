@@ -273,6 +273,8 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 .next-action .mantine-Button-root:hover { border-color: var(--action-fill-hover); background: var(--action-fill-hover); color: var(--action-contrast); }
 .axis-local-dialog [data-slot='alert-dialog-action'] { background: var(--action-fill); color: var(--action-contrast); }
 .axis-local-dialog [data-slot='alert-dialog-action']:hover { background: var(--action-fill-hover); }
+.axis-local-dialog [data-slot='alert-dialog-action'].is-destructive { background: var(--danger); color: #fff; }
+.axis-local-dialog [data-slot='alert-dialog-action'].is-destructive:hover { background: color-mix(in srgb, var(--danger) 85%, var(--ink)); }
 
 /* Every list/inspector workspace starts from the same rail and shares one persisted divider. */
 .resizable-split {
