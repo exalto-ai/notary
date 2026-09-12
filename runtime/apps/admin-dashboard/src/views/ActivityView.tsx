@@ -73,6 +73,9 @@ export function ActivityView({
           />
           <TextInput
             aria-label="Activity Trace ID"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             placeholder="Trace ID"
             value={captureId}
             onChange={(event) => setCaptureId(event.currentTarget.value)}
@@ -96,12 +99,18 @@ export function ActivityView({
           <div className="activity-filter-more">
             <TextInput
               aria-label="Activity operation ID"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               placeholder="Operation ID"
               value={operationId}
               onChange={(event) => setOperationId(event.currentTarget.value)}
             />
             <TextInput
               aria-label="Activity raw event name"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               placeholder="Raw event name"
               value={eventType}
               onChange={(event) => setEventType(event.currentTarget.value)}
