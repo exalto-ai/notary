@@ -1759,6 +1759,16 @@ function NotarizedTraceInspector({
                     ? verificationFailure
                     : 'Verification replays the provider adapter and checks every authenticated artifact.'
                 }
+                action={
+                  <Button
+                    variant="outline"
+                    leftSection={<ShieldCheck size={15} />}
+                    loading={verify.isPending}
+                    onClick={() => verify.mutate()}
+                  >
+                    {verificationFailure ? 'Verify again' : 'Verify locally'}
+                  </Button>
+                }
               />
             )}
           </div>
