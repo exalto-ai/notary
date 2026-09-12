@@ -8,7 +8,6 @@ import { Dashboard } from './AccountDashboard';
 import { DeviceAuthorizationApproval } from './AuthorizationPages';
 import { AccountPlaceholder, useSettledWait } from './LoadingStates';
 import { currentRoute, navigateTo } from './navigation';
-import { websiteHref } from './origins';
 import { Docs } from './PublicDocs';
 import { Footer, isLegalPage, LegalPage } from './SharedShell';
 import { rememberSession } from './session';
@@ -114,14 +113,13 @@ export function Header({
   return (
     <header className="app-nav">
       <a className="app-brand" href="/" aria-label="Exalto Capture home">
-        <span>Capture</span>
-        <small>BY EXALTO</small>
+        <span className="app-brand-family">Exalto</span>
+        <span className="app-brand-product">Capture</span>
       </a>
-      <nav className="app-nav-links" aria-label="Product">
-        <a href="/docs">Docs</a>
-        <a href={websiteHref('/')}>Exalto ↗</a>
-      </nav>
       <div className="app-nav-actions">
+        <nav className="app-nav-links" aria-label="Product">
+          <a href="/docs">Docs</a>
+        </nav>
         {user ? (
           <AccountMenu user={user} onLogout={onLogout} />
         ) : !hideSignIn && authPending ? (

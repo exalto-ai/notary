@@ -100,17 +100,17 @@ test('uses the app navigation and keeps only legal links in the footer', async (
   await expect
     .element(page.getByRole('link', { name: 'Exalto Capture home' }))
     .toHaveAttribute('href', '/');
-  expect(document.querySelector('.app-brand > span')?.textContent).toBe('Capture');
-  expect(document.querySelector('.app-brand > small')?.textContent).toBe('BY EXALTO');
+  expect(document.querySelector('.app-brand-family')?.textContent).toBe('Exalto');
+  expect(document.querySelector('.app-brand-product')?.textContent).toBe('Capture');
   expect(document.querySelector('.footer-copyright')?.textContent.trim()).toBe('Exalto');
   expect(Array.from(productNav.querySelectorAll('a'), (link) => link.textContent)).toEqual([
     'Docs',
-    'Exalto ↗',
   ]);
+  // Docs sits with the account controls on the right edge; the website link is
+  // gone from the header and survives only in the footer.
+  expect(productNav.parentElement?.className).toBe('app-nav-actions');
+  expect(page.getByRole('banner').getByRole('link', { name: 'Exalto ↗' }).query()).toBeNull();
   await expect.element(page.getByRole('link', { name: 'Docs' })).toHaveAttribute('href', '/docs');
-  await expect
-    .element(page.getByRole('banner').getByRole('link', { name: 'Exalto ↗' }))
-    .toHaveAttribute('href', 'https://exalto.ai/');
   await expect
     .element(page.getByRole('link', { name: 'Sign in' }))
     .toHaveAttribute('href', '/signin');
@@ -125,13 +125,13 @@ test('uses the app navigation and keeps only legal links in the footer', async (
     .toHaveAttribute('href', '/docs');
 });
 
-test('keeps Docs and Seal visible on narrow screens for either sign-in state', async () => {
+test('keeps the brand and Docs visible on narrow screens for either sign-in state', async () => {
   await page.viewport(320, 700);
   for (const user of [null, { provider_display_name: 'fixture-user' }]) {
     render(<Header user={user} onLogout={() => {}} />);
     const header = page.getByRole('banner');
+    await expect.element(header.getByRole('link', { name: 'Exalto Capture home' })).toBeVisible();
     await expect.element(header.getByRole('link', { name: 'Docs' })).toBeVisible();
-    await expect.element(header.getByRole('link', { name: 'Exalto ↗' })).toBeVisible();
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);
     cleanup();
   }

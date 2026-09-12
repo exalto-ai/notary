@@ -37,8 +37,8 @@ for (const icon of ['favicon.ico', 'apple-touch-icon-180.png', 'icon-192.png', '
   }
 }
 requireText(siteApp, 'aria-label="Exalto Capture home"', 'site header identity');
-requireText(siteApp, '<span>Capture</span>', 'site header product wordmark');
-requireText(siteApp, '<small>BY EXALTO</small>', 'site header family attribution');
+requireText(siteApp, '<span className="app-brand-family">Exalto</span>', 'site header family');
+requireText(siteApp, '<span className="app-brand-product">Capture</span>', 'site header product');
 requireText(
   readFileSync(resolve(root, 'src/site/SharedShell.tsx'), 'utf8'),
   '<a className="footer-copyright" href="https://exalto.ai">',
