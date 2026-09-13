@@ -944,3 +944,111 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
   box-shadow: 0 10px 30px rgba(0, 0, 0, .28), 0 0 0 .5px rgba(0, 0, 0, .12);
 }
 .dashboard-shell--embedded .mantine-Menu-item { border-radius: 5px; font-size: 13px; }
+
+/* macOS shell: Settings as grouped forms. A 13px group header, rounded
+   inset groups on the raised surface, label-left value-right rows, and
+   controls on the right, the way System Settings lays out a pane. */
+.dashboard-shell--embedded .settings-page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 18px 24px 48px;
+}
+.dashboard-shell--embedded .settings-group + .settings-group { margin-top: 28px; }
+.dashboard-shell--embedded .settings-group-title {
+  margin: 0 0 8px;
+  padding: 0 4px;
+  border: 0;
+  color: var(--ink);
+  font: 600 13px/1.3 var(--ui-font);
+  letter-spacing: 0;
+}
+.dashboard-shell--embedded .settings-subgroup-grid,
+.dashboard-shell--embedded .settings-flat-group,
+.dashboard-shell--embedded .settings-group > .settings-panel,
+.dashboard-shell--embedded .settings-group > .account-connection-card,
+.dashboard-shell--embedded .settings-group > .capture-mode-setting {
+  overflow: hidden;
+  border: 1px solid var(--rule-soft);
+  border-radius: 10px;
+  background: var(--raised);
+}
+.dashboard-shell--embedded .settings-group > * + * { margin-top: 12px; }
+.dashboard-shell--embedded .settings-subgroup-grid > .settings-panel {
+  border: 0;
+  border-right: 1px solid var(--rule-soft);
+  border-radius: 0;
+  background: transparent;
+}
+.dashboard-shell--embedded .settings-subgroup-grid > .settings-panel:last-child { border-right: 0; }
+.dashboard-shell--embedded .settings-panel { padding: 14px 16px 16px; }
+.dashboard-shell--embedded .settings-panel .eyebrow { display: none; }
+.dashboard-shell--embedded .settings-panel h2 {
+  margin: 0 0 4px;
+  font: 600 13px/1.35 var(--ui-font);
+  letter-spacing: 0;
+}
+.dashboard-shell--embedded .settings-panel > p:not(.eyebrow) {
+  max-width: none;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.dashboard-shell--embedded .settings-page .receipt-list {
+  display: block;
+  margin: 6px 0 0;
+  border-top: 0;
+}
+.dashboard-shell--embedded .settings-page .receipt-list > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.dashboard-shell--embedded .settings-page .receipt-list > div:last-child { border-bottom: 0; }
+.dashboard-shell--embedded .settings-page .receipt-list dt {
+  flex: 0 0 auto;
+  color: var(--ink);
+  font: 400 13px/1.4 var(--ui-font);
+}
+.dashboard-shell--embedded .settings-page .receipt-list dd {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.dashboard-shell--embedded .settings-page .safe-note {
+  margin: 10px 0 0;
+  padding: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.dashboard-shell--embedded .settings-panel .mantine-Group-root:has(> .mantine-Button-root),
+.dashboard-shell--embedded .settings-panel > .mantine-Button-root { margin-top: 10px; }
+.dashboard-shell--embedded .capture-mode-setting {
+  min-height: 0;
+  margin-top: 0;
+  padding: 12px 16px;
+}
+.dashboard-shell--embedded .capture-mode-setting .mantine-Text-root[data-fw] { font-size: 13px; }
+.dashboard-shell--embedded .capture-mode-setting > div > p:last-child {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.dashboard-shell--embedded .settings-page .account-connection-card { padding: 14px 16px 16px; gap: 12px; }
+.dashboard-shell--embedded .settings-page .account-connection-card h2 { margin: 0; font: 600 13px/1.35 var(--ui-font); letter-spacing: 0; }
+.dashboard-shell--embedded .settings-page .account-connection-card .eyebrow { display: none; }
+.dashboard-shell--embedded .settings-page .account-local-boundary { font-size: 12px; }
+.dashboard-shell--embedded .settings-panel:not(:has(> h2)) .eyebrow {
+  display: block;
+  margin: 0 0 4px;
+  color: var(--ink);
+  font: 600 13px/1.35 var(--ui-font);
+}
+.dashboard-shell--embedded .settings-page .account-connection-card > .mantine-Text-root { font-size: 13px; line-height: 1.5; }
+.dashboard-shell--embedded .capture-mode-setting > div > .mantine-Text-root:first-child { font-size: 13px; font-weight: 600; }
