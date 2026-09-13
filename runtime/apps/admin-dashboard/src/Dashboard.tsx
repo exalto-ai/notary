@@ -251,6 +251,15 @@ export function Dashboard({
     desktopSettings,
     onDesktopSettingsAction,
   );
+  // Portalled surfaces (dialogs, menus, select menus) render outside the shell
+  // element, so the desktop treatment is keyed off a root attribute as well.
+  useEffect(() => {
+    if (!embedded) return;
+    document.documentElement.dataset.shell = 'desktop';
+    return () => {
+      delete document.documentElement.dataset.shell;
+    };
+  }, [embedded]);
   useEffect(() => {
     if (!embedded) return;
     const publishRoute = () => {
