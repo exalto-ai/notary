@@ -121,6 +121,36 @@ function App() {
     };
   }, [setupOpen, state?.onboarding_complete]);
 
+  // Menu-bar View commands. New Chat and Find are handled by the view that owns them.
+  useEffect(() => {
+    if (!isTauri()) return;
+    let disposed = false;
+    let unlisten: UnlistenFn | null = null;
+    void listen<string>('exalto:menu', (event) => {
+      if (!state?.onboarding_complete || setupOpen) return;
+      const target = event.payload;
+      if (target === 'home' || target === 'chat' || target === 'traces' || target === 'settings') {
+        setTraceConstraint(null);
+        setTraceTarget(null);
+        setView(target);
+        if (workspaceRoutes[target]) {
+          setWorkspaceNavigationRevision((current) => current + 1);
+        }
+      } else if (target === 'new-chat') {
+        setTraceConstraint(null);
+        setTraceTarget(null);
+        setView('chat');
+      }
+    }).then((stopListening) => {
+      if (disposed) stopListening();
+      else unlisten = stopListening;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [setupOpen, state?.onboarding_complete]);
+
   useEffect(() => {
     if (!isTauri()) return;
     let disposed = false;

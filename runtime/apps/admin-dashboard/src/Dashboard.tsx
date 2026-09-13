@@ -260,8 +260,19 @@ export function Dashboard({
       );
     };
     const receiveReadyRequest = (event: MessageEvent) => {
-      if (event.source === window.parent && event.data?.type === 'notary:desktop-ready-request') {
+      if (event.source !== window.parent) return;
+      if (event.data?.type === 'notary:desktop-ready-request') {
         publishRoute();
+      } else if (
+        event.data?.type === 'notary:desktop-command' &&
+        event.data.payload?.command === 'find'
+      ) {
+        // The desktop shell's View > Find: focus the view's search or identifier field.
+        const field = document.querySelector<HTMLInputElement>(
+          'input[aria-label="Search traces"], input[aria-label="Activity Trace ID"]',
+        );
+        field?.focus();
+        field?.select();
       }
     };
     window.addEventListener('message', receiveReadyRequest);
