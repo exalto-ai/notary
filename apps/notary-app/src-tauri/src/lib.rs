@@ -12,6 +12,7 @@ mod credentials;
 mod daemon;
 mod models;
 mod service_client;
+mod symbols;
 mod tray;
 mod updates;
 mod vault;
@@ -345,6 +346,7 @@ pub fn run() {
             get_update_state,
             check_for_updates,
             install_update_and_restart,
+            symbols::system_symbol,
         ])
         .on_menu_event(|app, event| match app_menu_action(event.id().as_ref()) {
             Some(AppMenuAction::Hide) => {

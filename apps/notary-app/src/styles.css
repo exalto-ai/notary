@@ -66,6 +66,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 button:disabled { cursor: not-allowed; opacity: 0.45; }
 code, pre { font-family: var(--font-code); }
+/* An SF Symbol rendered by AppKit and tinted with the current colour. */
+.sf-symbol {
+  display: inline-block;
+  flex: none;
+  background: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  vertical-align: -.15em;
+}
 h1, h2, p { margin: 0; }
 
 .native-window {
@@ -111,7 +124,7 @@ h1, h2, p { margin: 0; }
 }
 .sidebar-group button:hover { background: var(--surface-hover); color: var(--text); }
 .sidebar-group button.is-selected { background: var(--blue); color: #fff; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .1); }
-.sidebar-group button svg { justify-self: center; }
+.sidebar-group button :is(svg, .sf-symbol) { justify-self: center; }
 .sidebar-group button b { min-width: 19px; padding: 1px 5px; border-radius: 10px; background: rgba(0, 0, 0, .09); font-size: var(--text-caption); font-weight: 600; text-align: center; }
 .sidebar-group button.is-selected b { background: rgba(255, 255, 255, .24); }
 .window-content { display: grid; min-width: 0; grid-template-rows: minmax(0, 1fr); }
@@ -182,7 +195,7 @@ h1, h2, p { margin: 0; }
 .capture-counts button:hover { background: var(--surface-hover); }
 .capture-counts b { font-size: var(--text-title); font-weight: 600; letter-spacing: -.035em; }
 .capture-counts span { color: var(--secondary); font-size: var(--text-caption); }
-.capture-counts svg { position: absolute; top: 14px; right: 11px; color: var(--tertiary); }
+.capture-counts :is(svg, .sf-symbol) { position: absolute; top: 14px; right: 11px; color: var(--tertiary); }
 .card-action { display: flex; width: 100%; min-height: 39px; align-items: center; justify-content: space-between; padding: 0 16px; border: 0; border-radius: 0 0 12px 12px; background: transparent; color: var(--blue); font-size: var(--text-caption); text-align: left; cursor: default; }
 .card-action:hover { background: var(--surface-hover); }
 .protection-card > header svg { color: var(--blue); }
@@ -367,7 +380,7 @@ h1, h2, p { margin: 0; }
   font: 400 var(--text-body)/1.25 var(--body-font);
   cursor: default;
 }
-.native-window .sidebar-group button svg { color: var(--accent); }
+.native-window .sidebar-group button :is(svg, .sf-symbol) { color: var(--accent); }
 .native-window .sidebar-group button:hover {
   background: color-mix(in srgb, var(--sidebar-text) 7%, transparent);
 }
@@ -561,9 +574,9 @@ h1, h2, p { margin: 0; }
   font-weight: 600;
   letter-spacing: -.01em;
 }
-.native-window .capture-receipt > header > svg { color: var(--green); }
-.native-window .capture-connection-card > header > svg,
-.native-window .capture-protection-card > header > svg { color: var(--blue); }
+.native-window .capture-receipt > header > :is(svg, .sf-symbol) { color: var(--green); }
+.native-window .capture-connection-card > header > :is(svg, .sf-symbol),
+.native-window .capture-protection-card > header > :is(svg, .sf-symbol) { color: var(--blue); }
 .native-window .capture-counts {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -585,7 +598,7 @@ h1, h2, p { margin: 0; }
 .native-window .capture-counts button:hover { background: var(--surface-hover); }
 .native-window .capture-counts b { font: 600 var(--text-title)/1 var(--display-font); font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
 .native-window .capture-counts span { color: var(--secondary); font: 600 var(--text-caption)/1.3 var(--body-font); }
-.native-window .capture-counts svg { top: 12px; right: 10px; color: var(--tertiary); }
+.native-window .capture-counts :is(svg, .sf-symbol) { top: 12px; right: 10px; color: var(--tertiary); }
 .native-window .capture-empty { display: grid; min-height: 108px; align-content: center; justify-items: start; gap: 9px; padding: 17px 20px; border-top: 1px solid var(--separator-soft); border-bottom: 1px solid var(--separator-soft); }
 .native-window .capture-empty p { color: var(--secondary); font: 400 var(--text-lead)/1.48 var(--body-font); }
 .native-window .capture-empty button,

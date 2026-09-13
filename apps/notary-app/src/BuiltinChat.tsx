@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Send, Square, ExternalLink } from 'lucide-react';
+import { Symbol } from './Symbol';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import {
   errorMessage,
@@ -490,7 +491,7 @@ export function BuiltinChat({
             setError('');
           }}
         >
-          <Plus size={13} /> New chat
+          <Symbol name="plus" fallback={Plus} size={12} weight="semibold" /> New chat
         </button>
         <button
           className="mac-button is-small"
@@ -630,7 +631,7 @@ export function BuiltinChat({
                         .catch((e) => setError(errorMessage(e)));
                   }}
                 >
-                  <Square size={13} /> Stop
+                  <Symbol name="stop.fill" fallback={Square} size={11} /> Stop
                 </button>
               ) : (
                 <button
@@ -645,7 +646,7 @@ export function BuiltinChat({
                     unfinished
                   }
                 >
-                  <Send size={13} /> Send
+                  <Symbol name="paperplane.fill" fallback={Send} size={12} /> Send
                 </button>
               )}
             </form>

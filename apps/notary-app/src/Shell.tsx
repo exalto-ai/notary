@@ -3,6 +3,7 @@ import { FileCheck2, MessageSquare, Radio, RefreshCw, Settings, Square } from 'l
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { isTauri, type DesktopState } from './bridge';
 import notaryMark from './notary-mark.svg';
+import { Symbol } from './Symbol';
 import {
   DISPLAY_NAME,
   viewMeta,
@@ -18,16 +19,17 @@ export function Sidebar({ state, view, onNavigate }: {
   onNavigate: (view: View) => void;
 }) {
   const traceCount = state.counts.captured + state.counts.notarized + state.counts.capturing + state.counts.capture_failed;
-  const items: Array<{ view: View; label: string; icon: typeof Radio; count?: number }> = [
-    { view: 'home', label: 'Overview', icon: Radio },
-    { view: 'chat', label: 'Chat', icon: MessageSquare },
+  const items: Array<{ view: View; label: string; icon: typeof Radio; symbol: string; count?: number }> = [
+    { view: 'home', label: 'Overview', icon: Radio, symbol: 'dot.radiowaves.left.and.right' },
+    { view: 'chat', label: 'Chat', icon: MessageSquare, symbol: 'bubble.left' },
     {
       view: 'traces',
       label: 'Traces',
       icon: FileCheck2,
+      symbol: 'doc.text',
       count: traceCount,
     },
-    { view: 'settings', label: 'Settings', icon: Settings },
+    { view: 'settings', label: 'Settings', icon: Settings, symbol: 'gearshape' },
   ];
 
   return <aside className="native-sidebar">
@@ -38,13 +40,13 @@ export function Sidebar({ state, view, onNavigate }: {
     </div>
     <nav aria-label={DISPLAY_NAME}>
       <div className="sidebar-group">
-        {items.map(({ view: itemView, label, icon: Icon, count }) => <button
+        {items.map(({ view: itemView, label, icon: Icon, symbol, count }) => <button
           key={itemView}
           type="button"
           className={view === itemView || (itemView === 'settings' && (view === 'providers' || view === 'activity')) ? 'is-selected' : ''}
           onClick={() => onNavigate(itemView)}
         >
-          <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
+          <Symbol name={symbol} fallback={Icon} size={16} />
           <span>{label}</span>
           {count ? <b>{count}</b> : null}
         </button>)}
