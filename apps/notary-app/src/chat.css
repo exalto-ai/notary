@@ -369,20 +369,6 @@
 
 .chat-composer-note { color: var(--secondary); font-size: var(--text-label); }
 
-.chat-consent {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 9px 11px;
-  border: 1px solid var(--separator-soft);
-  border-radius: 8px;
-  background: var(--window);
-  color: var(--secondary);
-  font-size: var(--text-label);
-  line-height: 1.5;
-}
-
-.chat-consent input { margin-top: 2px; }
 
 .chat-capture-off {
   display: flex;
