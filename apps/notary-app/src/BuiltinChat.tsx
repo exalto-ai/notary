@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Send, Square, ExternalLink } from 'lucide-react';
+import { ChevronRight, Copy, Plus, Send, Square, ExternalLink } from 'lucide-react';
 import { Symbol } from './Symbol';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import {
@@ -294,8 +294,16 @@ export function ProviderConnections({
 type Exchange = {
   prompt: string;
   response: string;
+  model: string;
+  sentAt: number;
   result?: bridge.ChatResult;
 };
+
+const timeFormat = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+
+function shortTraceId(id: string) {
+  return id.length > 14 ? `${id.slice(0, 4)}…${id.slice(-6)}` : id;
+}
 export function BuiltinChat({
   state,
   refresh,
@@ -403,7 +411,7 @@ export function BuiltinChat({
       { role: 'assistant' as const, content: e.response },
     ]);
     history.push({ role: 'user', content: message });
-    setExchanges((all) => [...all, { prompt: message, response: '' }]);
+    setExchanges((all) => [...all, { prompt: message, response: '', model: model.trim(), sentAt: Date.now() }]);
     try {
       const result = await bridge.sendChat(
         id,
@@ -523,53 +531,91 @@ export function BuiltinChat({
           {modelsError && <div className="chat-error" role="alert">{modelsError} <button className="mac-button is-small" disabled={busy || modelsLoading} onClick={() => setModelsRevision((n) => n + 1)}>Retry models</button></div>}
           <div className="chat-messages" role="log" aria-label="Conversation">
             {exchanges.length === 0 && (
-              <div className="chat-empty">
-                <h2>Start a chat</h2>
-                <p>
-                  Each exchange is captured as its own private Trace in your
-                  vault and uses your provider’s API balance or plan allowance.
-                  The chat text stays in memory until you close this window.
-                </p>
-              </div>
+              <p className="chat-empty">
+                Each exchange becomes its own private Trace on this Mac and uses your
+                provider’s API balance or plan allowance. The transcript stays in memory
+                until you close this window.
+              </p>
             )}
-            {exchanges.map((exchange, i) => (
-              <article className="chat-exchange" key={i}>
-                <div className="chat-user">
-                  <strong>You</strong>
-                  <p className="selectable-text">{exchange.prompt}</p>
-                </div>
-                <div className="chat-response">
-                  <strong>{names[selected]}</strong>
-                  <p className="selectable-text">
-                    {exchange.response ||
-                      (busy && i === exchanges.length - 1
-                        ? 'Waiting for response…'
-                        : 'No response received.')}
-                  </p>
-                </div>
-                {exchange.result && (
-                  <div className="chat-receipt">
-                    {exchange.result.status !== 'complete' && (
-                      <p role="alert">{exchange.result.status}</p>
-                    )}
-                    {exchange.result.traces.length === 0 && (
-                      <span>Capture not confirmed</span>
-                    )}
-                    {exchange.result.traces.map((trace) => (
-                      <button
-                        className="mac-button is-small"
-                        key={trace.id}
-                        onClick={() => onOpenTrace(trace.id)}
-                      >
-                        {trace.captured
-                          ? 'Captured · Open Trace'
-                          : 'Capture unconfirmed · Inspect Trace'}
-                      </button>
-                    ))}
+            {exchanges.map((exchange, i) => {
+              const streaming = busy && i === exchanges.length - 1 && !exchange.result;
+              const failed = exchange.result && exchange.result.status !== 'complete';
+              return (
+                <article className="chat-exchange" key={i}>
+                  <div className="chat-user">
+                    <p className="selectable-text">{exchange.prompt}</p>
                   </div>
-                )}
-              </article>
-            ))}
+                  <div className={`chat-response${streaming ? ' is-streaming' : ''}`}>
+                    <div className="chat-meta">
+                      <span className="chat-meta-model">
+                        {models.find((m) => m.id === exchange.model)?.name ?? exchange.model ?? names[selected]}
+                      </span>
+                      <time dateTime={new Date(exchange.sentAt).toISOString()}>
+                        {timeFormat.format(exchange.sentAt)}
+                      </time>
+                      {exchange.response && !streaming && (
+                        <button
+                          type="button"
+                          className="chat-copy"
+                          aria-label="Copy response"
+                          title="Copy response"
+                          onClick={() => void navigator.clipboard.writeText(exchange.response)}
+                        >
+                          <Symbol name="doc.on.doc" fallback={Copy} size={12} />
+                        </button>
+                      )}
+                    </div>
+                    <p className="selectable-text">
+                      {exchange.response ||
+                        (streaming ? '' : failed ? '' : 'No response received.')}
+                      {streaming && <span className="chat-cursor" aria-hidden="true" />}
+                    </p>
+                  </div>
+                  {/* The ledger line: what this exchange became. */}
+                  <div className={`chat-ledger${failed ? ' is-failed' : ''}`} aria-live="polite">
+                    {streaming ? (
+                      <>
+                        <span className="chat-ledger-mark is-live" aria-hidden="true" />
+                        <span>{exchange.response ? 'Responding' : 'Sending'}</span>
+                      </>
+                    ) : failed ? (
+                      <>
+                        <span className="chat-ledger-mark is-failed" aria-hidden="true" />
+                        <span role="alert">{exchange.result?.status}</span>
+                        {exchange.result?.traces.length === 0 && <span>Capture not confirmed</span>}
+                      </>
+                    ) : exchange.result ? (
+                      exchange.result.traces.length === 0 ? (
+                        <>
+                          <span className="chat-ledger-mark" aria-hidden="true" />
+                          <span>Capture not confirmed</span>
+                        </>
+                      ) : (
+                        exchange.result.traces.map((trace) => (
+                          <button
+                            type="button"
+                            className="chat-ledger-trace"
+                            key={trace.id}
+                            onClick={() => onOpenTrace(trace.id)}
+                            title={trace.id}
+                          >
+                            <span
+                              className={`chat-ledger-mark${trace.captured ? ' is-captured' : ''}`}
+                              aria-hidden="true"
+                            />
+                            <span>{trace.captured ? 'Captured' : 'Capture unconfirmed'}</span>
+                            <code>{shortTraceId(trace.id)}</code>
+                            <span className="chat-ledger-open">
+                              Open Trace <Symbol name="chevron.right" fallback={ChevronRight} size={10} weight="semibold" />
+                            </span>
+                          </button>
+                        ))
+                      )
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
             <div ref={bottom} />
           </div>
           <footer className="chat-composer">
@@ -614,11 +660,21 @@ export function BuiltinChat({
               <textarea
                 ref={composer}
                 aria-label="Message"
-                placeholder="Write a message…"
+                placeholder={
+                  model.trim()
+                    ? `Message ${models.find((m) => m.id === model.trim())?.name ?? model.trim()}`
+                    : 'Write a message…'
+                }
                 value={prompt}
                 disabled={busy || (unfinished && exchanges.length > 0)}
                 onChange={(e) => setPrompt(e.target.value)}
-                rows={2}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    void send();
+                  }
+                }}
+                rows={1}
               />
               {busy ? (
                 <button
