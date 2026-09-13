@@ -1052,3 +1052,69 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 }
 .dashboard-shell--embedded .settings-page .account-connection-card > .mantine-Text-root { font-size: 13px; line-height: 1.5; }
 .dashboard-shell--embedded .capture-mode-setting > div > .mantine-Text-root:first-child { font-size: 13px; font-weight: 600; }
+
+/* macOS shell: the AI connections tab uses the same grouped form as Preferences. */
+.dashboard-shell--embedded .providers-page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 18px 24px 48px;
+}
+.dashboard-shell--embedded .providers-page .settings-group + .settings-group { margin-top: 28px; }
+.dashboard-shell--embedded .providers-page .settings-group-title {
+  margin: 0 0 4px;
+  padding: 0 4px;
+  border: 0;
+  color: var(--ink);
+  font: 600 13px/1.3 var(--ui-font);
+  letter-spacing: 0;
+}
+.dashboard-shell--embedded .provider-boundary-note {
+  margin: 0 0 8px;
+  padding: 0 4px;
+  border: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.dashboard-shell--embedded .provider-route-list {
+  overflow: hidden;
+  border: 1px solid var(--rule-soft);
+  border-radius: 10px;
+  background: var(--raised);
+  gap: 0;
+}
+.dashboard-shell--embedded .provider-route-list .provider-route {
+  padding: 14px 16px 16px;
+  border: 0;
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  border-radius: 0;
+  background: transparent;
+}
+.dashboard-shell--embedded .provider-route-list .provider-route:nth-child(2n) { border-right: 0; }
+.dashboard-shell--embedded .provider-route-list .provider-route:nth-last-child(-n + 2) { border-bottom: 0; }
+.dashboard-shell--embedded .provider-route h2 {
+  margin: 0;
+  font: 600 13px/1.35 var(--ui-font);
+  letter-spacing: 0;
+}
+.dashboard-shell--embedded .provider-route .eyebrow { margin-bottom: 2px; }
+.dashboard-shell--embedded .provider-route-subtitle { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.dashboard-shell--embedded .provider-route > .mantine-Text-root:not(.eyebrow):not(.provider-route-subtitle),
+.dashboard-shell--embedded .provider-route .notary-details .mantine-Text-root { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.dashboard-shell--embedded .provider-route .safe-note { margin: 10px 0 0; padding: 8px 0 0; font-size: 12px; }
+.dashboard-shell--embedded .provider-route .notary-details { margin-top: 12px; padding-top: 10px; }
+.dashboard-shell--embedded .provider-route .notary-details summary { font-size: 12.5px; }
+.dashboard-shell--embedded .provider-route .receipt-list { display: block; margin: 8px 0 0; border-top: 0; }
+.dashboard-shell--embedded .provider-route .receipt-list > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.dashboard-shell--embedded .provider-route .receipt-list dt { color: var(--ink); font: 400 12.5px/1.4 var(--ui-font); }
+.dashboard-shell--embedded .provider-route .receipt-list dd { font-size: 12.5px; text-align: right; }
+.dashboard-shell--embedded .provider-route .json-view { margin-top: 10px; padding: 12px 14px; border-radius: 8px; max-height: none; }
+.dashboard-shell--embedded .provider-route .notary-details .mantine-Button-root { margin-top: 10px; }
