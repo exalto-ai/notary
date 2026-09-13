@@ -33,8 +33,6 @@ export function HomeView({
     + state.counts.notarized
     + state.counts.capturing
     + state.counts.capture_failed;
-  const hasCapturedTrace = traceTotal > 0;
-  const hasSealedTrace = state.counts.notarized > 0;
   const sealingServiceName = state.sealing_service?.name ?? 'Exalto Seal';
   const sealingPhase = state.sealing_service_readiness.phase;
   const sealingReady = sealingPhase === 'ready';
@@ -110,13 +108,6 @@ export function HomeView({
       </div>
     </div>}
 
-    <section className="capture-workflow" aria-label="Trace workflow">
-      <WorkflowStep number="01" label="Capture" detail={recording ? 'Recording locally' : 'Ready when you start'} state={recording ? 'active' : 'idle'} />
-      <WorkflowStep number="02" label="Review" detail={hasCapturedTrace ? 'Inspect disclosure' : 'After capture'} state={hasCapturedTrace ? 'complete' : 'idle'} />
-      <WorkflowStep number="03" label="Seal" detail={state.counts.notarizing ? 'Sealing now' : hasSealedTrace ? 'Portable proof ready' : 'When you need proof'} state={state.counts.notarizing ? 'active' : hasSealedTrace ? 'complete' : 'idle'} />
-      <WorkflowStep number="04" label="Verify or share" detail={hasSealedTrace ? 'Available' : 'After sealing'} state={hasSealedTrace ? 'complete' : 'idle'} />
-    </section>
-
     <section className="capture-layout">
       <div className="capture-main-stack">
         <div className="capture-receipt">
@@ -164,19 +155,6 @@ export function HomeView({
         </section>
       </div>
     </section>
-  </div>;
-}
-
-function WorkflowStep({ number, label, detail, state }: {
-  number: string;
-  label: string;
-  detail: string;
-  state: 'idle' | 'active' | 'complete';
-}) {
-  return <div className={`workflow-step is-${state}`}>
-    <span>{number}</span>
-    <strong>{label}</strong>
-    <small>{detail}</small>
   </div>;
 }
 
