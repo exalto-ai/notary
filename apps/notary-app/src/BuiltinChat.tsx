@@ -316,7 +316,6 @@ export function BuiltinChat({
   const [showConnections, setShowConnections] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [consent, setConsent] = useState(false);
   const request = useRef<string | null>(null);
   const alive = useRef(true);
   const bottom = useRef<HTMLDivElement>(null);
@@ -386,7 +385,6 @@ export function BuiltinChat({
   async function send() {
     if (
       busy ||
-      !consent ||
       !connection ||
       !prompt.trim() ||
       !model.trim() ||
@@ -528,8 +526,8 @@ export function BuiltinChat({
                 <h2>Start a chat</h2>
                 <p>
                   Each exchange is captured as its own private Trace in your
-                  vault. The chat text stays in memory until you close this
-                  window.
+                  vault and uses your provider’s API balance or plan allowance.
+                  The chat text stays in memory until you close this window.
                 </p>
               </div>
             )}
@@ -596,20 +594,6 @@ export function BuiltinChat({
                 </button>
               </div>
             )}
-            {!consent && (
-              <label className="chat-consent">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                />
-                <span>
-                  I understand sending uses my provider’s API balance or ChatGPT
-                  plan allowance and saves a private encrypted Trace. It does
-                  not seal or share it.
-                </span>
-              </label>
-            )}
             {error && (
               <p className="chat-error" role="alert">
                 {error}
@@ -654,7 +638,6 @@ export function BuiltinChat({
                   type="submit"
                   disabled={
                     !connection ||
-                    !consent ||
                     !state.capture_enabled ||
                     !state.running ||
                     !model.trim() ||
