@@ -421,7 +421,7 @@ export function BuiltinChat({
   }
   return (
     <section className="builtin-chat">
-      <header className="chat-bar">
+      <header className="chat-bar" data-tauri-drag-region="deep">
         {connections.length > 0 && !showConnections ? (
           <>
             <label className="chat-field">

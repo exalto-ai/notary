@@ -26,13 +26,14 @@
 
 .chat-bar {
   display: flex;
-  min-height: 46px;
+  min-height: var(--toolbar-height);
   flex-shrink: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  padding: 6px 16px;
+  padding: 6px 20px;
   border-bottom: 1px solid var(--separator);
+  background: var(--surface);
 }
 
 .chat-bar h1 {

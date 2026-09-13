@@ -358,9 +358,14 @@ function App() {
         onNavigate={navigate}
       />
       <section className="window-content">
-        <main className={`native-content ${route ? 'has-workspace' : ''} ${(view === 'settings' || view === 'providers' || view === 'activity') ? 'has-settings-subnav' : ''}`}>
+        <main className={`native-content ${route ? 'has-workspace' : ''} ${(view === 'settings' || view === 'providers' || view === 'activity') ? 'has-settings-subnav' : ''} ${view === 'home' ? 'has-view-toolbar' : ''}`}>
+          {view === 'home' && (
+            <header className="view-toolbar" data-tauri-drag-region="deep">
+              <h1 data-tauri-drag-region>Overview</h1>
+            </header>
+          )}
           {(view === 'settings' || view === 'providers' || view === 'activity') && (
-            <nav className="settings-subnav" aria-label="Settings sections">
+            <nav className="settings-subnav" aria-label="Settings sections" data-tauri-drag-region="deep">
               <button
                 type="button"
                 className={view === 'settings' ? 'is-selected' : ''}

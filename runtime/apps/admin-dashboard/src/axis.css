@@ -618,9 +618,10 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 
 .dashboard-shell--embedded .mantine-Button-root { padding-inline: 14px; }
 .dashboard-shell--embedded .trace-filters {
-  min-height: 66px;
+  min-height: 52px;
   flex: 0 0 auto;
-  padding: 13px 20px;
+  padding: 12px 20px;
+  background: var(--raised);
 }
 .dashboard-shell--embedded .trace-empty-workspace {
   display: grid;
