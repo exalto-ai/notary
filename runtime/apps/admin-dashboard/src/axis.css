@@ -825,3 +825,32 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
   .dashboard-shell--embedded .trace-message { grid-template-columns: 1fr; }
   .dashboard-shell--embedded .settings-panel { padding-inline: 18px; }
 }
+
+/* macOS shell: section headers and field names are sentence-case secondary text.
+   Uppercase tracked mono survives only inside evidence receipts and transcripts. */
+.dashboard-shell--embedded .eyebrow,
+.dashboard-shell--embedded .admin-context-label,
+.dashboard-shell--embedded .trace-lifecycle-label,
+.dashboard-shell--embedded .metadata-grid dt,
+.dashboard-shell--embedded .receipt-list dt,
+.dashboard-shell--embedded .sharing-facts dt,
+.dashboard-shell--embedded .share-control-label,
+.dashboard-shell--embedded .share-progress-timeline li,
+.dashboard-shell--embedded .settings-notary-source dt,
+.dashboard-shell--embedded .local-notary-facts dt,
+.dashboard-shell--embedded .local-notary-state,
+.dashboard-shell--embedded .local-notary-selected,
+.dashboard-shell--embedded .local-notary-key > span,
+.dashboard-shell--embedded .settings-notaries-heading > p,
+.dashboard-shell--embedded .sample-data-label,
+.dashboard-shell--embedded .trace-inference-label,
+.dashboard-shell--embedded .account-connection-facts dt,
+.dashboard-shell--embedded .proof-work footer {
+  font-family: var(--ui-font);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.dashboard-shell--embedded .status-label {
+  letter-spacing: 0;
+  text-transform: capitalize;
+}
