@@ -403,6 +403,35 @@ doubled borders.
   a bare public JSON as carrying cryptographic evidence. The body-disclosure
   warning sits beside every upload or share action.
 
+## The macOS shell
+
+Exalto Capture is a Mac app first. Inside the desktop window the Human
+Interface Guidelines own behaviour and geometry, and this document owns
+identity. The split is explicit so the two never argue:
+
+- **Native, from the HIG:** window chrome and the hidden title bar; the
+  sidebar as a translucent source list with a rounded accent-tinted selection;
+  one unified toolbar band whose contents change per view; control shapes and
+  sizes (6px radius on buttons and fields, 28px toolbar and 22px form controls,
+  segmented controls, pop-up buttons, the system switch, a rounded search
+  field); selection, focus rings, and the user's accent colour; sheets for
+  tasks, alerts for confirmations, menus for secondary and destructive actions;
+  a complete menu bar with standard shortcuts; Settings laid out as grouped
+  forms with the control on the right.
+- **Ours, from this document:** the paper and navy palette; the three type
+  roles with mono reserved for evidence values; square outlined status
+  markers with words; flat rule-separated grids with no lift or shadow; one
+  primary per screen; the setup rail and first-run sheet as a branded
+  exception; the copy doctrine.
+
+Section headers in the shell are 11px semibold secondary text in sentence
+case with no tracking, the way System Settings and Xcode label groups.
+Uppercase tracked mono survives only where a field name inside an evidence
+receipt or transcript aids scanning. The rules above about 0px radius, "never
+a pill", and "indigo rule, never a pill" apply to the browser workspace; the
+embedded dashboard follows this section when it runs inside the desktop
+shell (`.dashboard-shell--embedded`).
+
 ## Motion
 
 Motion explains an evidence transition. The relay diagram moves in one

@@ -95,8 +95,6 @@
   padding: 0 18px 9px;
   color: var(--night-muted);
   font: 600 var(--text-caption)/1.2 var(--font-text);
-  letter-spacing: .09em;
-  text-transform: uppercase;
 }
 
 .setup-ledger {
@@ -636,8 +634,6 @@
   color: var(--blue);
   font: 600 var(--text-caption)/1.6 var(--font-text);
   font-style: normal;
-  letter-spacing: .06em;
-  text-transform: uppercase;
 }
 
 .exalto-onboarding .notary-boundary {
@@ -661,8 +657,6 @@
 .exalto-onboarding .notary-boundary dt {
   color: var(--tertiary);
   font: 600 var(--text-caption)/1.2 var(--font-text);
-  letter-spacing: .06em;
-  text-transform: uppercase;
 }
 
 .exalto-onboarding .notary-boundary dd {
@@ -703,8 +697,6 @@
   color: var(--tertiary);
   font: 600 var(--text-caption)/1.2 var(--font-text);
   font-style: normal;
-  letter-spacing: .05em;
-  text-transform: uppercase;
 }
 
 .exalto-onboarding .advanced-notaries > p {
@@ -929,8 +921,6 @@
 .exalto-onboarding .credential-import > label {
   color: var(--tertiary);
   font: 600 var(--text-caption)/1.2 var(--font-text);
-  letter-spacing: .05em;
-  text-transform: uppercase;
 }
 
 .exalto-onboarding .credential-import > div {
@@ -1099,8 +1089,6 @@
 .exalto-onboarding .ready-summary dt {
   color: var(--tertiary);
   font: 600 var(--text-caption)/1.2 var(--font-text);
-  letter-spacing: .05em;
-  text-transform: uppercase;
 }
 
 .exalto-onboarding .ready-summary dd {
