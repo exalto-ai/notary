@@ -390,20 +390,22 @@ h1, h2, p { margin: 0; }
 .native-window .native-content { background: var(--window); }
 .native-window .native-page { width: min(1100px, calc(100% - 40px)); padding: 28px 0 28px; }
 .native-window .mac-button {
-  min-height: 35px;
+  min-height: var(--control-height);
+  padding-inline: 12px;
   border-color: var(--separator);
-  border-radius: 4px;
+  border-radius: var(--control-radius);
   background: var(--surface);
   color: var(--text);
   box-shadow: none;
-  font: 600 var(--text-body)/1.2 var(--body-font);
+  font: 500 var(--text-body)/1.2 var(--body-font);
 }
 .native-window .mac-button:hover:not(:disabled) { border-color: rgba(30, 74, 115, .38); background: var(--surface-secondary); }
 .native-window .mac-button:active:not(:disabled) { background: #e3dfd4; }
 .native-window .mac-button.is-primary { border-color: var(--blue); background: var(--blue); color: #fff; }
 .native-window .mac-button.is-primary:hover:not(:disabled) { border-color: var(--blue-hover); background: var(--blue-hover); }
-.native-window .mac-button.is-small { min-height: 31px; font-size: var(--text-label); }
-.native-window .mac-button.is-large { min-height: 40px; padding-inline: 18px; font-size: var(--text-body); }
+.native-window .mac-button.is-primary { font-weight: 600; }
+.native-window .mac-button.is-small { min-height: var(--control-height-compact); padding-inline: 9px; font-size: var(--text-label); }
+.native-window .mac-button.is-large { min-height: 32px; padding-inline: 16px; font-size: var(--text-body); }
 .native-window .section-label {
   color: var(--tertiary);
   font: 600 var(--text-caption)/1.25 var(--body-font);
