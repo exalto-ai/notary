@@ -175,9 +175,11 @@ body {
   text-decoration: none;
 }
 
+/* Docs is a link and the account control is a button; a wider gap keeps the
+   two from reading as one group. */
 .app-nav-actions {
   justify-content: flex-end;
-  gap: 15px;
+  gap: 26px;
 }
 
 .app-sign-in-link {
@@ -1026,7 +1028,7 @@ html {
 
   .app-nav-links { gap: 14px; }
 
-  .app-nav-actions { gap: 11px; }
+  .app-nav-actions { gap: 18px; }
 
   .app-workspace { min-height: calc(100dvh - 60px); padding-top: 45px; }
 

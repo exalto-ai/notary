@@ -1,9 +1,10 @@
 # Capture and public website
 
-`platform/web` is the Capture SPA: account overview, usage and billing, hosted
-Trace management, device approval, sign-in, docs, and legal pages. Its root
-opens the account overview or sign-in. It has no duplicate marketing landing
-page or public Trace/Registry/verifier routes.
+`platform/web` is the Capture SPA: the Capture landing page, account overview,
+usage and billing, hosted Trace management, device approval, sign-in, docs, and
+legal pages. Its root is a short landing led by the macOS download and stays
+that way when signed in; the account lives under `/app`. It does not repeat the
+exalto.ai story and has no public Trace/Registry/verifier routes.
 
 The sibling `website` repository owns the exalto.ai marketing page and public
 `/traces`, `/s/{trace_id}`, `/registry`, and `/verify` routes. Public tools do
