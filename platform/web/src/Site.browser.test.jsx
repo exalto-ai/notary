@@ -187,7 +187,7 @@ test('holds the Account layout with a placeholder while authentication loads', a
   // The placeholder is the Account layout, not an indicator floating over it.
   expect(document.querySelector('.dashboard-shell--placeholder .dashboard-layout')).not.toBe(null);
   await expect
-    .element(page.getByRole('heading', { name: 'Record every session.' }))
+    .element(page.getByRole('link', { name: 'Download for macOS' }))
     .not.toBeInTheDocument();
 
   resolveCurrentUser({
@@ -1303,7 +1303,41 @@ test('distinguishes loading, zero-usage, and unavailable utilization states', as
     .toBeVisible();
 });
 
-test('Capture opens sign-in at root without a duplicate landing page', async () => {
+test('leads the root with the macOS download for visitors and account holders alike', async () => {
+  vi.stubGlobal('fetch', async () => ({ ok: false }));
+  render(<App loadCurrentUser={async () => null} />);
+  await expect
+    .element(page.getByRole('heading', { name: 'Record every session. Seal what matters.' }))
+    .toBeVisible();
+  const downloads = page.getByRole('link', { name: 'Download for macOS' });
+  await expect.element(downloads.first()).toHaveAttribute('href', '/docs/getting-started');
+  expect(downloads.all()).toHaveLength(2);
+  await expect.element(page.getByRole('link', { name: 'Sign in' }).first()).toBeVisible();
+  expect(page.getByRole('link', { name: 'Open dashboard' }).query()).toBeNull();
+  expect(document.title).toBe('Exalto Capture');
+  cleanup();
+
+  // A session never turns the front door into the dashboard; it only swaps
+  // the sign-in prompts for a way into /app.
+  render(
+    <App
+      loadCurrentUser={async () => ({
+        provider_display_name: 'fixture-user',
+        usage: usageFixture(),
+      })}
+    />,
+  );
+  await expect
+    .element(page.getByRole('link', { name: 'Open dashboard' }))
+    .toHaveAttribute('href', '/app/');
+  await expect
+    .element(page.getByRole('heading', { name: 'Record every session. Seal what matters.' }))
+    .toBeVisible();
+  expect(page.getByRole('heading', { name: 'Overview' }).query()).toBeNull();
+});
+
+test('keeps the dashboard behind sign-in under /app', async () => {
+  window.history.replaceState({}, '', '/app');
   render(<App loadCurrentUser={async () => null} />);
   await expect.element(page.getByRole('heading', { name: 'Keep the record close.' })).toBeVisible();
   expect(document.title).toBe('Overview · Exalto Capture');

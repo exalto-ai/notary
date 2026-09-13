@@ -6,6 +6,7 @@ import './siteStyles';
 import { apiHref, getAuthProviders, getCurrentUser, logoutBrowser } from '../platform-api/client';
 import { Dashboard } from './AccountDashboard';
 import { DeviceAuthorizationApproval } from './AuthorizationPages';
+import { LandingPage } from './LandingPage';
 import { AccountPlaceholder, useSettledWait } from './LoadingStates';
 import { currentRoute, navigateTo } from './navigation';
 import { Docs } from './PublicDocs';
@@ -366,8 +367,9 @@ export function CaptureApp({
   };
   const path = route;
   const routePath = path.split('?')[0];
-  const [requestedSection, requestedPage] = routePath.split('/');
-  const section = requestedSection || 'app';
+  // The root is the public landing, signed in or not; the account lives
+  // under /app so a session never turns the front door into a dashboard.
+  const [section, requestedPage] = routePath.split('/');
   const page = requestedPage;
   const routeQuery = path.includes('?') ? `?${path.split('?').slice(1).join('?')}` : '';
   const canonicalPath = `${section}${page ? `/${page}` : ''}${routeQuery}`;
@@ -406,7 +408,9 @@ export function CaptureApp({
         hideSignIn={section === 'authorize' || section === 'signin'}
         authPending={authPending}
       />
-      {section === 'authorize' ? (
+      {!section ? (
+        <LandingPage signedIn={user !== null} />
+      ) : section === 'authorize' ? (
         <DeviceAuthorizationApproval route={path} user={user} />
       ) : section === 'signin' ? (
         <SignInPage route={path} user={user} />
