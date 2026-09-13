@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Send, Square, ExternalLink } from 'lucide-react';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import {
   errorMessage,
+  isTauri,
   setCaptureEnabled,
   startDaemon,
   type DesktopState,
@@ -318,6 +320,28 @@ export function BuiltinChat({
   const request = useRef<string | null>(null);
   const alive = useRef(true);
   const bottom = useRef<HTMLDivElement>(null);
+  const composer = useRef<HTMLTextAreaElement>(null);
+  // File > New Chat clears the conversation and focuses the composer.
+  useEffect(() => {
+    if (!isTauri()) return;
+    let disposed = false;
+    let unlisten: UnlistenFn | null = null;
+    void listen<string>('exalto:menu', (event) => {
+      if (event.payload !== 'new-chat' || request.current) return;
+      setExchanges([]);
+      setPrompt('');
+      setError('');
+      setShowConnections(false);
+      requestAnimationFrame(() => composer.current?.focus());
+    }).then((stopListening) => {
+      if (disposed) stopListening();
+      else unlisten = stopListening;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -603,6 +627,7 @@ export function BuiltinChat({
               }}
             >
               <textarea
+                ref={composer}
                 aria-label="Message"
                 placeholder="Write a message…"
                 value={prompt}

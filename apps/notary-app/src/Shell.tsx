@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { FileCheck2, MessageSquare, Radio, RefreshCw, Settings, Square } from 'lucide-react';
-import type { DesktopState } from './bridge';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { isTauri, type DesktopState } from './bridge';
 import notaryMark from './notary-mark.svg';
 import {
   DISPLAY_NAME,
@@ -100,6 +101,27 @@ export function WorkspaceFrame({
     ?? `${workspaceOrigin}/dashboard?embedded=desktop#/${traceDestination}`;
   const lastParentRequest = useRef({ route, source: requestedSource, navigationRequest });
   const [navigation, setNavigation] = useState({ source: requestedSource, revision: 0 });
+
+  // View > Find reaches the search field inside the workspace frame.
+  useEffect(() => {
+    if (!isTauri()) return;
+    let disposed = false;
+    let unlisten: UnlistenFn | null = null;
+    void listen<string>('exalto:menu', (event) => {
+      if (event.payload !== 'find') return;
+      frame.current?.contentWindow?.postMessage(
+        { type: 'notary:desktop-command', payload: { command: 'find' } },
+        workspaceOrigin,
+      );
+    }).then((stopListening) => {
+      if (disposed) stopListening();
+      else unlisten = stopListening;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
 
   const sendDesktopSettings = () => {
     if (!desktopSettings) return;
