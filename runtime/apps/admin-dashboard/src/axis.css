@@ -925,16 +925,22 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 .dashboard-shell--embedded .notary-details summary,
 .dashboard-shell--embedded .otlp-details summary { border-radius: 6px; }
 
-/* Menus: rounded, on the raised surface, with the system's soft shadow. */
+/* Menus. The browser workspace keeps its square, flat surfaces; the desktop
+   shell rounds them and adds the system's soft shadow (see the desktop block). */
 .mantine-Menu-dropdown {
   padding: 4px;
   border: 1px solid var(--rule);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--raised);
   color: var(--ink);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .28), 0 0 0 .5px rgba(0, 0, 0, .12);
+  box-shadow: none;
 }
-.mantine-Menu-item { min-height: 26px; border-radius: 5px; font-size: 13px; }
+.mantine-Menu-item { min-height: 26px; border-radius: 0; font-size: 12px; }
 .mantine-Menu-item:hover:not(:disabled), .mantine-Menu-item[data-hovered] { background: var(--subtle); }
 .mantine-Menu-item[data-disabled] { color: var(--muted); }
 .mantine-Menu-label { padding-inline: 10px; color: var(--muted); font-size: 11px; white-space: normal; }
+.dashboard-shell--embedded .mantine-Menu-dropdown {
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .28), 0 0 0 .5px rgba(0, 0, 0, .12);
+}
+.dashboard-shell--embedded .mantine-Menu-item { border-radius: 5px; font-size: 13px; }

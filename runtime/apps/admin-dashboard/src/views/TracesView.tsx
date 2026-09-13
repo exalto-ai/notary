@@ -751,9 +751,9 @@ function DeleteTraceAction({
     <>
       <Menu position="bottom-end" width={220} withinPortal>
         <Menu.Target>
-          <ActionIcon variant="outline" size={28} aria-label="More actions" title="More actions">
-            <Ellipsis size={15} />
-          </ActionIcon>
+          <Button variant="outline" leftSection={<Ellipsis size={15} />} aria-label="More actions">
+            More
+          </Button>
         </Menu.Target>
         <Menu.Dropdown>
           <Menu.Item
