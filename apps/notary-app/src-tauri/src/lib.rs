@@ -270,7 +270,6 @@ async fn get_desktop_state(
     }
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// The sidebar column is drawn by the system as a translucent sidebar
 /// material, so the window is transparent and the content area paints its
 /// own opaque background.
@@ -288,6 +287,7 @@ fn apply_sidebar_material(app: &tauri::App) {
     }
 }
 
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
