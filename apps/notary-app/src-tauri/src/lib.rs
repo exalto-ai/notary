@@ -270,6 +270,23 @@ async fn get_desktop_state(
     }
 }
 
+/// The sidebar column is drawn by the system as a translucent sidebar
+/// material, so the window is transparent and the content area paints its
+/// own opaque background.
+fn apply_sidebar_material(app: &tauri::App) {
+    #[cfg(target_os = "macos")]
+    if let Some(window) = app.get_webview_window("main")
+        && let Err(error) = window_vibrancy::apply_vibrancy(
+            &window,
+            window_vibrancy::NSVisualEffectMaterial::Sidebar,
+            None,
+            None,
+        )
+    {
+        eprintln!("sidebar material unavailable: {error}");
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
@@ -349,6 +366,7 @@ pub fn run() {
         })
         .setup(|app| {
             create_app_menu(app)?;
+            apply_sidebar_material(app);
             let capture_menu = create_tray(app)?;
             app.manage(capture_menu);
             schedule_capture_menu_updates(app.handle().clone());
