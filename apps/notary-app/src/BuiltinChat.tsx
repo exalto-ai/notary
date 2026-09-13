@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Copy, Plus, Send, Square, ExternalLink } from 'lucide-react';
+import { ChevronRight, Copy, Plus, Send, Settings, Square, ExternalLink } from 'lucide-react';
 import { Symbol } from './Symbol';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import {
@@ -453,7 +453,7 @@ export function BuiltinChat({
   return (
     <section className="builtin-chat">
       <header className="chat-bar" data-tauri-drag-region="deep">
-        {connections.length > 0 && !showConnections ? (
+        {connections.length > 0 ? (
           <>
             <label className="chat-field">
               <span>Use</span>
@@ -501,42 +501,60 @@ export function BuiltinChat({
         >
           <Symbol name="plus" fallback={Plus} size={12} weight="semibold" /> New chat
         </button>
-        <button
-          className="mac-button is-small"
-          aria-expanded={showConnections}
-          disabled={busy}
-          onClick={() => setShowConnections(!showConnections)}
-        >
-          {showConnections ? 'Done' : 'Connections'}
-        </button>
       </header>
-      <div
-        className="chat-connections-panel"
-        hidden={!showConnections && connections.length > 0}
-      >
-        <ProviderConnections
-          key={String(showConnections)}
-          disabled={busy}
-          onChange={(items) => {
-            setConnections(items);
-            if (!items.some((c) => c.id === selected) && items[0]) {
-              setSelected(items[0].id);
-              setExchanges([]);
-            }
-          }}
-        />
-      </div>
-      {connections.length > 0 && !showConnections && (
+      {connections.length === 0 && (
+        <div className="chat-connections-panel">
+          <ProviderConnections
+            disabled={busy}
+            onChange={(items) => {
+              setConnections(items);
+              if (!items.some((c) => c.id === selected) && items[0]) {
+                setSelected(items[0].id);
+                setExchanges([]);
+              }
+            }}
+          />
+        </div>
+      )}
+      {connections.length > 0 && showConnections && (
+        /* Connections as a sheet: hangs from the top of the pane, dismisses with Done, Escape, or a click outside. */
+        <div className="chat-sheet-overlay" onClick={() => setShowConnections(false)}>
+          <section
+            className="chat-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Connections"
+            tabIndex={-1}
+            ref={(node) => node?.focus()}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setShowConnections(false);
+            }}
+          >
+            <div className="chat-sheet-body">
+              <ProviderConnections
+                disabled={busy}
+                onChange={(items) => {
+                  setConnections(items);
+                  if (!items.some((c) => c.id === selected) && items[0]) {
+                    setSelected(items[0].id);
+                    setExchanges([]);
+                  }
+                }}
+              />
+            </div>
+            <footer className="chat-sheet-footer">
+              <button className="mac-button is-primary" type="button" onClick={() => setShowConnections(false)}>
+                Done
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
+      {connections.length > 0 && (
         <>
           {modelsError && <div className="chat-error" role="alert">{modelsError} <button className="mac-button is-small" disabled={busy || modelsLoading} onClick={() => setModelsRevision((n) => n + 1)}>Retry models</button></div>}
           <div className="chat-messages" role="log" aria-label="Conversation">
-            {exchanges.length === 0 && (
-              <p className="chat-empty">
-                Each exchange becomes its own private Trace on this Mac and uses your
-                provider’s API balance or plan allowance. The transcript stays in memory
-                until you close this window.
-              </p>
-            )}
             {exchanges.map((exchange, i) => {
               const streaming = busy && i === exchanges.length - 1 && !exchange.result;
               const failed = exchange.result && exchange.result.status !== 'complete';
@@ -657,6 +675,17 @@ export function BuiltinChat({
                 void send();
               }}
             >
+              <button
+                className="chat-connections-button"
+                type="button"
+                aria-label="Connections"
+                title="Connections"
+                aria-haspopup="dialog"
+                disabled={busy}
+                onClick={() => setShowConnections(true)}
+              >
+                <Symbol name="gearshape" fallback={Settings} size={15} />
+              </button>
               <textarea
                 ref={composer}
                 aria-label="Message"
