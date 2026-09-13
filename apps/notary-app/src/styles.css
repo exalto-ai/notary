@@ -393,7 +393,7 @@ h1, h2, p { margin: 0; }
 .native-window .window-content { min-height: 0; height: 100%; overflow: hidden; }
 
 .native-window .native-content { background: var(--window); }
-.native-window .native-page { width: min(1100px, calc(100% - 40px)); padding: 28px 0 28px; }
+.native-window .native-page { width: min(1100px, calc(100% - 40px)); padding: 18px 0 28px; }
 .native-window .mac-button {
   min-height: var(--control-height);
   padding-inline: 12px;
@@ -416,26 +416,26 @@ h1, h2, p { margin: 0; }
   font: 600 var(--text-caption)/1.25 var(--body-font);
 }
 
+/* The recorder is the first group: state on the left, the one action on the right. */
 .native-window .capture-console {
   display: grid;
-  min-height: 150px;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 28px;
-  padding: 26px 28px;
-  border: 1px solid #17283a;
-  border-radius: 5px;
-  background: #0c1622;
-  color: #f5f3ec;
-  box-shadow: var(--shadow);
+  gap: 20px;
+  padding: 16px 20px;
+  border: 1px solid var(--separator-soft);
+  border-radius: var(--group-radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: none;
 }
-.native-window .capture-console.is-recording { border-color: rgba(53, 227, 155, .42); }
-.native-window .capture-console-state { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 15px; }
+.native-window .capture-console.is-recording { border-color: rgba(53, 227, 155, .5); }
+.native-window .capture-console-state { display: grid; grid-template-columns: 16px minmax(0, 1fr); align-items: start; gap: 12px; }
 .native-window .capture-rec-dot {
   width: 10px;
   height: 10px;
-  margin-top: 27px;
-  border: 1px solid #718094;
+  margin-top: 22px;
+  border: 1px solid var(--tertiary);
   border-radius: 50%;
   background: transparent;
 }
@@ -448,25 +448,25 @@ h1, h2, p { margin: 0; }
 @keyframes capture-rec-pulse {
   50% { box-shadow: 0 0 0 7px rgba(232, 117, 97, .04); }
 }
-.native-window .capture-console .section-label { color: #91a2b5; }
+.native-window .capture-console .section-label { color: var(--tertiary); }
 .native-window .capture-console h1 {
-  margin-top: 6px;
+  margin-top: 3px;
   font-family: var(--display-font);
-  font-size: 30px;
-  font-weight: 650;
-  letter-spacing: -.02em;
-  line-height: 1;
+  font-size: var(--text-section);
+  font-weight: 640;
+  letter-spacing: -.015em;
+  line-height: 1.2;
 }
-.native-window .capture-console p { max-width: 700px; margin-top: 9px; color: #b6c0cc; font: 400 15.5px/1.48 var(--body-font); }
-.native-window .capture-button { min-height: 42px; padding-inline: 18px; }
+.native-window .capture-console p { max-width: 640px; margin-top: 4px; color: var(--secondary); font: 400 var(--text-body)/1.5 var(--body-font); }
+.native-window .capture-button { min-height: 32px; padding-inline: 16px; }
 .native-window .capture-button.is-primary {
-  border-color: #35e39b;
-  background: #35e39b;
-  color: #0c1622;
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
 }
-.native-window .capture-button.is-primary:hover:not(:disabled) { border-color: #55e8aa; background: #55e8aa; color: #0c1622; }
-.native-window .capture-button.is-stop { border-color: rgba(255, 255, 255, .24); background: transparent; color: #f5f3ec; }
-.native-window .capture-button.is-stop:hover:not(:disabled) { border-color: rgba(255, 255, 255, .42); background: rgba(255, 255, 255, .07); }
+.native-window .capture-button.is-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.native-window .capture-button.is-stop { border-color: var(--separator); background: var(--surface); color: var(--text); }
+.native-window .capture-button.is-stop:hover:not(:disabled) { background: var(--surface-secondary); }
 
 .native-window .capture-toast {
   position: fixed;
@@ -531,52 +531,17 @@ h1, h2, p { margin: 0; }
 .native-window .capture-warning-actions { display: flex; align-items: center; justify-content: flex-end; gap: 11px; padding-top: 2px; }
 .native-window .capture-warning button { padding: 0 0 2px; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--text); font-size: var(--text-caption); white-space: nowrap; }
 
-.native-window .capture-workflow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: 18px;
-  overflow: hidden;
-  border: 1px solid var(--separator);
-  border-radius: 5px;
-  background: var(--surface);
-}
-.native-window .workflow-step {
-  position: relative;
-  display: grid;
-  min-height: 90px;
-  grid-template-columns: 28px minmax(0, 1fr);
-  align-content: center;
-  column-gap: 10px;
-  padding: 15px 17px;
-}
-.native-window .workflow-step + .workflow-step { border-left: 1px solid var(--separator-soft); }
-.native-window .workflow-step > span {
-  grid-row: span 2;
-  align-self: start;
-  padding-top: 2px;
-  color: var(--tertiary);
-  font: 600 var(--text-caption)/1.2 var(--body-font);
-}
-.native-window .workflow-step strong { font-size: var(--text-body); font-weight: 650; }
-.native-window .workflow-step small { margin-top: 5px; color: var(--tertiary); font: 500 var(--text-label)/1.35 var(--body-font); }
-.native-window .workflow-step.is-active { background: var(--green-soft); box-shadow: inset 0 3px 0 var(--green); }
-.native-window .workflow-step.is-active > span,
-.native-window .workflow-step.is-active small { color: var(--green); }
-.native-window .workflow-step.is-complete { background: var(--blue-soft); box-shadow: inset 0 3px 0 var(--blue); }
-.native-window .workflow-step.is-complete > span,
-.native-window .workflow-step.is-complete small { color: var(--blue); }
-
-.native-window .capture-layout { display: grid; grid-template-columns: minmax(0, 1.22fr) minmax(320px, .78fr); align-items: start; gap: 16px; margin-top: 16px; }
+.native-window .capture-layout { display: grid; grid-template-columns: minmax(0, 1.22fr) minmax(320px, .78fr); align-items: start; gap: 12px; margin-top: 12px; }
 .native-window .capture-main-stack { display: grid; align-content: start; gap: 16px; }
 .native-window .capture-receipt,
 .native-window .capture-connection-card,
 .native-window .capture-protection-card,
 .native-window .capture-route-card {
   overflow: hidden;
-  border: 1px solid var(--separator);
-  border-radius: 5px;
+  border: 1px solid var(--separator-soft);
+  border-radius: var(--group-radius);
   background: var(--surface);
-  box-shadow: 0 1px 1px rgba(12, 22, 34, .025);
+  box-shadow: none;
 }
 .native-window .capture-receipt > header,
 .native-window .capture-connection-card > header,
@@ -590,11 +555,11 @@ h1, h2, p { margin: 0; }
 .native-window .capture-receipt h2,
 .native-window .capture-connection-card h2,
 .native-window .capture-protection-card h2 {
-  margin-top: 4px;
-  font-family: var(--display-font);
-  font-size: var(--text-section);
-  font-weight: 620;
-  letter-spacing: -.012em;
+  margin-top: 3px;
+  font-family: var(--body-font);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.01em;
 }
 .native-window .capture-receipt > header > svg { color: var(--green); }
 .native-window .capture-connection-card > header > svg,
@@ -643,7 +608,7 @@ h1, h2, p { margin: 0; }
 .native-window .capture-connection-card > button:hover { background: var(--surface-hover); }
 .native-window .capture-side-stack { display: grid; gap: 16px; }
 .native-window .capture-connection-card > p,
-.native-window .capture-protection-card > p { padding: 0 20px 16px; color: var(--secondary); font: 400 var(--text-lead)/1.48 var(--body-font); }
+.native-window .capture-protection-card > p { padding: 0 20px 14px; color: var(--secondary); font: 400 var(--text-body)/1.5 var(--body-font); }
 .native-window .capture-connection-card > button { border-top: 1px solid var(--separator-soft); }
 .native-window .capture-protection-card dl { margin: 0; border-top: 1px solid var(--separator-soft); }
 .native-window .capture-protection-card dl div { display: grid; min-height: 43px; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 10px; padding: 0 20px; }
@@ -652,7 +617,7 @@ h1, h2, p { margin: 0; }
 .native-window .capture-protection-card dd { overflow: hidden; margin: 0; color: var(--text); font: 500 var(--text-caption)/1.2 var(--body-font); text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .native-window .capture-protection-card dd code { font: 500 var(--text-caption)/1.2 var(--mono-font); }
 
-.native-window .capture-route-card { margin-top: 16px; }
+.native-window .capture-route-card { margin-top: 12px; }
 .native-window .capture-main-stack .capture-route-card { margin-top: 0; }
 .native-window .capture-route-card > header { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 16px 20px; }
 .native-window .capture-route-card > header strong { color: var(--secondary); font-size: var(--text-caption); font-weight: 500; }
@@ -783,9 +748,6 @@ h1, h2, p { margin: 0; }
 @media (max-width: 880px) {
   .native-window .capture-console { grid-template-columns: 1fr; }
   .native-window .capture-button { justify-self: start; }
-  .native-window .capture-workflow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .native-window .workflow-step:nth-child(3) { border-left: 0; border-top: 1px solid var(--separator-soft); }
-  .native-window .workflow-step:nth-child(4) { border-top: 1px solid var(--separator-soft); }
   .native-window .capture-side-stack { grid-template-columns: 1fr; }
   .native-window .capture-warning { grid-template-columns: 1fr; }
   .native-window .capture-warning-actions { justify-content: flex-start; }
@@ -817,7 +779,6 @@ h1, h2, p { margin: 0; }
   }
   .native-window .mac-button { border-color: var(--separator); background: var(--surface); color: var(--text); }
   .native-window .mac-button:hover:not(:disabled) { background: var(--surface-secondary); }
-  .native-window .capture-console { border-color: #294157; background: #07111b; }
   .native-window .capture-button.is-primary,
   .native-window .capture-button.is-primary:hover:not(:disabled) { color: #07111b; }
   .native-window .capture-warning { color: var(--secondary); }
