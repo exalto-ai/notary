@@ -20,6 +20,7 @@ export default defineConfig({
       { find: 'radix-ui', replacement: resolve(process.cwd(), 'node_modules/radix-ui') },
       { find: 'tailwind-merge', replacement: resolve(process.cwd(), 'node_modules/tailwind-merge') },
       { find: 'tw-animate-css', replacement: resolve(process.cwd(), 'node_modules/tw-animate-css') },
+      { find: 'shadcn/tailwind.css', replacement: resolve(process.cwd(), 'node_modules/shadcn/dist/tailwind.css') },
       { find: 'shadcn', replacement: resolve(process.cwd(), 'node_modules/shadcn') },
     ],
   },
