@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createTheme, MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import {
   checkForUpdates,
@@ -28,12 +33,34 @@ import {
 } from './product';
 import { Sidebar } from './Shell';
 import { SettingsView } from './SettingsView';
+import type { DashboardRoute } from '../../../runtime/apps/admin-dashboard/src/routes';
 
 export const SENSITIVE_INPUT_RESET_EVENT = 'exalto:sensitive-input-reset';
 export const CAPTURE_STATE_CHANGED_EVENT = 'exalto:capture-state-changed';
 export const DISPOSABLE_TEST_STOPPED_MESSAGE = 'The disposable test stopped when setup closed. Prepare it again when you are ready.';
 
-function App() {
+const desktopTheme = createTheme({
+  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif',
+  fontFamilyMonospace: 'ui-monospace, "SFMono-Regular", "SF Mono", Menlo, monospace',
+  primaryColor: 'axis',
+  defaultRadius: 0,
+  colors: {
+    axis: [
+      '#edf4ff',
+      '#dceaff',
+      '#b9d8ff',
+      '#8db8ff',
+      '#6fa7ff',
+      '#4e8df2',
+      '#3775df',
+      '#285fd1',
+      '#1c55cd',
+      '#143d94',
+    ],
+  },
+});
+
+function AppContent() {
   const query = useMemo(() => new URLSearchParams(window.location.search), []);
   const requestedView = query.get('view') as View | null;
   const [view, setView] = useState<View>(requestedView && requestedView in viewMeta ? requestedView : 'home');
@@ -364,9 +391,19 @@ function App() {
       setWorkspaceNavigationRevision((current) => current + 1);
     }
   };
-  const syncWorkspaceRoute = (next: View) => {
-    setTraceConstraint(null);
-    setTraceTarget(null);
+  const syncWorkspaceRoute = (next: View, dashboardRoute?: DashboardRoute) => {
+    const filters = dashboardRoute?.filters;
+    const constraint = next === 'traces'
+      ? filters?.state
+        ? `state=${filters.state}` as TraceConstraint
+        : filters?.status
+          ? `status=${filters.status}` as TraceConstraint
+          : null
+      : null;
+    setTraceConstraint(constraint);
+    setTraceTarget(next === 'traces' && dashboardRoute?.id
+      ? { traceId: dashboardRoute.id, action: dashboardRoute.action }
+      : null);
     setView(next);
   };
   const openTraces = (constraint: TraceConstraint) => {
@@ -460,6 +497,20 @@ function App() {
         </main>
       </section>
     </div>
+  );
+}
+
+function App() {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: { queries: { staleTime: 2_000, retry: 1, refetchOnWindowFocus: true } },
+  }));
+  return (
+    <MantineProvider theme={desktopTheme} defaultColorScheme="auto">
+      <Notifications position="bottom-right" />
+      <QueryClientProvider client={queryClient}>
+        <AppContent />
+      </QueryClientProvider>
+    </MantineProvider>
   );
 }
 

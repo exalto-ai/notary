@@ -835,6 +835,9 @@ function CapturedTraceInspector({
     mutationFn: () => api.startNotarization(capture.trace_id),
     onMutate: () => setFirstProofStartError(null),
     onSuccess: (result) => {
+      if (initialAction === 'first-proof') {
+        onTraceActionConsumed?.(capture.trace_id, 'first-proof');
+      }
       notifications.show({
         title: result.deduplicated ? 'Already in the queue' : 'Sealing queued',
         message: result.deduplicated
@@ -849,7 +852,7 @@ function CapturedTraceInspector({
       navigate({
         view: 'traces',
         id: capture.trace_id,
-        action: initialAction === 'first-proof' ? initialAction : undefined,
+        action: initialAction === 'first-proof' ? undefined : initialAction,
       });
     },
     onError: (error) => {
