@@ -74,7 +74,6 @@ function AppContent() {
   const [serviceStartError, setServiceStartError] = useState<string | null>(null);
   const [setupOpen, setSetupOpen] = useState(false);
   const lastWorkspaceRoute = useRef<WorkspaceView | null>(null);
-  const [workspaceNavigationRevision, setWorkspaceNavigationRevision] = useState(0);
   const [sensitiveInputGeneration, setSensitiveInputGeneration] = useState(0);
   const [setupResumeError, setSetupResumeError] = useState<string | null>(null);
   const disposableTestInProgress = useRef(false);
@@ -112,7 +111,6 @@ function AppContent() {
     setTraceConstraint(null);
     setTraceTarget(target);
     setView('traces');
-    setWorkspaceNavigationRevision((current) => current + 1);
   }, [setupOpen, state?.onboarding_complete]);
 
   useEffect(() => {
@@ -148,7 +146,7 @@ function AppContent() {
     };
   }, [setupOpen, state?.onboarding_complete]);
 
-  // Menu-bar View commands. New Chat and Find are handled by the view that owns them.
+  // Menu-bar View commands. The desktop tree owns navigation and search.
   useEffect(() => {
     if (!isTauri()) return;
     let disposed = false;
@@ -160,13 +158,16 @@ function AppContent() {
         setTraceConstraint(null);
         setTraceTarget(null);
         setView(target);
-        if (workspaceRoutes[target]) {
-          setWorkspaceNavigationRevision((current) => current + 1);
-        }
       } else if (target === 'new-chat') {
         setTraceConstraint(null);
         setTraceTarget(null);
         setView('chat');
+      } else if (target === 'find') {
+        const field = document.querySelector<HTMLInputElement>(
+          'input[aria-label="Search traces"], input[aria-label="Activity Trace ID"]',
+        );
+        field?.focus();
+        field?.select();
       }
     }).then((stopListening) => {
       if (disposed) stopListening();
@@ -387,9 +388,6 @@ function AppContent() {
     setTraceConstraint(null);
     setTraceTarget(null);
     setView(next);
-    if (workspaceRoutes[next]) {
-      setWorkspaceNavigationRevision((current) => current + 1);
-    }
   };
   const syncWorkspaceRoute = (next: View, dashboardRoute?: DashboardRoute) => {
     const filters = dashboardRoute?.filters;
@@ -411,12 +409,6 @@ function AppContent() {
     setTraceTarget(null);
     setView('traces');
   };
-  const allowLegacyWorkspace = Boolean(
-    !state.managed_by_desktop
-    && state.daemon_build_id
-    && state.daemon_build_id !== state.app_build_id,
-  );
-
   return (
     <div className="native-window" key={`shell-${sensitiveInputGeneration}`}>
       <Sidebar
@@ -474,8 +466,6 @@ function AppContent() {
           )}
           {lastWorkspaceRoute.current && <div className="workspace-view-container" hidden={!route}><SettingsView
             route={lastWorkspaceRoute.current}
-            active={Boolean(route)}
-            navigationRequest={workspaceNavigationRevision}
             constraint={route === 'traces' ? traceConstraint : null}
             traceTarget={route === 'traces' ? traceTarget : null}
             onTraceActionConsumed={(traceId, action) => {
@@ -492,7 +482,6 @@ function AppContent() {
             onRestartToUpdate={() => void restartToUpdate()}
             onStartService={startLocalServiceFromWorkspace}
             onNavigate={syncWorkspaceRoute}
-            allowLegacyWorkspace={allowLegacyWorkspace}
           /></div>}
         </main>
       </section>

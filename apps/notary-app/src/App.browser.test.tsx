@@ -211,7 +211,7 @@ describe('Exalto Capture desktop shell', () => {
 
   test('keeps service-backed workspaces inside the desktop shell', async () => {
     renderApp('?screen=capture-on&view=providers');
-    await expect.element(page.getByRole('heading', { name: 'AI connections' })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Connect your AI tool' })).toBeVisible();
     expect(document.querySelector('.workspace-frame')).toBeNull();
     expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
     await userEvent.click(page.getByRole('button', { name: 'Connection setup' }));

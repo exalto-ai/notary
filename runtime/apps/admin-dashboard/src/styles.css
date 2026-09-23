@@ -310,9 +310,9 @@ code, pre, .mono-id, .mono-time { font-family: var(--mono); }
 .settings-flat-group .capture-mode-setting:last-child { border-bottom: 0; }
 .settings-subgroup-grid { border-left: 1px solid var(--rule); border-top: 1px solid var(--rule); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .settings-subgroup-grid > .settings-panel { border-left: 0; border-top: 0; }
-.settings-page--embedded .settings-panel { min-height: 0; }
+.settings-page--desktop .settings-panel { min-height: 0; }
 .account-local-boundary { border-top: 1px solid var(--rule); color: var(--muted); font-size: 11px; padding-top: 10px; }
-.embedded-notaries .receipt-list, .embedded-update-settings .receipt-list { margin-top: 20px; }
+.desktop-notaries .receipt-list, .desktop-update-settings .receipt-list { margin-top: 20px; }
 .notary-details { border-top: 1px solid var(--rule); margin-top: 20px; padding-top: 12px; }
 .notary-details summary { cursor: pointer; font-size: 12px; font-weight: 700; }
 .otlp-details > .mantine-Button-root { margin-top: 12px; }

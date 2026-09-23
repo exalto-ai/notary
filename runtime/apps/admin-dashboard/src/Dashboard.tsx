@@ -35,11 +35,7 @@ import { ActivityView } from './views/ActivityView';
 import { OverviewView } from './views/OverviewView';
 import { ProvidersView } from './views/ProvidersView';
 import type { DesktopSettingsAction, DesktopSettingsState } from './views/SettingsView';
-import {
-  EmbeddedSettingsView,
-  StandaloneSettingsView,
-  useDesktopSettingsBridge,
-} from './views/SettingsView';
+import { DesktopSettingsView, StandaloneSettingsView } from './views/SettingsView';
 import { TracesView } from './views/TracesView';
 
 export type { DesktopSettingsAction, DesktopSettingsState } from './views/SettingsView';
@@ -238,61 +234,21 @@ function TopNav({
 export function Dashboard({
   api,
   fixture = false,
-  embedded = false,
-  desktopSettings,
+  desktopSettings = null,
   onDesktopSettingsAction,
 }: {
   api: LocalApi;
   fixture?: boolean;
-  embedded?: boolean;
   desktopSettings?: DesktopSettingsState | null;
   onDesktopSettingsAction?: (action: DesktopSettingsAction) => void;
 }) {
   const route = useRoute();
   const queryClient = useQueryClient();
   const [navOpened, { open: openNav, close: closeNav }] = useDisclosure(false);
-  const desktopBridge = useDesktopSettingsBridge(
-    embedded,
-    desktopSettings,
-    onDesktopSettingsAction,
-  );
-  // Portalled surfaces (dialogs, menus, select menus) render outside the shell
-  // element, so the desktop treatment is keyed off a root attribute as well.
-  useEffect(() => {
-    if (!embedded) return;
-    document.documentElement.dataset.shell = 'desktop';
-    return () => {
-      delete document.documentElement.dataset.shell;
-    };
-  }, [embedded]);
-  useEffect(() => {
-    if (!embedded) return;
-    const publishRoute = () => {
-      window.parent.postMessage(
-        { type: 'notary:desktop-route-change', payload: { view: route.view } },
-        '*',
-      );
-    };
-    const receiveReadyRequest = (event: MessageEvent) => {
-      if (event.source !== window.parent) return;
-      if (event.data?.type === 'notary:desktop-ready-request') {
-        publishRoute();
-      } else if (
-        event.data?.type === 'notary:desktop-command' &&
-        event.data.payload?.command === 'find'
-      ) {
-        // The desktop shell's View > Find: focus the view's search or identifier field.
-        const field = document.querySelector<HTMLInputElement>(
-          'input[aria-label="Search traces"], input[aria-label="Activity Trace ID"]',
-        );
-        field?.focus();
-        field?.select();
-      }
-    };
-    window.addEventListener('message', receiveReadyRequest);
-    publishRoute();
-    return () => window.removeEventListener('message', receiveReadyRequest);
-  }, [embedded, route.view]);
+  const desktopBridge = {
+    state: desktopSettings,
+    send: (action: DesktopSettingsAction) => onDesktopSettingsAction?.(action),
+  };
   const statusQuery = useQuery({
     queryKey: ['status'],
     queryFn: api.status,
@@ -303,16 +259,7 @@ export function Dashboard({
     closeNav();
     goTo(next);
   };
-  const consumeTraceAction = (traceId: string, action: 'first-proof') => {
-    if (embedded) {
-      window.parent.postMessage(
-        {
-          type: 'notary:desktop-trace-action-consumed',
-          payload: { traceId, action },
-        },
-        '*',
-      );
-    }
+  const consumeTraceAction = (traceId: string, _action: 'first-proof') => {
     goTo({ view: 'traces', id: traceId });
   };
 
@@ -328,22 +275,6 @@ export function Dashboard({
   if (statusQuery.error) return <ErrorState onRetry={() => statusQuery.refetch()} />;
   if (!statusQuery.data) return <ErrorState onRetry={() => statusQuery.refetch()} />;
   const status = statusQuery.data;
-  if (embedded) {
-    return (
-      <main className="dashboard-shell dashboard-shell--embedded dashboard-main">
-        <View
-          route={route}
-          status={status}
-          api={api}
-          navigate={navigate}
-          fixture={fixture}
-          embedded
-          onTraceActionConsumed={consumeTraceAction}
-          desktopBridge={desktopBridge}
-        />
-      </main>
-    );
-  }
   return (
     <AppShell header={{ height: 50 }} padding={0} className="dashboard-shell">
       <AppShell.Header className="dashboard-header">
@@ -372,7 +303,6 @@ export function Dashboard({
           api={api}
           navigate={navigate}
           fixture={fixture}
-          embedded={false}
           onTraceActionConsumed={consumeTraceAction}
           desktopBridge={desktopBridge}
         />
@@ -439,7 +369,6 @@ export function InlineDashboard({
         api={api}
         navigate={onNavigate}
         fixture={false}
-        embedded={false}
         onTraceActionConsumed={consumeTraceAction}
         desktopBridge={desktopBridge}
       />
@@ -452,7 +381,6 @@ function View({
   status,
   api,
   navigate,
-  embedded,
   onTraceActionConsumed,
   desktopBridge,
 }: {
@@ -461,7 +389,6 @@ function View({
   api: LocalApi;
   navigate: (route: Route) => void;
   fixture: boolean;
-  embedded: boolean;
   onTraceActionConsumed: (traceId: string, action: 'first-proof') => void;
   desktopBridge: {
     state: DesktopSettingsState | null;
@@ -483,10 +410,10 @@ function View({
     case 'activity':
       return <ActivityView api={api} initialTraceId={route.filters?.traceId} navigate={navigate} />;
     case 'providers':
-      return <ProvidersView api={api} status={status} embedded={embedded} />;
+      return <ProvidersView api={api} status={status} showHeading={!desktopBridge.state} />;
     case 'settings':
-      return embedded || desktopBridge.state ? (
-        <EmbeddedSettingsView
+      return desktopBridge.state ? (
+        <DesktopSettingsView
           status={status}
           api={api}
           desktopSettings={desktopBridge.state}

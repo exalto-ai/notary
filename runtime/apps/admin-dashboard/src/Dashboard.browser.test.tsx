@@ -36,7 +36,6 @@ const desktopSettings: DesktopSettingsState = {
 function renderDashboard(
   hash = '/overview',
   api: LocalApi = createFixtureApi(),
-  embedded = false,
   settings: DesktopSettingsState | null = null,
   onDesktopSettingsAction?: (action: DesktopSettingsAction) => void,
 ) {
@@ -49,7 +48,6 @@ function renderDashboard(
         <Dashboard
           api={api}
           fixture
-          embedded={embedded}
           desktopSettings={settings}
           onDesktopSettingsAction={onDesktopSettingsAction}
         />
@@ -644,27 +642,17 @@ describe('Notary admin dashboard', () => {
     expect(verify).toHaveBeenCalledTimes(1);
   });
 
-  test('reports the exact consumed first-proof handoff to the embedded desktop shell', async () => {
+  test('keeps first-proof handoff inside the rendered desktop tree', async () => {
     const fixture = createFixtureApi();
     const traceId = 'trc-20260727-research-brief';
     const postMessage = vi.spyOn(window.parent, 'postMessage');
 
-    renderDashboard(`/traces/${traceId}?action=first-proof`, fixture, true);
+    renderDashboard(`/traces/${traceId}?action=first-proof`, fixture);
 
     await expect
-      .poll(() =>
-        postMessage.mock.calls.some(
-          ([message]) =>
-            typeof message === 'object' &&
-            message !== null &&
-            'type' in message &&
-            message.type === 'notary:desktop-trace-action-consumed' &&
-            'payload' in message &&
-            (message.payload as { traceId?: unknown; action?: unknown }).traceId === traceId &&
-            (message.payload as { action?: unknown }).action === 'first-proof',
-        ),
-      )
-      .toBe(true);
+      .element(page.getByText('Your first proof is sealed and verified.', { exact: true }))
+      .toBeVisible();
+    expect(postMessage).not.toHaveBeenCalled();
   });
 
   test('does not celebrate a terminal verification result that did not pass', async () => {
@@ -787,7 +775,7 @@ describe('Notary admin dashboard', () => {
       ...fixture,
       traces: async () => ({ items: [], next_cursor: null }),
     };
-    renderDashboard('/traces', emptyApi, true);
+    renderDashboard('/traces', emptyApi);
     await expect
       .element(page.getByRole('heading', { name: 'No traces have been captured yet.' }))
       .toBeVisible();
@@ -1098,7 +1086,7 @@ describe('Notary admin dashboard', () => {
         throw new LocalApiError(401, 'unauthorized', 'Unauthorized');
       },
     };
-    renderDashboard('/overview', api, true);
+    renderDashboard('/overview', api);
     await expect.element(page.getByText('Exalto Capture', { exact: true })).toBeVisible();
     await expect
       .element(page.getByText('Exalto Capture administration', { exact: true }))
@@ -1126,54 +1114,16 @@ describe('Notary admin dashboard', () => {
     await expect.element(page.getByText('Online', { exact: true })).not.toBeInTheDocument();
   });
 
-  test('uses the same route content in embedded mode without standalone navigation', async () => {
-    const postMessage = vi.spyOn(window.parent, 'postMessage');
-    renderDashboard('/providers', createFixtureApi(), true);
+  test('keeps the standalone dashboard navigation with its route content', async () => {
+    renderDashboard('/providers', createFixtureApi());
     await expect.element(page.getByRole('heading', { name: 'OpenAI', exact: true })).toBeVisible();
-    await expect
-      .element(page.getByRole('heading', { name: 'AI connections' }))
-      .not.toBeInTheDocument();
-    await expect
-      .element(page.getByRole('navigation', { name: 'Admin dashboard' }))
-      .not.toBeInTheDocument();
-    await expect
-      .poll(() =>
-        postMessage.mock.calls.some(
-          ([message]) =>
-            typeof message === 'object' &&
-            message !== null &&
-            'type' in message &&
-            message.type === 'notary:desktop-route-change' &&
-            'payload' in message &&
-            (message.payload as { view?: unknown }).view === 'providers',
-        ),
-      )
-      .toBe(true);
-    postMessage.mockClear();
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        source: window.parent,
-        data: { type: 'notary:desktop-ready-request' },
-      }),
-    );
-    await expect
-      .poll(() =>
-        postMessage.mock.calls.some(
-          ([message]) =>
-            typeof message === 'object' &&
-            message !== null &&
-            'type' in message &&
-            message.type === 'notary:desktop-route-change' &&
-            'payload' in message &&
-            (message.payload as { view?: unknown }).view === 'providers',
-        ),
-      )
-      .toBe(true);
+    await expect.element(page.getByRole('heading', { name: 'AI connections' })).toBeVisible();
+    await expect.element(page.getByRole('navigation', { name: 'Admin dashboard' })).toBeVisible();
   });
 
-  test('uses exactly four Settings groups in embedded desktop mode', async () => {
+  test('uses exactly four Settings groups in the desktop surface', async () => {
     const actions: DesktopSettingsAction[] = [];
-    renderDashboard('/settings', createFixtureApi(), true, desktopSettings, (action) =>
+    renderDashboard('/settings', createFixtureApi(), desktopSettings, (action) =>
       actions.push(action),
     );
     await expect
@@ -1206,8 +1156,8 @@ describe('Notary admin dashboard', () => {
     ]);
   });
 
-  test('shows embedded account, local data, sealing service, updates, and advanced consequences', async () => {
-    renderDashboard('/settings', createFixtureApi(), true, desktopSettings);
+  test('shows desktop account, local data, sealing service, updates, and advanced consequences', async () => {
+    renderDashboard('/settings', createFixtureApi(), desktopSettings);
     await expect.element(page.getByText('Sample User', { exact: true })).toBeVisible();
     await expect.element(page.getByText(/does not upload or share local traces/)).toBeVisible();
     await expect
@@ -1249,7 +1199,7 @@ describe('Notary admin dashboard', () => {
         })),
       }),
     };
-    renderDashboard('/settings', thirdParty, true, desktopSettings);
+    renderDashboard('/settings', thirdParty, desktopSettings);
     await expect.element(page.getByRole('heading', { name: 'Northstar Seal' })).toBeVisible();
     await expect.element(page.getByText('Exalto Seal', { exact: true })).not.toBeInTheDocument();
 
@@ -1270,7 +1220,7 @@ describe('Notary admin dashboard', () => {
         ],
       }),
     };
-    renderDashboard('/settings', explicit, true, desktopSettings);
+    renderDashboard('/settings', explicit, desktopSettings);
     await expect
       .element(page.getByRole('heading', { name: 'Configured sealing service' }))
       .toBeVisible();
@@ -1289,7 +1239,7 @@ describe('Notary admin dashboard', () => {
         links: (await fixture.account()).links,
       }),
     };
-    renderDashboard('/settings', api, true, {
+    renderDashboard('/settings', api, {
       ...desktopSettings,
       update: { ...readyUpdate, phase: 'ready' },
       restart_block_reason: 'Wait for the active seal to finish before restarting to update.',

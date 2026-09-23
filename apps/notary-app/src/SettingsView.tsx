@@ -38,7 +38,7 @@ function dashboardRoute(
 }
 
 export function SettingsView({
-  route, active, navigationRequest, constraint, traceTarget, onTraceActionConsumed,
+  route, constraint, traceTarget, onTraceActionConsumed,
   state,
   updateState,
   busy,
@@ -48,11 +48,8 @@ export function SettingsView({
   onRestartToUpdate,
   onStartService,
   onNavigate,
-  allowLegacyWorkspace,
 }: {
   route: WorkspaceView;
-  active: boolean;
-  navigationRequest: number;
   constraint: TraceConstraint | null;
   traceTarget: TraceTarget | null;
   onTraceActionConsumed: (traceId: string, action: 'first-proof') => void;
@@ -65,7 +62,6 @@ export function SettingsView({
   onRestartToUpdate: () => void;
   onStartService: () => void;
   onNavigate: (view: View, route?: DashboardRoute) => void;
-  allowLegacyWorkspace: boolean;
 }) {
   const [launch, setLaunch] = useState(false);
   const [launchReady, setLaunchReady] = useState(false);
