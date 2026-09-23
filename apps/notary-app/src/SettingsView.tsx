@@ -228,6 +228,7 @@ export function SettingsView({
       <InlineDashboard
         key={`${route}:${constraint ?? ''}:${traceTarget?.traceId ?? ''}:${traceTarget?.action ?? ''}`}
         api={localDashboardApi}
+        apiBaseUrl="http://127.0.0.1:8788"
         route={dashboardRoute(route, constraint, traceTarget)}
         desktopSettings={desktopSettings}
         onDesktopSettingsAction={handleDesktopAction}

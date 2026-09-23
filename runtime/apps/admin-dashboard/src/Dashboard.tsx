@@ -318,6 +318,7 @@ export function Dashboard({
  */
 export function InlineDashboard({
   api,
+  apiBaseUrl,
   route,
   desktopSettings = null,
   onDesktopSettingsAction,
@@ -325,6 +326,7 @@ export function InlineDashboard({
   onTraceActionConsumed,
 }: {
   api: LocalApi;
+  apiBaseUrl?: string;
   route: Route;
   desktopSettings?: DesktopSettingsState | null;
   onDesktopSettingsAction?: (action: DesktopSettingsAction) => void;
@@ -367,6 +369,7 @@ export function InlineDashboard({
         route={route}
         status={statusQuery.data}
         api={api}
+        apiBaseUrl={apiBaseUrl}
         navigate={onNavigate}
         fixture={false}
         onTraceActionConsumed={consumeTraceAction}
@@ -380,6 +383,7 @@ function View({
   route,
   status,
   api,
+  apiBaseUrl,
   navigate,
   onTraceActionConsumed,
   desktopBridge,
@@ -387,6 +391,7 @@ function View({
   route: Route;
   status: Status;
   api: LocalApi;
+  apiBaseUrl?: string;
   navigate: (route: Route) => void;
   fixture: boolean;
   onTraceActionConsumed: (traceId: string, action: 'first-proof') => void;
@@ -416,6 +421,7 @@ function View({
         <DesktopSettingsView
           status={status}
           api={api}
+          apiBaseUrl={apiBaseUrl}
           desktopSettings={desktopBridge.state}
           onDesktopAction={desktopBridge.send}
         />

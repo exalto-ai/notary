@@ -504,6 +504,12 @@ describe('Exalto Capture desktop shell', () => {
     await expect.element(page.getByRole('heading', { name: 'Connections', exact: true })).toBeVisible();
     expect(document.querySelector('.workspace-frame')).toBeNull();
     expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
+    await expect
+      .element(page.getByText('http://127.0.0.1:8788/v1/status', { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole('link', { name: 'Open generated OpenAPI' }))
+      .toHaveAttribute('href', 'http://127.0.0.1:8788/openapi.json');
     (page.getByRole('switch', { name: 'Open Exalto Capture at sign-in' }).element() as HTMLInputElement).click();
     await expect.poll(() => localStorage.getItem('notary-launch-at-login')).toBe('true');
   });

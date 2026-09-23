@@ -37,7 +37,10 @@ export default defineConfig({
       },
     },
     fs: {
-      allow: [resolve(process.cwd(), '../../runtime/apps/admin-dashboard')],
+      allow: [
+        resolve(process.cwd()),
+        resolve(process.cwd(), '../../runtime/apps/admin-dashboard'),
+      ],
     },
   },
   envPrefix: ['VITE_', 'TAURI_'],

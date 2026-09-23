@@ -788,17 +788,20 @@ function DesktopNotaries({ api }: { api: LocalApi }) {
 export function DesktopSettingsView({
   status,
   api,
+  apiBaseUrl,
   desktopSettings,
   onDesktopAction,
 }: {
   status: Status;
   api: LocalApi;
+  apiBaseUrl?: string;
   desktopSettings: DesktopSettingsState | null;
   onDesktopAction: (action: DesktopSettingsAction) => void;
 }) {
   const accountConnection = useAccountConnection(api);
-  const openApiUrl = `${window.location.origin}/openapi.json`;
-  const statusUrl = `${window.location.origin}/v1/status`;
+  const serviceOrigin = (apiBaseUrl ?? window.location.origin).replace(/\/$/, '');
+  const openApiUrl = `${serviceOrigin}/openapi.json`;
+  const statusUrl = `${serviceOrigin}/v1/status`;
   const copyOpenApi = async () => {
     await navigator.clipboard.writeText(openApiUrl);
     notifications.show({
@@ -963,7 +966,7 @@ export function DesktopSettingsView({
             </div>
             <Button
               component="a"
-              href="/openapi.json"
+              href={openApiUrl}
               target="_blank"
               variant="outline"
               leftSection={<CodeXml size={15} />}
