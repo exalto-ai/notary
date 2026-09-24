@@ -890,3 +890,56 @@ h1, h2, p { margin: 0; }
   grid-column: 1 / -1;
   border-right: 0;
 }
+
+/* Keep the trace toolbar's controls on one visual system. The dashboard's
+ * responsive grid allows these items to stretch, while the native shell needs
+ * field chrome that stays full-width and an explicit, right-aligned chevron. */
+.native-window .dashboard-shell--inline .axis-select-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.native-window .dashboard-shell--inline .axis-select-trigger {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px 0 12px;
+  line-height: 1;
+}
+
+.native-window .dashboard-shell--inline .axis-select-trigger > [data-slot='select-value'] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.native-window .dashboard-shell--inline .axis-select-trigger > svg {
+  display: block;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.native-window .dashboard-shell--inline .trace-state-filter {
+  width: max-content;
+  max-width: 100%;
+  align-self: center;
+  justify-self: start;
+}
+
+.native-window .dashboard-shell--inline .trace-state-filter button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 820px) {
+  .native-window .dashboard-shell--inline .trace-filter-primary {
+    align-items: center;
+  }
+
+  .native-window .dashboard-shell--inline .trace-state-filter {
+    width: max-content;
+  }
+}
