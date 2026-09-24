@@ -1,7 +1,8 @@
-import { Anchor, Box, Text } from '@mantine/core';
-import { useState } from 'react';
+import { Anchor, Box, Text, useComputedColorScheme } from '@mantine/core';
+import { useEffect, useState } from 'react';
 import { Footer, Header, Page } from './components/Shell';
 import { account as sampleAccount, traces } from './data/fixtures';
+import { documentTitle } from './documentTitle';
 import { Authorize } from './pages/Authorize';
 import { AccountShell, type AccountView } from './pages/account/AccountShell';
 import { Overview } from './pages/account/Overview';
@@ -12,7 +13,7 @@ import { Docs } from './pages/Docs';
 import { Landing } from './pages/Landing';
 import { Legal } from './pages/Legal';
 import { SignIn } from './pages/SignIn';
-import { href, query, segments, usePath } from './router';
+import { href, query, segments, useLinkNavigation, usePath } from './router';
 
 const accountViews: AccountView[] = ['overview', 'traces', 'usage', 'settings'];
 
@@ -42,6 +43,26 @@ export function App() {
   const path = usePath();
   const [signedIn, setSignedIn] = useState(true);
   const [section, page] = segments(path);
+  const scheme = useComputedColorScheme('light');
+  useLinkNavigation();
+
+  useEffect(() => {
+    document.title = documentTitle(section, page);
+  }, [section, page]);
+
+  // The browser paints its own chrome from this, so it follows the resolved
+  // scheme rather than the stored preference.
+  useEffect(() => {
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', scheme === 'dark' ? '#0d1013' : '#eff0f2');
+  }, [scheme]);
+
+  // Docs keep their reading position when a section link moves within a page.
+  useEffect(() => {
+    if (section !== 'docs') window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [section, path]);
+
   const account = signedIn ? sampleAccount : null;
   const parameters = query(path);
 

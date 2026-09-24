@@ -195,6 +195,15 @@ Exalto Seal uses the same palette, typography, evidence grammar, and reading
 surfaces at greater operational density. Its account controls remain compact,
 but they do not revert to a separate product identity or design system.
 
+**Ledger Phosphor is being replaced on `capture.exalto.ai`.** The hosted site
+is moving to Aperture, specified in
+[`docs/design-aperture.md`](docs/design-aperture.md) and built in
+`platform/web/src/next/`. Until that port finishes, this part is still the
+authority for every shipped pixel on that surface; edit it for work that ships
+now, and edit the Aperture document for work on the replacement. This part is
+rewritten, not amended, when the new application becomes the site's index.
+exalto.ai keeps Ledger Phosphor and is not part of that move.
+
 ## Tokens
 
 Colors — paper `#f5f3ec` · card `#fdfcf7` · ink `#1a2233` · ink-soft
