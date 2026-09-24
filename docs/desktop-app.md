@@ -201,11 +201,13 @@ That relay accepts only the expected response route while a chat is active,
 records the daemon's returned Trace IDs, and streams the response unchanged.
 There is no direct-provider fallback and no arbitrary upstream URL input.
 
-Built-in chat requires the bundled supervised service. Each request includes
-`x-exalto-require-capture: 1`; the daemon strips this local header and rejects
-an off-capture request with HTTP 409 before contacting a provider. External
-clients that omit the header retain existing direct-mode behavior. This proxy
-header does not change the versioned administration API or its generated schema.
+Built-in chat uses any compatible service on the fixed loopback route, including
+one started outside the desktop app. Process ownership affects only lifecycle
+actions such as stop, restart, and update. Each request includes
+`x-exalto-require-capture: 1`; the daemon strips this local header and rejects an
+off-capture request with HTTP 409 before contacting a provider. External clients
+that omit the header retain existing direct-mode behavior. This proxy header
+does not change the versioned administration API or its generated schema.
 
 Each provider exchange creates its own Trace. A Codex turn may make multiple
 exchanges; each returned Trace ID is shown separately. A response is marked
