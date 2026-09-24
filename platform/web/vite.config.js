@@ -47,6 +47,17 @@ export default defineConfig(({ command }) => {
       },
     ],
 
+    // The redesign prototype is a second document so it shares nothing with the
+    // production entry: no stylesheet, no provider, no route handling.
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(import.meta.dirname, 'index.html'),
+          next: resolve(import.meta.dirname, 'next.html'),
+        },
+      },
+    },
+
     server: { host: 'localhost', port: 4174, strictPort: true },
     preview: { host: 'localhost', port: 4174, strictPort: true },
   };

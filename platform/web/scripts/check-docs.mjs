@@ -65,7 +65,12 @@ for (const file of markdown) {
   }
 }
 
-const publicDocs = readFileSync(resolve(appRoot, 'src/site/PublicDocs.tsx'), 'utf8');
+// Documentation copy lives in the content module; the renderer is checked with
+// it so a rule about wording cannot be sidestepped by moving a string.
+const publicDocs = [
+  readFileSync(resolve(appRoot, 'src/content/docs.ts'), 'utf8'),
+  readFileSync(resolve(appRoot, 'src/site/PublicDocs.tsx'), 'utf8'),
+].join('\n');
 const llms = readFileSync(resolve(appRoot, 'public/llms.txt'), 'utf8');
 for (const [name, source] of [
   ['public site documentation', publicDocs],
