@@ -215,6 +215,22 @@ test('shows only the providers the deployment configures', async () => {
   expect(page.getByRole('link', { name: /Continue with Google/ }).elements()).toHaveLength(0);
 });
 
+test('each provider icon resolves to a real asset', async () => {
+  mount(<SignIn loadProviders={async () => ({ google: true, github: true })} />);
+  await expect.element(page.getByRole('link', { name: /Continue with Google/ })).toBeVisible();
+  const icons = Array.from(
+    document.querySelectorAll<HTMLImageElement>('[data-auth-provider-icon]'),
+  );
+  expect(icons.map((icon) => icon.dataset.authProviderIcon).sort()).toEqual(['github', 'google']);
+  for (const icon of icons) {
+    // The path that shipped doubled the assets directory and 404ed in silence,
+    // so this asserts the image actually decoded rather than the shape of its
+    // address, which differs between the dev server and a build.
+    expect(icon.src).not.toContain('/assets/assets/');
+    await waitFor(() => expect(icon.naturalWidth).toBeGreaterThan(0));
+  }
+});
+
 test('says so when a deployment configures no provider at all', async () => {
   mount(<SignIn loadProviders={async () => ({ google: false, github: false })} />);
   await expect.element(page.getByText(/No sign-in provider is configured/)).toBeVisible();
