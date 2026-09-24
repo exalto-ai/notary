@@ -10,7 +10,7 @@ the product names, the marks, and the capture / seal / verify vocabulary) and
 replaces the palette, typography, geometry, density, and component language
 underneath it.
 
-Every surface lives in `platform/web/src/next`. Run it with
+Every surface lives in `platform/web/src/site`. Run it with
 `npm --prefix platform/web run preview:capture`.
 
 ## Why a new system

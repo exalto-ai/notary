@@ -12,8 +12,8 @@ const captureTile = readFileSync(
   'utf8',
 );
 const preview = readFileSync(resolve(root, 'public/social-preview.png'));
-const shell = readFileSync(resolve(root, 'src/next/components/Shell.tsx'), 'utf8');
-const traces = readFileSync(resolve(root, 'src/next/pages/account/Traces.tsx'), 'utf8');
+const shell = readFileSync(resolve(root, 'src/site/components/Shell.tsx'), 'utf8');
+const traces = readFileSync(resolve(root, 'src/site/pages/account/Traces.tsx'), 'utf8');
 
 function requireText(source, expected, label) {
   if (!source.includes(expected))

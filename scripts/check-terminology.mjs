@@ -123,6 +123,11 @@ const classified = [
     reason: 'reads the retired storage key so a visitor keeps their theme',
   },
   {
+    file: 'platform/web/src/site/App.browser.test.tsx',
+    contains: 'llm-notary-theme',
+    reason: 'asserts a visitor carrying the retired storage key keeps their theme',
+  },
+  {
     file: 'runtime/docs/cluster-operations.md',
     contains: 'llm-notary-cluster_',
     reason: 'names the retired Compose volumes operators must keep',

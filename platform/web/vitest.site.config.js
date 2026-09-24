@@ -10,7 +10,7 @@ export default defineConfig({
   resolve: { alias: { '@': resolve(process.cwd(), 'src') } },
   plugins: [react()],
   test: {
-    include: ['src/next/App.browser.test.tsx'],
+    include: ['src/site/App.browser.test.tsx'],
     browser: {
       enabled: true,
       headless: true,

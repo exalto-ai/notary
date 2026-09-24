@@ -321,7 +321,7 @@ shrink need `min-width: 0`; wide content scrolls inside its own container.
 
 Aperture governs the hosted site: the landing page, documentation, sign in,
 device approval, the account, and the legal pages, all built in
-`platform/web/src/next`. It replaced Ledger Phosphor on this surface because
+`platform/web/src/site`. It replaced Ledger Phosphor on this surface because
 the account is most of the surface area, and an editorial system that reads
 well on a marketing page reads badly above five numbers a person came to
 check. [`docs/design-aperture.md`](docs/design-aperture.md) keeps the
@@ -345,7 +345,7 @@ attribution meanings, and the capture / seal / verify vocabulary are unchanged.
 ## Tokens
 
 Two surfaces and three signals, resolved per colour scheme in
-`src/next/theme.ts`.
+`src/site/theme.ts`.
 
 | Token | Light | Dark | Job |
 | --- | --- | --- | --- |
