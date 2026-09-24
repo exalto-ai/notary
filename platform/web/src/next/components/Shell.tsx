@@ -1,4 +1,13 @@
-import { ActionIcon, Anchor, Box, Button, Menu, Text, useMantineColorScheme } from '@mantine/core';
+import {
+  ActionIcon,
+  Anchor,
+  Box,
+  Button,
+  Menu,
+  Text,
+  useComputedColorScheme,
+  useMantineColorScheme,
+} from '@mantine/core';
 import { IconMoon, IconSun } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { href } from '../router';
@@ -47,8 +56,10 @@ export function Wordmark({ size = 19 }: { size?: number }) {
 }
 
 function ColorSchemeToggle() {
-  const { colorScheme, setColorScheme } = useMantineColorScheme();
-  const dark = colorScheme === 'dark';
+  const { setColorScheme } = useMantineColorScheme();
+  // Resolved, not stored: with the preference on "auto" the control still has
+  // to show what the reader is actually looking at.
+  const dark = useComputedColorScheme('light') === 'dark';
   return (
     <ActionIcon
       variant="subtle"

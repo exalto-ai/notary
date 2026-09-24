@@ -3,11 +3,13 @@ export type ThemePreference = (typeof themeOptions)[number];
 export type ResolvedTheme = Exclude<ThemePreference, 'auto'>;
 
 export const themeStorageKey = 'notary-theme';
+// Visitors who chose a theme before the storage key was renamed keep it.
+export const legacyThemeStorageKey = 'llm-notary-theme';
 
 export function initialThemePreference(): ThemePreference {
-  // Visitors who chose a theme before the storage key was renamed keep it.
   const stored =
-    window.localStorage.getItem(themeStorageKey) ?? window.localStorage.getItem('llm-notary-theme');
+    window.localStorage.getItem(themeStorageKey) ??
+    window.localStorage.getItem(legacyThemeStorageKey);
   return stored && themeOptions.includes(stored as ThemePreference)
     ? (stored as ThemePreference)
     : 'light';

@@ -1,7 +1,9 @@
 # Aperture, a proposed design system for Exalto Capture
 
-Status: proposal. Nothing here governs a shipped surface yet.
-[`DESIGN.md`](../DESIGN.md) remains the authority for everything in production.
+Status: accepted, being ported. This is where the hosted site is going, and
+[`DESIGN.md`](../DESIGN.md) Part II remains the authority for every pixel that
+ships until the port finishes. Part II is rewritten, not amended, when the new
+application becomes the site's index.
 
 Aperture is a clean-break replacement for Ledger Phosphor on
 `capture.exalto.ai`. It keeps the frozen Part I identity (the Exalto wordmark,
@@ -9,9 +11,13 @@ the product names, the marks, and the capture / seal / verify vocabulary) and
 replaces the palette, typography, geometry, density, and component language
 underneath it.
 
-A working prototype of every surface lives in `platform/web/src/next/` and is
-served from its own document at `/next.html`. It shares no stylesheet, no
-provider, and no route handling with the production entry.
+A working prototype of every surface lives in `platform/web/src/next/`. It is
+its own document, sharing no stylesheet, provider, or route handling with the
+shipped entry, and it answers real paths under `/next` in development. It is
+not built or deployed; the cutover is what puts it in front of anyone.
+
+Run it with `npm --prefix platform/web run preview:capture`, then open
+`http://localhost:4174/next/`.
 
 ## Why a new system
 
@@ -110,11 +116,15 @@ measure.
 - Card shadows, gradient washes, and hover lift.
 - Entrance animation.
 
-## Open questions
+## Settled and still open
+
+Settled: the hosted site cuts over to Aperture in full, one layer at a time,
+and `exalto.ai` keeps Ledger Phosphor.
+
+Still open:
 
 - Whether the wordmark keeps Fraunces, which costs a font payload for one word.
-- Whether `capture.exalto.ai` and `exalto.ai` should share one system or stay
-  deliberately different, now that the hosted product carries most of the
-  surface area.
 - Whether the local admin dashboard follows Aperture or stays on the developer
   workspace rules in Part III.
+- Whether the shared appearance preference should gain a fourth state now that
+  both applications read the same key.

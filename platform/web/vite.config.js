@@ -33,6 +33,25 @@ export default defineConfig(({ command }) => {
       react(),
       tailwindcss(),
       ...(sample ? [localPreviewApi({ capture, website })] : []),
+      // The redesign prototype is a second document so it shares nothing with
+      // the production entry: no stylesheet, no provider, no route handling. It
+      // answers real paths under /next so the router can be exercised as it
+      // will ship, and it is served in development only, never built or
+      // deployed, until the cutover makes it the index.
+      {
+        name: 'redesign-prototype',
+        apply: 'serve',
+        configureServer(server) {
+          server.middlewares.use((request, _response, next) => {
+            const path = (request.url ?? '').split('?')[0];
+            if (path === '/next' || path === '/next/' || path.startsWith('/next/')) {
+              // Vite still has to serve its own client and the source graph.
+              if (!/\.[a-z0-9]+$/i.test(path)) request.url = '/next.html';
+            }
+            next();
+          });
+        },
+      },
       {
         name: 'site-html',
         transformIndexHtml: (html) =>
@@ -46,17 +65,6 @@ export default defineConfig(({ command }) => {
         },
       },
     ],
-
-    // The redesign prototype is a second document so it shares nothing with the
-    // production entry: no stylesheet, no provider, no route handling.
-    build: {
-      rollupOptions: {
-        input: {
-          index: resolve(import.meta.dirname, 'index.html'),
-          next: resolve(import.meta.dirname, 'next.html'),
-        },
-      },
-    },
 
     server: { host: 'localhost', port: 4174, strictPort: true },
     preview: { host: 'localhost', port: 4174, strictPort: true },
