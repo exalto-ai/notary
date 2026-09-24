@@ -23,7 +23,6 @@ const accountViews: AccountView[] = ['overview', 'traces', 'usage', 'settings'];
 // Removed one entry at a time as each layer of the port lands.
 const stillSampleData: Partial<Record<AccountView, string[]>> = {
   overview: ['the 30 day chart', 'recent traces', 'the device count'],
-  traces: ['every trace listed here'],
   usage: ['allowance meters', 'purchases'],
   settings: ['devices', 'API keys'],
 };
