@@ -47,6 +47,7 @@ Use the generated contract when prose and an installed service disagree.
 - [Cursor-pagination contract and array inventory](adr/0001-cursor-pagination.md)
 - [Provider-neutral account identities](adr/0002-provider-neutral-identities.md)
 - [Design language](../DESIGN.md)
+- [Aperture design system proposal](design-aperture.md)
 - [Provider icon assets and usage terms](provider-icons.md)
 - [OpenCode production canary](../runtime/benchmarks/opencode-e2e/README.md)
 - [Repository agent instructions](../AGENTS.md)
