@@ -11,9 +11,11 @@ import {
 import { useState } from 'react';
 import { CodeBlock } from '../../components/CodeBlock';
 import { Data, Lamp, SectionHead } from '../../components/primitives';
-import { account, apiKeys, devices } from '../../data/fixtures';
+import { type Account, accountName, authProviderName } from '../../data/account';
+import { apiKeys, devices } from '../../data/fixtures';
 
-export function Settings() {
+export function Settings({ account }: { account: Account }) {
+  const name = accountName(account);
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [newKey, setNewKey] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -33,16 +35,28 @@ export function Settings() {
               placeItems: 'center',
               fontWeight: 600,
               fontSize: 13,
+              overflow: 'hidden',
             }}
           >
-            {account.name.slice(0, 2).toUpperCase()}
+            {account.avatar_url ? (
+              <img
+                src={account.avatar_url}
+                alt=""
+                referrerPolicy="no-referrer"
+                width={40}
+                height={40}
+                style={{ display: 'block', objectFit: 'cover' }}
+              />
+            ) : (
+              name.slice(0, 2).toUpperCase()
+            )}
           </Box>
           <Box>
             <Text fz={16} fw={570}>
-              {account.name}
+              {name}
             </Text>
             <Data c="var(--x-quiet)">
-              {account.identifier}, signed in with {account.provider}
+              {account.provider_display_name}, signed in with {authProviderName(account)}
             </Data>
           </Box>
         </Group>

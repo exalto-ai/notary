@@ -3,12 +3,6 @@
 import type { CustodyStep } from '../components/primitives';
 import type { Line } from '../components/TraceRecord';
 
-export const account = {
-  name: 'Kev Zhang',
-  identifier: 'kev@exalto.ai',
-  provider: 'Google',
-};
-
 export const heroTrace = {
   title: 'Reviewing the retry policy',
   status: 'sealed' as const,

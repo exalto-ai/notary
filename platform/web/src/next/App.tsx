@@ -1,7 +1,10 @@
 import { Anchor, Box, Text, useComputedColorScheme } from '@mantine/core';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useSettledWait } from '../site/LoadingStates';
+import { AccountPlaceholder } from './components/AccountPlaceholder';
+import { PrototypeNotice } from './components/PrototypeNotice';
 import { Footer, Header, Page } from './components/Shell';
-import { account as sampleAccount, traces } from './data/fixtures';
+import { useAccount } from './data/account';
 import { documentTitle } from './documentTitle';
 import { Authorize } from './pages/Authorize';
 import { AccountShell, type AccountView } from './pages/account/AccountShell';
@@ -16,6 +19,14 @@ import { SignIn } from './pages/SignIn';
 import { href, query, segments, useLinkNavigation, usePath } from './router';
 
 const accountViews: AccountView[] = ['overview', 'traces', 'usage', 'settings'];
+
+// Removed one entry at a time as each layer of the port lands.
+const stillSampleData: Partial<Record<AccountView, string[]>> = {
+  overview: ['the 30 day chart', 'recent traces', 'the device count'],
+  traces: ['every trace listed here'],
+  usage: ['allowance meters', 'purchases'],
+  settings: ['devices', 'API keys'],
+};
 
 function NotFound({ path }: { path: string }) {
   return (
@@ -41,57 +52,72 @@ function NotFound({ path }: { path: string }) {
 
 export function App() {
   const path = usePath();
-  const [signedIn, setSignedIn] = useState(true);
   const [section, page] = segments(path);
+  const parameters = query(path);
   const scheme = useComputedColorScheme('light');
+  const { account, pending, error, signOut } = useAccount();
   useLinkNavigation();
 
   useEffect(() => {
     document.title = documentTitle(section, page);
   }, [section, page]);
 
-  // The browser paints its own chrome from this, so it follows the resolved
-  // scheme rather than the stored preference.
   useEffect(() => {
     document
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute('content', scheme === 'dark' ? '#0d1013' : '#eff0f2');
   }, [scheme]);
 
-  // Docs keep their reading position when a section link moves within a page.
   useEffect(() => {
     if (section !== 'docs') window.scrollTo({ top: 0, behavior: 'instant' });
   }, [section, path]);
 
-  const account = signedIn ? sampleAccount : null;
-  const parameters = query(path);
-
   const accountView: AccountView = accountViews.includes(page as AccountView)
     ? (page as AccountView)
     : 'overview';
+  // The account is the only section that has to wait for an answer. Everything
+  // else renders while the session resolves.
+  const waiting = section === 'app' && pending;
+  const placeholderVisible = useSettledWait(waiting);
 
   let body: React.ReactNode;
   if (!section) body = <Landing signedIn={account !== null} />;
   else if (section === 'docs')
     body = <Docs pageKey={page ?? 'overview'} section={parameters.get('section') ?? undefined} />;
   else if (section === 'signin')
-    body = <SignIn returnTo={parameters.get('return_to') ?? undefined} />;
-  else if (section === 'authorize') body = <Authorize />;
+    body = <SignIn returnTo={parameters.get('return_to')} account={account} />;
+  else if (section === 'authorize') body = <Authorize route={path} account={account} />;
   else if (section === 'privacy' || section === 'terms') body = <Legal pageKey={section} />;
-  else if (section === 'app' && !account) body = <SignIn returnTo={path} />;
-  else if (section === 'app')
+  else if (section === 'app' && waiting) body = placeholderVisible ? <AccountPlaceholder /> : null;
+  else if (section === 'app' && !account)
     body = (
-      <AccountShell view={accountView} counts={{ traces: traces.length }}>
-        {accountView === 'overview' ? (
-          <Overview />
-        ) : accountView === 'traces' ? (
-          <Traces />
-        ) : accountView === 'usage' ? (
-          <Usage />
-        ) : (
-          <Settings />
-        )}
-      </AccountShell>
+      <>
+        {error ? (
+          <Box className="x-prototype-notice" role="alert">
+            <Text component="span" fz={12.5} c="var(--x-alert)">
+              Your account could not be loaded: {error}
+            </Text>
+          </Box>
+        ) : null}
+        <SignIn returnTo={`/${path.replace(/^\//, '')}`} account={null} />
+      </>
+    );
+  else if (section === 'app' && account)
+    body = (
+      <>
+        <PrototypeNotice fixtures={stillSampleData[accountView] ?? []} />
+        <AccountShell view={accountView} counts={{ traces: account.usage.hosted_traces.total }}>
+          {accountView === 'overview' ? (
+            <Overview account={account} />
+          ) : accountView === 'traces' ? (
+            <Traces />
+          ) : accountView === 'usage' ? (
+            <Usage />
+          ) : (
+            <Settings account={account} />
+          )}
+        </AccountShell>
+      </>
     );
   else body = <NotFound path={path} />;
 
@@ -102,12 +128,13 @@ export function App() {
       {!bare ? (
         <Header
           account={account}
-          onSignOut={() => setSignedIn(false)}
+          onSignOut={signOut}
+          authPending={pending}
           showDownload={section === 'docs'}
         />
       ) : null}
       {body}
-      <Footer />
+      {!waiting ? <Footer /> : null}
     </>
   );
 }

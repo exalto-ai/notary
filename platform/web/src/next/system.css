@@ -743,3 +743,33 @@ h1 {
   place-items: center;
   padding: 48px var(--x-gutter);
 }
+
+/* ---- Loading ------------------------------------------------------------ */
+/* A placeholder is a shape, not a spinner. It never animates faster than the
+   thing it is standing in for would have arrived. */
+
+.x-skeleton {
+  background: var(--x-sunken);
+  border-radius: 3px;
+  animation: x-settle 1.4s ease-in-out infinite;
+}
+
+@keyframes x-settle {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ---- Prototype notice --------------------------------------------------- */
+
+.x-prototype-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 7px var(--x-gutter);
+  background: var(--x-sunken);
+  border-bottom: 1px solid var(--x-rule);
+  color: var(--x-quiet);
+  font-size: 12.5px;
+}
