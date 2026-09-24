@@ -1,6 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { localPreviewApi } from './scripts/local-preview-api.mjs';
@@ -31,27 +30,7 @@ export default defineConfig(({ command }) => {
     },
     plugins: [
       react(),
-      tailwindcss(),
       ...(sample ? [localPreviewApi({ capture, website })] : []),
-      // The redesign prototype is a second document so it shares nothing with
-      // the production entry: no stylesheet, no provider, no route handling. It
-      // answers real paths under /next so the router can be exercised as it
-      // will ship, and it is served in development only, never built or
-      // deployed, until the cutover makes it the index.
-      {
-        name: 'redesign-prototype',
-        apply: 'serve',
-        configureServer(server) {
-          server.middlewares.use((request, _response, next) => {
-            const path = (request.url ?? '').split('?')[0];
-            if (path === '/next' || path === '/next/' || path.startsWith('/next/')) {
-              // Vite still has to serve its own client and the source graph.
-              if (!/\.[a-z0-9]+$/i.test(path)) request.url = '/next.html';
-            }
-            next();
-          });
-        },
-      },
       {
         name: 'site-html',
         transformIndexHtml: (html) =>
