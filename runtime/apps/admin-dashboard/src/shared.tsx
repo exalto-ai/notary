@@ -27,6 +27,7 @@ export function AxisSelect({
   ariaLabel,
   label,
   clearable = true,
+  disabled,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
@@ -35,6 +36,7 @@ export function AxisSelect({
   ariaLabel?: string;
   label?: string;
   clearable?: boolean;
+  disabled?: boolean;
 }) {
   const options = data.map((option) =>
     typeof option === 'string' ? { value: option, label: option } : option,
@@ -60,6 +62,7 @@ export function AxisSelect({
       }))}
       value={value}
       onChange={onChange}
+      disabled={disabled}
       clearable={clearable}
       allowDeselect={clearable}
       renderOption={({ option, checked }) => (

@@ -461,7 +461,8 @@ describe('Exalto Capture desktop shell', () => {
     renderApp('?screen=capture-on&view=providers');
     await userEvent.click(page.getByRole('button', { name: 'Connection setup' }));
     await userEvent.click(page.getByRole('radio', { name: /^Built-in/ }));
-    await userEvent.selectOptions(page.getByLabelText('Connection type'), 'openai');
+    await page.getByRole('combobox', { name: 'Connection type' }).click();
+    await page.getByRole('option', { name: 'OpenAI API' }).click();
     const openAiKey = page.getByLabelText('OpenAI API key');
     await userEvent.fill(openAiKey, 'unsaved provider secret');
 
@@ -469,7 +470,8 @@ describe('Exalto Capture desktop shell', () => {
       window.dispatchEvent(new Event(SENSITIVE_INPUT_RESET_EVENT));
     });
     await userEvent.click(page.getByRole('radio', { name: /^Built-in/ }));
-    await userEvent.selectOptions(page.getByLabelText('Connection type'), 'openai');
+    await page.getByRole('combobox', { name: 'Connection type' }).click();
+    await page.getByRole('option', { name: 'OpenAI API' }).click();
     await expect
       .element(page.getByLabelText('OpenAI API key'))
       .toHaveValue('');
