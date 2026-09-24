@@ -10,6 +10,7 @@ import {
 } from '@mantine/core';
 import { IconMoon, IconSun } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
+import { type Account, accountName, authProviderName } from '../data/account';
 import { href } from '../router';
 
 /**
@@ -73,17 +74,18 @@ function ColorSchemeToggle() {
   );
 }
 
-export type Account = { name: string; identifier: string; provider: string } | null;
-
 export function Header({
   account,
   onSignOut,
+  authPending = false,
   showDownload = false,
 }: {
-  account: Account;
+  account: Account | null;
   onSignOut?: () => void;
+  authPending?: boolean;
   showDownload?: boolean;
 }) {
+  const name = account ? accountName(account) : '';
   return (
     <Box
       component="header"
@@ -114,21 +116,38 @@ export function Header({
           </Button>
         ) : null}
         {account ? (
-          <Menu position="bottom-end" width={230} shadow="md">
+          <Menu position="bottom-end" width={240} shadow="md">
             <Menu.Target>
-              <ActionIcon variant="default" size={30} radius="xl" aria-label="Account menu">
-                <Text fz={11} fw={600}>
-                  {account.name.slice(0, 2).toUpperCase()}
-                </Text>
+              <ActionIcon
+                variant="default"
+                size={30}
+                radius="xl"
+                aria-label={`Account menu for ${name}`}
+                style={{ overflow: 'hidden' }}
+              >
+                {account.avatar_url ? (
+                  <img
+                    src={account.avatar_url}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    width={30}
+                    height={30}
+                    style={{ display: 'block', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <Text fz={11} fw={600}>
+                    {name.slice(0, 2).toUpperCase()}
+                  </Text>
+                )}
               </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown>
               <Box px={12} py={8}>
                 <Text fz="sm" fw={550}>
-                  {account.name}
+                  {name}
                 </Text>
                 <Text fz="xs" c="var(--x-quiet)">
-                  {account.identifier}, {account.provider}
+                  {account.provider_display_name}, {authProviderName(account)}
                 </Text>
               </Box>
               <Menu.Divider />
@@ -142,6 +161,10 @@ export function Header({
               <Menu.Item onClick={onSignOut}>Sign out</Menu.Item>
             </Menu.Dropdown>
           </Menu>
+        ) : authPending ? (
+          // The control is about to be here either way, so the wait keeps its
+          // footprint rather than shifting the bar when the session answers.
+          <Box className="x-skeleton" w={72} h={30} style={{ borderRadius: 4 }} />
         ) : (
           <Button component="a" href={href('/signin')} variant="default" size="xs" h={30} px={14}>
             Sign in

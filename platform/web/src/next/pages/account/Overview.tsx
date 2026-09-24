@@ -1,8 +1,11 @@
 import { Anchor, Box, Text } from '@mantine/core';
+import { listingDate } from '../../../site/format';
 import { CodeBlock } from '../../components/CodeBlock';
 import { Custody, Data, Lamp, Meter, SectionHead } from '../../components/primitives';
-import { devices, sealingByDay, traces, usage } from '../../data/fixtures';
+import type { Account } from '../../data/account';
+import { devices, sealingByDay, traces } from '../../data/fixtures';
 import { bytes, percent } from '../../format';
+import { planLabel } from '../../plan';
 import { href } from '../../router';
 
 function Readout({
@@ -30,25 +33,45 @@ function Readout({
   );
 }
 
-export function Overview() {
+export function Overview({ account }: { account: Account }) {
+  const { billing, usage } = account;
+  const capture = usage.credits.capture;
+  const sealing = usage.credits.notarization;
+  const shares = usage.hosted_traces;
+  const attention =
+    billing.billing_status === 'review' ? 'Billing' : shares.needs_attention || 'None';
   const peak = Math.max(...sealingByDay);
   const recent = traces.slice(0, 3);
   return (
     <>
       <Box className="x-readouts">
-        <Readout label="Plan" value={usage.plan} note={`Resets ${usage.resetsAt}`} />
+        <Readout
+          label="Plan"
+          value={planLabel(billing.plan)}
+          note={`Resets ${listingDate(usage.credits.reset_at)}`}
+          tone={billing.billing_status === 'review' ? 'alert' : undefined}
+        />
         <Readout
           label="Capture this month"
-          value={percent(usage.capture.used, usage.capture.total)}
-          note={`${bytes(usage.capture.used)} of ${bytes(usage.capture.total)}`}
+          value={percent(capture.total_used_bytes, capture.total_granted_bytes)}
+          note={`${bytes(capture.total_used_bytes)} of ${bytes(capture.total_granted_bytes)}`}
         />
         <Readout
           label="Sealing this month"
-          value={percent(usage.sealing.used, usage.sealing.total)}
-          note={`${bytes(usage.sealing.total - usage.sealing.used)} left`}
+          value={percent(sealing.total_used_bytes, sealing.total_granted_bytes)}
+          note={`${bytes(sealing.total_remaining_bytes)} left`}
         />
-        <Readout label="Shared traces" value="3" note={`${bytes(usage.storage.used)} stored`} />
-        <Readout label="Needs attention" value="1" note="A trace is still verifying" tone="alert" />
+        <Readout
+          label="Shared traces"
+          value={String(shares.shared)}
+          note={`${bytes(shares.stored_bytes)} stored`}
+        />
+        <Readout
+          label="Needs attention"
+          value={String(attention)}
+          note={attention === 'None' ? 'Nothing is waiting on you' : 'Open Traces to resolve it'}
+          tone={attention === 'None' ? undefined : 'alert'}
+        />
       </Box>
 
       <Box mt={40}>
@@ -84,10 +107,11 @@ export function Overview() {
             <Data c="var(--x-quiet)">today</Data>
           </Box>
           <Box mt="md">
-            <Meter used={usage.sealing.used} total={usage.sealing.total} />
+            <Meter used={sealing.total_used_bytes} total={sealing.total_granted_bytes} />
             <Box mt={8} style={{ display: 'flex', justifyContent: 'space-between' }}>
               <Data c="var(--x-quiet)">
-                {bytes(usage.sealing.used)} sealed of {bytes(usage.sealing.total)} included
+                {bytes(sealing.total_used_bytes)} sealed of {bytes(sealing.total_granted_bytes)}{' '}
+                granted
               </Data>
               <Anchor href={href('/app/usage')} fz={12.5} c="var(--x-seal)">
                 Add sealing
