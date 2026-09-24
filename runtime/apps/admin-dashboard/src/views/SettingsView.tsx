@@ -815,18 +815,8 @@ export function DesktopSettingsView({
     ['checking', 'downloading', 'installing'].includes(update?.phase ?? '');
   return (
     <div className="view-page settings-page settings-page--desktop">
-      <SettingsGroup id="settings-connections" title="Connections">
-        <div className="settings-subgroup-grid">
-          <Paper className="settings-panel">
-            <Text className="eyebrow">AI tools</Text>
-            <Title order={2}>AI connections</Title>
-            <Text>
-              Connect Codex CLI, Claude Code, or an API client from the AI connections tab.
-              Sign-ins, API keys, and model selection stay in the originating tool.
-            </Text>
-          </Paper>
-          <DesktopNotaries api={api} />
-        </div>
+      <SettingsGroup id="settings-sealing" title="Sealing & account">
+        <DesktopNotaries api={api} />
         <AccountConnectionCard controller={accountConnection} />
       </SettingsGroup>
       <SettingsGroup id="settings-privacy" title="Privacy & storage">

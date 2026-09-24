@@ -303,6 +303,7 @@ export function Dashboard({
           api={api}
           navigate={navigate}
           fixture={fixture}
+          desktopShell={false}
           onTraceActionConsumed={consumeTraceAction}
           desktopBridge={desktopBridge}
         />
@@ -320,6 +321,7 @@ export function InlineDashboard({
   api,
   apiBaseUrl,
   route,
+  desktopShell = false,
   desktopSettings = null,
   onDesktopSettingsAction,
   onNavigate,
@@ -328,6 +330,7 @@ export function InlineDashboard({
   api: LocalApi;
   apiBaseUrl?: string;
   route: Route;
+  desktopShell?: boolean;
   desktopSettings?: DesktopSettingsState | null;
   onDesktopSettingsAction?: (action: DesktopSettingsAction) => void;
   onNavigate: (route: Route) => void;
@@ -372,6 +375,7 @@ export function InlineDashboard({
         apiBaseUrl={apiBaseUrl}
         navigate={onNavigate}
         fixture={false}
+        desktopShell={desktopShell}
         onTraceActionConsumed={consumeTraceAction}
         desktopBridge={desktopBridge}
       />
@@ -385,6 +389,7 @@ function View({
   api,
   apiBaseUrl,
   navigate,
+  desktopShell,
   onTraceActionConsumed,
   desktopBridge,
 }: {
@@ -394,6 +399,7 @@ function View({
   apiBaseUrl?: string;
   navigate: (route: Route) => void;
   fixture: boolean;
+  desktopShell: boolean;
   onTraceActionConsumed: (traceId: string, action: 'first-proof') => void;
   desktopBridge: {
     state: DesktopSettingsState | null;
@@ -409,6 +415,7 @@ function View({
           initialAction={route.action}
           initialFilters={route.filters}
           navigate={navigate}
+          hideActivity={desktopShell}
           onTraceActionConsumed={onTraceActionConsumed}
         />
       );
@@ -429,6 +436,8 @@ function View({
         <StandaloneSettingsView status={status} api={api} />
       );
     default:
-      return <OverviewView api={api} status={status} navigate={navigate} />;
+      return (
+        <OverviewView api={api} status={status} navigate={navigate} hideActivity={desktopShell} />
+      );
   }
 }

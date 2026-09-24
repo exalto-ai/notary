@@ -1,4 +1,4 @@
-import { FileCheck2, MessageSquare, Radio, Settings } from 'lucide-react';
+import { FileCheck2, MessageSquare, Radio, Settings, Unplug } from 'lucide-react';
 import type { DesktopState } from './bridge';
 import notaryMark from './notary-mark.svg';
 import { Symbol } from './Symbol';
@@ -23,7 +23,8 @@ export function Sidebar({ state, view, onNavigate }: {
       symbol: 'doc.text',
       count: traceCount,
     },
-    { view: 'settings', label: 'Settings', icon: Settings, symbol: 'gearshape' },
+    { view: 'providers', label: 'Connections', icon: Unplug, symbol: 'point.3.connected.trianglepath.dotted' },
+    { view: 'settings', label: 'Preferences', icon: Settings, symbol: 'gearshape' },
   ];
 
   return <aside className="native-sidebar">
@@ -37,7 +38,7 @@ export function Sidebar({ state, view, onNavigate }: {
         {items.map(({ view: itemView, label, icon: Icon, symbol, count }) => <button
           key={itemView}
           type="button"
-          className={view === itemView || (itemView === 'settings' && (view === 'providers' || view === 'activity')) ? 'is-selected' : ''}
+          className={view === itemView ? 'is-selected' : ''}
           onClick={() => onNavigate(itemView)}
         >
           <Symbol name={symbol} fallback={Icon} size={16} />

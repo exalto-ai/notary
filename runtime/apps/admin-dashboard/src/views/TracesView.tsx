@@ -406,6 +406,7 @@ export function TracesView({
   initialAction,
   initialFilters,
   navigate,
+  hideActivity = false,
   onTraceActionConsumed,
 }: {
   api: LocalApi;
@@ -413,6 +414,7 @@ export function TracesView({
   initialAction?: Route['action'];
   initialFilters?: Route['filters'];
   navigate: (route: Route) => void;
+  hideActivity?: boolean;
   onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
 }) {
   const [query, setQuery] = useState('');
@@ -649,6 +651,7 @@ export function TracesView({
                 mobile={Boolean(mobile)}
                 onBack={() => navigate({ view: 'traces' })}
                 navigate={navigate}
+                hideActivity={hideActivity}
                 onTraceActionConsumed={onTraceActionConsumed}
               />
             ) : null}
@@ -698,6 +701,7 @@ function TraceInspector(props: {
   mobile: boolean;
   onBack: () => void;
   navigate: (route: Route) => void;
+  hideActivity?: boolean;
   onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
 }) {
   return props.capture.state === 'notarized' ? (
@@ -708,6 +712,7 @@ function TraceInspector(props: {
       mobile={props.mobile}
       onBack={props.onBack}
       navigate={props.navigate}
+      hideActivity={props.hideActivity}
       onTraceActionConsumed={props.onTraceActionConsumed}
     />
   ) : (
@@ -805,6 +810,7 @@ function CapturedTraceInspector({
   mobile,
   onBack,
   navigate,
+  hideActivity = false,
   onTraceActionConsumed,
 }: {
   api: LocalApi;
@@ -813,6 +819,7 @@ function CapturedTraceInspector({
   mobile: boolean;
   onBack: () => void;
   navigate: (route: Route) => void;
+  hideActivity?: boolean;
   onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
 }) {
   const queryClient = useQueryClient();
@@ -1061,8 +1068,10 @@ function CapturedTraceInspector({
               <OperationInspector
                 operation={value.notarization}
                 fixture={false}
-                onViewActivity={() =>
-                  navigate({ view: 'activity', filters: { traceId: capture.trace_id } })
+                onViewActivity={
+                  !hideActivity
+                    ? () => navigate({ view: 'activity', filters: { traceId: capture.trace_id } })
+                    : undefined
                 }
               />
             ) : (
@@ -1232,6 +1241,7 @@ function NotarizedTraceInspector({
   mobile,
   onBack,
   navigate,
+  hideActivity = false,
   onTraceActionConsumed,
 }: {
   api: LocalApi;
@@ -1240,6 +1250,7 @@ function NotarizedTraceInspector({
   mobile: boolean;
   onBack: () => void;
   navigate: (route: Route) => void;
+  hideActivity?: boolean;
   onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
 }) {
   const queryClient = useQueryClient();
@@ -1724,8 +1735,10 @@ function NotarizedTraceInspector({
               <OperationInspector
                 operation={detail.data.notarization}
                 fixture={false}
-                onViewActivity={() =>
-                  navigate({ view: 'activity', filters: { traceId: captureId } })
+                onViewActivity={
+                  !hideActivity
+                    ? () => navigate({ view: 'activity', filters: { traceId: captureId } })
+                    : undefined
                 }
               />
             ) : (

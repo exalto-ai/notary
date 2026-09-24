@@ -151,7 +151,7 @@ describe('Exalto Capture desktop shell', () => {
           node.textContent?.replace(/\d+$/, ''),
         ),
       )
-      .toEqual(['Overview', 'Chat', 'Traces', 'Settings']);
+      .toEqual(['Overview', 'Chat', 'Traces', 'Connections', 'Preferences']);
     await expect.element(page.getByText('Captures', { exact: true })).not.toBeInTheDocument();
     await expect.element(page.getByText('Finalizations', { exact: true })).not.toBeInTheDocument();
     await expect.element(page.getByText('Share', { exact: true })).not.toBeInTheDocument();
@@ -217,8 +217,9 @@ describe('Exalto Capture desktop shell', () => {
     await userEvent.click(page.getByRole('button', { name: 'Connection setup' }));
     await expect.element(page.getByRole('heading', { name: 'Where would you like to chat?' })).toBeVisible();
     await userEvent.click(page.getByRole('button', { name: 'Done' }));
-    await userEvent.click(page.getByRole('button', { name: 'Activity log' }));
-    await expect.element(page.getByText('No activity')).toBeVisible();
+    await userEvent.click(page.getByRole('button', { name: 'Preferences' }));
+    await expect.element(page.getByRole('heading', { name: 'Preferences' })).toBeVisible();
+    expect(document.querySelector('.settings-subnav')).toBeNull();
     expect(document.querySelector('.workspace-frame')).toBeNull();
   });
 
@@ -226,7 +227,7 @@ describe('Exalto Capture desktop shell', () => {
     renderApp('?screen=capture-on&view=traces');
     await expect.element(page.getByPlaceholder('Search traces')).toBeVisible();
     expect(document.querySelector('.workspace-frame')).toBeNull();
-    for (const label of ['Settings', 'Chat', 'Traces', 'Settings', 'Traces']) {
+    for (const label of ['Preferences', 'Chat', 'Traces', 'Connections', 'Preferences', 'Traces']) {
       await userEvent.click(page.getByRole('button', { name: new RegExp(`^${label}`) }));
       expect(document.querySelector('.workspace-frame')).toBeNull();
     }
@@ -243,7 +244,7 @@ describe('Exalto Capture desktop shell', () => {
   });
 
   test('keeps the primary capture control on Capture', async () => {
-    renderApp('?view=activity');
+    renderApp('?screen=service-off&view=traces');
     await expect.element(page.getByText('Start the local service to inspect private traces and connections. Capture remains off.')).toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Start local service' })).toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Start capturing' })).not.toBeInTheDocument();
@@ -252,7 +253,7 @@ describe('Exalto Capture desktop shell', () => {
   });
 
   test('shows start failures beside the retry action on every offline workspace', async () => {
-    for (const view of ['traces', 'providers', 'activity'] as const) {
+    for (const view of ['traces', 'providers'] as const) {
       renderApp(`?screen=service-off&view=${view}&service-start=fail`);
       await userEvent.click(page.getByRole('button', { name: 'Start local service' }));
       await expect.element(page.getByRole('alert')).toHaveTextContent('could not start');
@@ -501,7 +502,9 @@ describe('Exalto Capture desktop shell', () => {
 
   test('uses one native desktop-and-service Settings surface', async () => {
     renderApp('?screen=capture-on&view=settings&update=ready');
-    await expect.element(page.getByRole('heading', { name: 'Connections', exact: true })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Preferences', exact: true })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'Sealing & account', exact: true })).toBeVisible();
+    await expect.element(page.getByRole('heading', { name: 'AI connections', exact: true })).not.toBeInTheDocument();
     expect(document.querySelector('.workspace-frame')).toBeNull();
     expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
     await expect
@@ -522,7 +525,7 @@ describe('Exalto Capture desktop shell', () => {
           (heading) => heading.textContent,
         ),
       )
-      .toEqual(['Connections', 'Privacy & storage', 'App', 'Advanced']);
+      .toEqual(['Sealing & account', 'Privacy & storage', 'App', 'Advanced']);
     await expect.element(page.getByRole('switch', { name: 'Capture new requests' })).not.toBeInTheDocument();
     await expect.element(page.getByRole('button', { name: 'Start capturing' })).not.toBeInTheDocument();
     await expect.element(page.getByRole('button', { name: 'Start local service' })).toBeVisible();

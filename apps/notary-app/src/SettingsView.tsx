@@ -133,7 +133,7 @@ export function SettingsView({
     return (
       <div className="native-page preferences-page offline-settings-page">
         <section className="preference-section">
-          <h2>Connections</h2>
+          <h2>Sealing &amp; account</h2>
           <div className="preference-group">
             <div className="preference-row">
               <div>
@@ -232,6 +232,7 @@ export function SettingsView({
         route={dashboardRoute(route, constraint, traceTarget)}
         desktopSettings={desktopSettings}
         onDesktopSettingsAction={handleDesktopAction}
+        desktopShell
         onNavigate={(next) => onNavigate(next.view as View, next)}
         onTraceActionConsumed={onTraceActionConsumed}
       />

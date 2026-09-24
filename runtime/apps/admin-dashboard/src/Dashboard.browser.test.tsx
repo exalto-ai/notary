@@ -1132,7 +1132,7 @@ describe('Notary admin dashboard', () => {
           (heading) => heading.textContent,
         ),
       )
-      .toEqual(['Connections', 'Privacy & storage', 'App', 'Advanced']);
+      .toEqual(['Sealing & account', 'Privacy & storage', 'App', 'Advanced']);
     await expect
       .element(page.getByRole('switch', { name: 'Open Exalto Capture at sign-in' }))
       .toBeChecked();

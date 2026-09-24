@@ -417,38 +417,24 @@ function AppContent() {
         onNavigate={navigate}
       />
       <section className="window-content">
-        <main className={`native-content ${route ? 'has-workspace' : ''} ${(view === 'settings' || view === 'providers' || view === 'activity') ? 'has-settings-subnav' : ''} ${view === 'home' ? 'has-view-toolbar' : ''}`}>
+        <main className={`native-content ${route ? 'has-workspace' : ''} ${view === 'home' ? 'has-view-toolbar' : ''}`}>
           {view === 'home' && (
             <header className="view-toolbar" data-tauri-drag-region="deep">
               <h1 data-tauri-drag-region>Overview</h1>
             </header>
           )}
-          {(view === 'settings' || view === 'providers' || view === 'activity') && (
-            <nav className="settings-subnav" aria-label="Settings sections" data-tauri-drag-region="deep">
-              <button
-                type="button"
-                className={view === 'settings' ? 'is-selected' : ''}
-                onClick={() => navigate('settings')}
-              >
-                Preferences
-              </button>
-              <button
-                type="button"
-                className={view === 'providers' ? 'is-selected' : ''}
-                onClick={() => navigate('providers')}
-              >
-                AI connections
-              </button>
-              <button
-                type="button"
-                className={view === 'activity' ? 'is-selected' : ''}
-                onClick={() => navigate('activity')}
-              >
-                Activity log
-              </button>
-              <span className="settings-subnav-spacer" />
-              {view === 'providers' && <button className="settings-subnav-action" type="button" onClick={() => setSetupOpen(true)}>Connection setup</button>}
-            </nav>
+          {route && (
+            <header className="native-page-header" data-tauri-drag-region="deep">
+              <div>
+                <h1 data-tauri-drag-region>{viewMeta[view].title}</h1>
+                <p>{viewMeta[view].subtitle}</p>
+              </div>
+              {view === 'providers' && (
+                <button className="mac-button is-primary" type="button" onClick={() => setSetupOpen(true)}>
+                  Connection setup
+                </button>
+              )}
+            </header>
           )}
           <div className="chat-view-container" hidden={view !== 'chat'}><BuiltinChat state={state} refresh={refresh} onOpenTrace={(id) => { setTraceTarget({ traceId: id }); setTraceConstraint(null); setView('traces'); }} /></div>
           {view === 'home' && (
