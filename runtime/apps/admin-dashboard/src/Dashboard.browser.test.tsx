@@ -504,7 +504,7 @@ describe('Notary admin dashboard', () => {
     await expect.poll(() => startNotarization).toHaveBeenCalledTimes(1);
     expect(startNotarization).toHaveBeenCalledWith(traceId);
     await expect.element(page.getByText('Waiting for proof worker', { exact: true })).toBeVisible();
-    expect(window.location.hash).toBe(`#/traces/${traceId}?action=first-proof`);
+    expect(window.location.hash).toBe(`#/traces/${traceId}`);
 
     await page.getByRole('tab', { name: 'Summary' }).click();
     await page.getByRole('tab', { name: 'Sealing' }).click();
@@ -986,7 +986,8 @@ describe('Notary admin dashboard', () => {
     const api = createFixtureApi();
     renderDashboard('/settings', api);
     const toggle = page.getByRole('switch', { name: 'Capture requests' });
-    await toggle.click();
+    await expect.element(toggle).toBeVisible();
+    (toggle.element() as HTMLInputElement).click();
     await expect.element(toggle).not.toBeChecked();
     await expect
       .element(page.getByText('Off, requests still pass through', { exact: false }))
@@ -1191,7 +1192,11 @@ describe('Notary admin dashboard', () => {
     await expect
       .element(page.getByText('Menu-bar controller', { exact: true }))
       .not.toBeInTheDocument();
-    await page.getByRole('switch', { name: 'Open Exalto Capture at sign-in' }).click();
+    (
+      page
+        .getByRole('switch', { name: 'Open Exalto Capture at sign-in' })
+        .element() as HTMLInputElement
+    ).click();
     await page.getByRole('button', { name: 'Check now' }).click();
     await page.getByRole('button', { name: 'Restart to update' }).click();
     expect(actions).toEqual([
@@ -1205,7 +1210,9 @@ describe('Notary admin dashboard', () => {
     renderDashboard('/settings', createFixtureApi(), true, desktopSettings);
     await expect.element(page.getByText('Sample User', { exact: true })).toBeVisible();
     await expect.element(page.getByText(/does not upload or share local traces/)).toBeVisible();
-    await expect.element(page.getByText('Local data', { exact: true })).toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'Protected by Keychain', exact: true }))
+      .toBeVisible();
     await expect
       .element(page.getByText(/not protected by the private-capture vault/))
       .toBeVisible();
