@@ -1,10 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react()],
   resolve: {
     alias: [
       { find: '@', replacement: resolve(process.cwd(), '../../runtime/apps/admin-dashboard/src') },
@@ -14,14 +13,7 @@ export default defineConfig({
       { find: '@mantine/hooks', replacement: resolve(process.cwd(), 'node_modules/@mantine/hooks') },
       { find: '@mantine/notifications', replacement: resolve(process.cwd(), 'node_modules/@mantine/notifications') },
       { find: '@tanstack/react-query', replacement: resolve(process.cwd(), 'node_modules/@tanstack/react-query') },
-      { find: 'class-variance-authority', replacement: resolve(process.cwd(), 'node_modules/class-variance-authority') },
-      { find: 'clsx', replacement: resolve(process.cwd(), 'node_modules/clsx') },
       { find: 'lucide-react', replacement: resolve(process.cwd(), 'node_modules/lucide-react') },
-      { find: 'radix-ui', replacement: resolve(process.cwd(), 'node_modules/radix-ui') },
-      { find: 'tailwind-merge', replacement: resolve(process.cwd(), 'node_modules/tailwind-merge') },
-      { find: 'tw-animate-css', replacement: resolve(process.cwd(), 'node_modules/tw-animate-css') },
-      { find: 'shadcn/tailwind.css', replacement: resolve(process.cwd(), 'node_modules/shadcn/dist/tailwind.css') },
-      { find: 'shadcn', replacement: resolve(process.cwd(), 'node_modules/shadcn') },
     ],
   },
   clearScreen: false,
@@ -37,7 +29,10 @@ export default defineConfig({
       },
     },
     fs: {
-      allow: [resolve(process.cwd(), '../../runtime/apps/admin-dashboard')],
+      allow: [
+        resolve(process.cwd()),
+        resolve(process.cwd(), '../../runtime/apps/admin-dashboard'),
+      ],
     },
   },
   envPrefix: ['VITE_', 'TAURI_'],

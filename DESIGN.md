@@ -484,7 +484,7 @@ doubled borders.
   verbs ("Seal trace", "Share trace", "Revoke device"); one primary per
   screen. Secondary actions bordered or text-only; square neutral filters;
   inputs with a visible 1px rule. No rounded pills, floating buttons, or
-  icon-only actions without labels. Behavior-heavy primitives use shadcn/Radix
+  icon-only actions without labels. Behavior-heavy primitives use Mantine
   restyled through workspace variables — a primitive is not permission to accept
   its default radius or shadow.
 - **Lists and inspectors:** continuous rule-separated rows; selection gets
