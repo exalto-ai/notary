@@ -16,7 +16,7 @@ import { Docs } from './pages/Docs';
 import { Landing } from './pages/Landing';
 import { Legal } from './pages/Legal';
 import { SignIn } from './pages/SignIn';
-import { href, query, segments, useLinkNavigation, usePath } from './router';
+import { go, href, query, segments, useLinkNavigation, usePath } from './router';
 
 const accountViews: AccountView[] = ['overview', 'traces', 'usage', 'settings'];
 
@@ -24,7 +24,6 @@ const accountViews: AccountView[] = ['overview', 'traces', 'usage', 'settings'];
 const stillSampleData: Partial<Record<AccountView, string[]>> = {
   overview: ['the 30 day chart', 'recent traces', 'the device count'],
   usage: ['allowance meters', 'purchases'],
-  settings: ['devices', 'API keys'],
 };
 
 function NotFound({ path }: { path: string }) {
@@ -54,7 +53,7 @@ export function App() {
   const [section, page] = segments(path);
   const parameters = query(path);
   const scheme = useComputedColorScheme('light');
-  const { account, pending, error, signOut } = useAccount();
+  const { account, pending, error, signOut, forget } = useAccount();
   useLinkNavigation();
 
   useEffect(() => {
@@ -113,7 +112,13 @@ export function App() {
           ) : accountView === 'usage' ? (
             <Usage />
           ) : (
-            <Settings account={account} />
+            <Settings
+              account={account}
+              onAccountDeleted={() => {
+                forget();
+                go('/');
+              }}
+            />
           )}
         </AccountShell>
       </>

@@ -11,6 +11,8 @@ export type AccountState = {
   error: string | null;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** After the account is gone there is nothing to re-read, so forget it. */
+  forget: () => void;
 };
 
 export function useAccount(loadAccount = getCurrentUser): AccountState {
@@ -54,6 +56,10 @@ export function useAccount(loadAccount = getCurrentUser): AccountState {
     refresh: () => read(),
     signOut: async () => {
       await logoutBrowser();
+      setAccount(null);
+      rememberSession(false);
+    },
+    forget: () => {
       setAccount(null);
       rememberSession(false);
     },
