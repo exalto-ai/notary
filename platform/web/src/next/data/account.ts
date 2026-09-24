@@ -49,21 +49,18 @@ export function useAccount(loadAccount = getCurrentUser): AccountState {
     };
   }, [read]);
 
-  return {
-    account,
-    pending,
-    error,
-    refresh: () => read(),
-    signOut: async () => {
-      await logoutBrowser();
-      setAccount(null);
-      rememberSession(false);
-    },
-    forget: () => {
-      setAccount(null);
-      rememberSession(false);
-    },
-  };
+  const refresh = useCallback(() => read(), [read]);
+  const signOut = useCallback(async () => {
+    await logoutBrowser();
+    setAccount(null);
+    rememberSession(false);
+  }, []);
+  const forget = useCallback(() => {
+    setAccount(null);
+    rememberSession(false);
+  }, []);
+
+  return { account, pending, error, refresh, signOut, forget };
 }
 
 export function accountName(account: Pick<Account, 'display_name' | 'provider_display_name'>) {

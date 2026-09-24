@@ -2,7 +2,6 @@ import { Anchor, Box, Text, useComputedColorScheme } from '@mantine/core';
 import { useEffect } from 'react';
 import { useSettledWait } from '../site/LoadingStates';
 import { AccountPlaceholder } from './components/AccountPlaceholder';
-import { PrototypeNotice } from './components/PrototypeNotice';
 import { Footer, Header, Page } from './components/Shell';
 import { useAccount } from './data/account';
 import { documentTitle } from './documentTitle';
@@ -19,12 +18,6 @@ import { SignIn } from './pages/SignIn';
 import { go, href, query, segments, useLinkNavigation, usePath } from './router';
 
 const accountViews: AccountView[] = ['overview', 'traces', 'usage', 'settings'];
-
-// Removed one entry at a time as each layer of the port lands.
-const stillSampleData: Partial<Record<AccountView, string[]>> = {
-  overview: ['the 30 day chart', 'recent traces', 'the device count'],
-  usage: ['allowance meters', 'purchases'],
-};
 
 function NotFound({ path }: { path: string }) {
   return (
@@ -53,7 +46,7 @@ export function App() {
   const [section, page] = segments(path);
   const parameters = query(path);
   const scheme = useComputedColorScheme('light');
-  const { account, pending, error, signOut, forget } = useAccount();
+  const { account, pending, error, refresh, signOut, forget } = useAccount();
   useLinkNavigation();
 
   useEffect(() => {
@@ -103,14 +96,13 @@ export function App() {
   else if (section === 'app' && account)
     body = (
       <>
-        <PrototypeNotice fixtures={stillSampleData[accountView] ?? []} />
         <AccountShell view={accountView} counts={{ traces: account.usage.hosted_traces.total }}>
           {accountView === 'overview' ? (
             <Overview account={account} />
           ) : accountView === 'traces' ? (
             <Traces />
           ) : accountView === 'usage' ? (
-            <Usage />
+            <Usage account={account} route={path} onAccountChanged={refresh} />
           ) : (
             <Settings
               account={account}
