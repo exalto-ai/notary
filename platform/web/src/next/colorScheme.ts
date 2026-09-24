@@ -1,11 +1,14 @@
 import type { MantineColorScheme, MantineColorSchemeManager } from '@mantine/core';
-import { type ThemePreference, themeOptions, themeStorageKey } from '../theme';
+import {
+  legacyThemeStorageKey,
+  type ThemePreference,
+  themeOptions,
+  themeStorageKey,
+} from '../theme';
 
 // Mantine's color scheme values and the site's own theme preference are the
 // same three words, so the prototype reads and writes the key the shipped site
 // already uses. A visitor who chose an appearance keeps it across the cutover.
-const legacyKey = 'llm-notary-theme';
-
 function isPreference(value: unknown): value is ThemePreference {
   return typeof value === 'string' && themeOptions.includes(value as ThemePreference);
 }
@@ -22,7 +25,8 @@ export function siteColorSchemeManager(): MantineColorSchemeManager {
       if (typeof window === 'undefined') return defaultValue;
       try {
         const stored =
-          window.localStorage.getItem(themeStorageKey) ?? window.localStorage.getItem(legacyKey);
+          window.localStorage.getItem(themeStorageKey) ??
+          window.localStorage.getItem(legacyThemeStorageKey);
         return isPreference(stored) ? stored : defaultValue;
       } catch {
         return defaultValue;
