@@ -818,14 +818,19 @@ function CapturedTraceInspector({
   const queryClient = useQueryClient();
   const handledInitialAction = useRef<string | null>(null);
   const consumedFirstProofAction = useRef<string | null>(null);
+  const [firstProofRequested, setFirstProofRequested] = useState(initialAction === 'first-proof');
   const [firstProofStartError, setFirstProofStartError] = useState<string | null>(null);
+  const firstProofActionKey = `${capture.trace_id}:first-proof`;
   const consumeFirstProofAction = () => {
-    if (initialAction !== 'first-proof') return;
+    if (!firstProofRequested) return;
     if (consumedFirstProofAction.current === capture.trace_id) return;
     consumedFirstProofAction.current = capture.trace_id;
     if (onTraceActionConsumed) onTraceActionConsumed(capture.trace_id, 'first-proof');
     else navigate({ view: 'traces', id: capture.trace_id });
   };
+  useEffect(() => {
+    if (initialAction === 'first-proof') setFirstProofRequested(true);
+  }, [initialAction]);
   const detail = useQuery({
     queryKey: ['capture', capture.trace_id],
     queryFn: () => api.trace(capture.trace_id),
@@ -835,6 +840,9 @@ function CapturedTraceInspector({
     mutationFn: () => api.startNotarization(capture.trace_id),
     onMutate: () => setFirstProofStartError(null),
     onSuccess: (result) => {
+      if (firstProofRequested) {
+        consumeFirstProofAction();
+      }
       notifications.show({
         title: result.deduplicated ? 'Already in the queue' : 'Sealing queued',
         message: result.deduplicated
@@ -849,12 +857,12 @@ function CapturedTraceInspector({
       navigate({
         view: 'traces',
         id: capture.trace_id,
-        action: initialAction === 'first-proof' ? initialAction : undefined,
+        action: initialAction === 'first-proof' ? undefined : initialAction,
       });
     },
     onError: (error) => {
       mutationError('Could not seal trace', error);
-      if (initialAction === 'first-proof') {
+      if (firstProofRequested) {
         setFirstProofStartError(
           'Automatic sealing could not start. Review the error, then choose Seal trace when you are ready to retry.',
         );
@@ -863,8 +871,7 @@ function CapturedTraceInspector({
     },
   });
   useEffect(() => {
-    if (initialAction !== 'first-proof' || !detail.data) return;
-    const actionKey = `${capture.trace_id}:${initialAction}`;
+    if (!firstProofRequested || !detail.data) return;
     const operationState = detail.data.notarization?.state;
     if (!capture.notarization_eligible) {
       setFirstProofStartError(
@@ -891,8 +898,8 @@ function CapturedTraceInspector({
     }
     if (capture.status === 'notarizing') return;
     if (capture.state === 'captured' && capture.status == null && !detail.data.notarization) {
-      if (handledInitialAction.current === actionKey) return;
-      handledInitialAction.current = actionKey;
+      if (handledInitialAction.current === firstProofActionKey) return;
+      handledInitialAction.current = firstProofActionKey;
       notarize.mutate();
       return;
     }
@@ -906,7 +913,7 @@ function CapturedTraceInspector({
     capture.status,
     capture.trace_id,
     detail.data,
-    initialAction,
+    firstProofRequested,
   ]);
   if (detail.isLoading) return <LoadingState />;
   if (detail.error) return <QueryError error={detail.error} title="Trace detail is unavailable" />;
@@ -965,7 +972,7 @@ function CapturedTraceInspector({
           <DeleteTraceAction api={api} capture={capture} navigate={navigate} />
         </Group>
       </div>
-      {initialAction === 'first-proof' && !firstProofStartError && (
+      {firstProofRequested && !firstProofStartError && (
         <Paper withBorder p="md" role="status" aria-live="polite">
           <Text className="eyebrow">Creating your first proof</Text>
           <Text fw={600}>Exalto Seal is sealing this disposable test Trace.</Text>

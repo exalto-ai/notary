@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { createLocalApi } from '../../../runtime/apps/admin-dashboard/src/api';
+import { InlineDashboard } from '../../../runtime/apps/admin-dashboard/src/Dashboard';
+import type { DashboardRoute } from '../../../runtime/apps/admin-dashboard/src/routes';
 import {
   errorMessage,
   getLaunchAtLogin,
@@ -10,8 +13,29 @@ import { updateRestartBlockReason, vaultProtection, type View, type WorkspaceVie
 import {
   type DesktopSettingsAction,
   type DesktopSettingsPayload,
-  WorkspaceFrame,
 } from './Shell';
+
+const localDashboardApi = createLocalApi({ baseUrl: 'http://127.0.0.1:8788' });
+
+function dashboardRoute(
+  route: WorkspaceView,
+  constraint: TraceConstraint | null,
+  traceTarget: TraceTarget | null,
+): DashboardRoute {
+  if (route === 'traces' && traceTarget) {
+    return { view: route, id: traceTarget.traceId, action: traceTarget.action };
+  }
+  if (route === 'traces' && constraint) {
+    const [key, value] = constraint.split('=');
+    return {
+      view: route,
+      filters: key === 'state'
+        ? { state: value as 'captured' | 'notarized' }
+        : { status: value as 'notarizing' | 'needs_attention' },
+    };
+  }
+  return { view: route };
+}
 
 export function SettingsView({
   route, active, navigationRequest, constraint, traceTarget, onTraceActionConsumed,
@@ -40,7 +64,7 @@ export function SettingsView({
   onCheckUpdate: () => void;
   onRestartToUpdate: () => void;
   onStartService: () => void;
-  onNavigate: (view: View) => void;
+  onNavigate: (view: View, route?: DashboardRoute) => void;
   allowLegacyWorkspace: boolean;
 }) {
   const [launch, setLaunch] = useState(false);
@@ -84,6 +108,28 @@ export function SettingsView({
     restart_block_reason: updateRestartBlockReason(state),
     notice: message ?? notice,
   };
+
+  if (!state.running && route !== 'settings') {
+    return (
+      <div className="native-page workspace-offline-page">
+        <section className="preference-section">
+          <h1>Local service is off</h1>
+          <p className="preference-note">
+            Start the local service to inspect private traces and connections. Capture remains off.
+          </p>
+          <button
+            className="mac-button is-primary"
+            type="button"
+            onClick={onStartService}
+            disabled={busy === 'service-start'}
+          >
+            {busy === 'service-start' ? 'Starting local service…' : 'Start local service'}
+          </button>
+          {serviceError && <p className="preference-note native-notice service-start-notice" role="alert">{serviceError}</p>}
+        </section>
+      </div>
+    );
+  }
 
   if (!state.running && route === 'settings') {
     const restartBlock = updateRestartBlockReason(state);
@@ -182,22 +228,15 @@ export function SettingsView({
   }
 
   return (
-    <div className="native-page embedded-settings-page">
-      <WorkspaceFrame
-        route={route}
-        active={active}
-        navigationRequest={navigationRequest}
-        constraint={constraint}
-        traceTarget={traceTarget}
-        onTraceActionConsumed={onTraceActionConsumed}
-        onStartService={onStartService}
-        serviceStarting={busy === 'service-start'}
-        serviceError={serviceError}
-        running={state.running}
+    <div className="native-page inline-dashboard-page">
+      <InlineDashboard
+        key={`${route}:${constraint ?? ''}:${traceTarget?.traceId ?? ''}:${traceTarget?.action ?? ''}`}
+        api={localDashboardApi}
+        route={dashboardRoute(route, constraint, traceTarget)}
         desktopSettings={desktopSettings}
         onDesktopSettingsAction={handleDesktopAction}
-        onRouteChange={onNavigate}
-        allowLegacyFrameLoadFallback={allowLegacyWorkspace}
+        onNavigate={(next) => onNavigate(next.view as View, next)}
+        onTraceActionConsumed={onTraceActionConsumed}
       />
     </div>
   );

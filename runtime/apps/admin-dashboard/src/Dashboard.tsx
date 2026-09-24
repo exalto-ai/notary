@@ -24,6 +24,11 @@ import {
   Unplug,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
+import './shadcn.css';
+import './styles.css';
+import './axis.css';
 import type { LocalApi, LocalApiError, Status } from './api';
 import { ErrorState, LoadingState } from './shared';
 import { ActivityView } from './views/ActivityView';
@@ -376,6 +381,72 @@ export function Dashboard({
   );
 }
 
+/**
+ * Renders the local service views without creating another browser shell.
+ * The desktop app owns navigation, window chrome, and update controls; these
+ * views contribute only the service-backed content and actions.
+ */
+export function InlineDashboard({
+  api,
+  route,
+  desktopSettings = null,
+  onDesktopSettingsAction,
+  onNavigate,
+  onTraceActionConsumed,
+}: {
+  api: LocalApi;
+  route: Route;
+  desktopSettings?: DesktopSettingsState | null;
+  onDesktopSettingsAction?: (action: DesktopSettingsAction) => void;
+  onNavigate: (route: Route) => void;
+  onTraceActionConsumed?: (traceId: string, action: 'first-proof') => void;
+}) {
+  const queryClient = useQueryClient();
+  const statusQuery = useQuery({
+    queryKey: ['status'],
+    queryFn: api.status,
+    retry: false,
+    refetchInterval: 10_000,
+  });
+
+  if (statusQuery.isLoading) return <LoadingState label="Connecting to the local service" />;
+  if (statusQuery.error && (statusQuery.error as LocalApiError).status === 401) {
+    return (
+      <AuthGate
+        api={api}
+        onAuthenticated={() => queryClient.invalidateQueries({ queryKey: ['status'] })}
+      />
+    );
+  }
+  if (statusQuery.error || !statusQuery.data) {
+    return <ErrorState onRetry={() => statusQuery.refetch()} />;
+  }
+
+  const desktopBridge = {
+    state: desktopSettings,
+    send: (action: DesktopSettingsAction) => onDesktopSettingsAction?.(action),
+  };
+  const consumeTraceAction = (traceId: string, action: 'first-proof') => {
+    onTraceActionConsumed?.(traceId, action);
+    onNavigate({ view: 'traces', id: traceId });
+  };
+
+  return (
+    <main className="dashboard-shell dashboard-shell--inline dashboard-main">
+      <View
+        route={route}
+        status={statusQuery.data}
+        api={api}
+        navigate={onNavigate}
+        fixture={false}
+        embedded={false}
+        onTraceActionConsumed={consumeTraceAction}
+        desktopBridge={desktopBridge}
+      />
+    </main>
+  );
+}
+
 function View({
   route,
   status,
@@ -414,7 +485,7 @@ function View({
     case 'providers':
       return <ProvidersView api={api} status={status} embedded={embedded} />;
     case 'settings':
-      return embedded ? (
+      return embedded || desktopBridge.state ? (
         <EmbeddedSettingsView
           status={status}
           api={api}
