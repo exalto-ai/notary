@@ -1,3 +1,5 @@
+import './styles';
+
 import { MantineProvider } from '@mantine/core';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
@@ -205,6 +207,27 @@ test('leads the root with the macOS download for signed-out and signed-in alike'
   await expect.element(downloads.first()).toBeVisible();
   await expect.element(page.getByRole('heading', { name: /Record every session/ })).toBeVisible();
   await expect.element(page.getByRole('link', { name: 'Open dashboard' })).toBeVisible();
+});
+
+test('the one filled action on a screen is actually filled', async () => {
+  // A hand-picked subset of Mantine's stylesheets once loaded UnstyledButton
+  // after Button, so its transparent background won and every primary control
+  // shipped unstyled without anything failing. Computed colour catches that;
+  // rendering without error does not.
+  mount(<SignIn loadProviders={async () => ({ google: true, github: true })} />);
+  const primary = page.getByRole('link', { name: /Continue with Google/ });
+  await expect.element(primary).toBeVisible();
+  await waitFor(() => {
+    const filled = document.querySelector('button.mantine-Button-root, a.mantine-Button-root');
+    expect(filled).toBeTruthy();
+  });
+  const styles = Array.from(document.querySelectorAll<HTMLElement>('.mantine-Button-root')).map(
+    (el) => getComputedStyle(el).backgroundColor,
+  );
+  // Every button here is the default variant, which paints a surface. None of
+  // them may be fully transparent.
+  expect(styles.length).toBeGreaterThan(0);
+  for (const background of styles) expect(background).not.toBe('rgba(0, 0, 0, 0)');
 });
 
 // ---- Sign in --------------------------------------------------------------

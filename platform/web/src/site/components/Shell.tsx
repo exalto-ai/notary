@@ -147,7 +147,11 @@ export function Header({
                   {name}
                 </Text>
                 <Text fz="xs" c="var(--x-quiet)">
-                  {account.provider_display_name}, {authProviderName(account)}
+                  {/* A Google account often reports the person's name as its
+                      identifier, and printing it twice reads as a mistake. */}
+                  {account.provider_display_name === name
+                    ? authProviderName(account)
+                    : `${account.provider_display_name}, ${authProviderName(account)}`}
                 </Text>
               </Box>
               <Menu.Divider />
