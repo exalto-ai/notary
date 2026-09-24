@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createTheme, MantineProvider } from '@mantine/core';
+import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@mantine/core/styles.css';
@@ -34,31 +34,11 @@ import {
 import { Sidebar } from './Shell';
 import { SettingsView } from './SettingsView';
 import type { DashboardRoute } from '../../../runtime/apps/admin-dashboard/src/routes';
+import { exaltoTheme } from '../../../runtime/apps/admin-dashboard/src/theme';
 
 export const SENSITIVE_INPUT_RESET_EVENT = 'exalto:sensitive-input-reset';
 export const CAPTURE_STATE_CHANGED_EVENT = 'exalto:capture-state-changed';
 export const DISPOSABLE_TEST_STOPPED_MESSAGE = 'The disposable test stopped when setup closed. Prepare it again when you are ready.';
-
-const desktopTheme = createTheme({
-  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif',
-  fontFamilyMonospace: 'ui-monospace, "SFMono-Regular", "SF Mono", Menlo, monospace',
-  primaryColor: 'axis',
-  defaultRadius: 0,
-  colors: {
-    axis: [
-      '#edf4ff',
-      '#dceaff',
-      '#b9d8ff',
-      '#8db8ff',
-      '#6fa7ff',
-      '#4e8df2',
-      '#3775df',
-      '#285fd1',
-      '#1c55cd',
-      '#143d94',
-    ],
-  },
-});
 
 function AppContent() {
   const query = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -480,7 +460,7 @@ function App() {
     defaultOptions: { queries: { staleTime: 2_000, retry: 1, refetchOnWindowFocus: true } },
   }));
   return (
-    <MantineProvider theme={desktopTheme} defaultColorScheme="auto">
+    <MantineProvider theme={exaltoTheme} defaultColorScheme="auto">
       <Notifications position="bottom-right" />
       <QueryClientProvider client={queryClient}>
         <AppContent />

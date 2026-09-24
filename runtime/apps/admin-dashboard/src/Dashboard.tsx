@@ -26,7 +26,6 @@ import {
 import { type FormEvent, useEffect, useState } from 'react';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
-import './shadcn.css';
 import './styles.css';
 import './axis.css';
 import type { LocalApi, LocalApiError, Status } from './api';

@@ -4,6 +4,7 @@ import {
   Button,
   Group,
   Loader,
+  Modal,
   Paper,
   SimpleGrid,
   Switch,
@@ -17,16 +18,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CodeXml, Copy, Moon, PanelLeft, ShieldCheck, Sun } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import type { AccountConnection, AccountConnectionStarted, LocalApi, Notary, Status } from '../api';
 import { LocalApiError } from '../api';
 import {
@@ -40,6 +31,7 @@ import {
   formatBytes,
   formatDate,
   LoadingState,
+  localModalClassNames,
   mutationError,
   QueryError,
   StatusLabel,
@@ -482,26 +474,31 @@ export function AccountConnectionCard({
           Connecting an account does not upload or share local traces.
         </Text>
       )}
-      <AlertDialog open={disconnectOpen} onOpenChange={setDisconnectOpen}>
-        <AlertDialogContent className="axis-local-dialog">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Disconnect this device?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This revokes only the local browser-approved session. It does not sign out the website
-              or delete your hosted account.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep connected</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={disconnect.isPending}
-              onClick={() => void disconnectAccount()}
-            >
-              {disconnect.isPending ? 'Disconnecting…' : 'Disconnect device'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Modal
+        opened={disconnectOpen}
+        onClose={() => {
+          if (!disconnect.isPending) setDisconnectOpen(false);
+        }}
+        title="Disconnect this device?"
+        size={430}
+        classNames={localModalClassNames}
+        closeOnClickOutside={!disconnect.isPending}
+        closeOnEscape={!disconnect.isPending}
+        withCloseButton={!disconnect.isPending}
+      >
+        <Text className="axis-local-dialog-description">
+          This revokes only the local browser-approved session. It does not sign out the website or
+          delete your hosted account.
+        </Text>
+        <Group className="axis-local-dialog-footer" justify="flex-end">
+          <Button variant="default" onClick={() => setDisconnectOpen(false)}>
+            Keep connected
+          </Button>
+          <Button loading={disconnect.isPending} onClick={() => void disconnectAccount()}>
+            Disconnect device
+          </Button>
+        </Group>
+      </Modal>
     </section>
   );
 }

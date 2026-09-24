@@ -43,7 +43,7 @@ function renderDashboard(
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <MantineProvider theme={theme} defaultColorScheme="auto">
-      <Notifications />
+      <Notifications transitionDuration={0} />
       <QueryClientProvider client={queryClient}>
         <Dashboard
           api={api}
@@ -114,15 +114,17 @@ describe('Notary admin dashboard', () => {
 
   test('keeps lifecycle primary while placing operational filters under More filters', async () => {
     renderDashboard('/traces?status=notarizing');
-    await expect.element(page.getByRole('button', { name: 'All', exact: true })).toBeVisible();
-    await expect.element(page.getByRole('button', { name: 'Captured', exact: true })).toBeVisible();
-    await expect.element(page.getByRole('button', { name: 'Sealed', exact: true })).toBeVisible();
+    await expect.element(page.getByText('All', { exact: true }).first()).toBeVisible();
+    await expect.element(page.getByText('Captured', { exact: true }).first()).toBeVisible();
+    await expect.element(page.getByText('Sealed', { exact: true }).first()).toBeVisible();
     await expect.element(page.getByRole('combobox', { name: 'Provider filter' })).toBeVisible();
     await expect.element(page.getByRole('combobox', { name: 'Trace time filter' })).toBeVisible();
     await expect
       .element(page.getByRole('combobox', { name: 'Operational status filter' }))
       .toBeVisible();
-    await expect.element(page.getByText('Sealing', { exact: true }).first()).toBeVisible();
+    await expect
+      .element(page.getByRole('combobox', { name: 'Operational status filter' }))
+      .toHaveValue('Sealing');
 
     cleanup();
     renderDashboard('/traces');
@@ -238,10 +240,10 @@ describe('Notary admin dashboard', () => {
       .element(page.getByText('Raw HTTP header values and provider credentials'))
       .toBeVisible();
     await expect.element(page.getByText(/Unlisted is not private/)).toBeVisible();
-    await page.getByLabelText('Share visibility').click();
+    await page.getByRole('combobox', { name: 'Share visibility' }).click();
     await page.getByRole('option', { name: 'Listed · public discovery' }).click();
     await page.getByLabelText('Optional password').fill('evidence-pass');
-    await page.getByLabelText('Share expiration').click();
+    await page.getByRole('combobox', { name: 'Share expiration' }).click();
     await page.getByRole('option', { name: '7 days' }).click();
     await page.getByRole('button', { name: 'Share trace' }).click();
     await expect.element(page.getByText('Verifying', { exact: true })).toBeVisible();
@@ -423,7 +425,7 @@ describe('Notary admin dashboard', () => {
 
     await page.getByRole('button', { name: 'More actions' }).click();
     await page.getByRole('menuitem', { name: 'Delete Trace…' }).click();
-    const dialog = page.getByRole('alertdialog');
+    const dialog = page.getByRole('dialog');
     await expect.element(dialog.getByRole('heading', { name: 'Delete this Trace?' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Delete Trace' }).click();
 
@@ -440,7 +442,7 @@ describe('Notary admin dashboard', () => {
 
     await page.getByRole('button', { name: 'More actions' }).click();
     await page.getByRole('menuitem', { name: 'Delete Trace…' }).click();
-    const dialog = page.getByRole('alertdialog');
+    const dialog = page.getByRole('dialog');
     await dialog.getByRole('button', { name: 'Cancel' }).click();
 
     expect(deleteTrace).not.toHaveBeenCalled();
@@ -783,13 +785,13 @@ describe('Notary admin dashboard', () => {
     expect(document.querySelector('.empty-state')?.parentElement).toHaveClass(
       'trace-empty-workspace',
     );
-    await page.getByRole('button', { name: 'Captured', exact: true }).click();
+    await page.getByText('Captured', { exact: true }).first().click();
     await expect
       .element(
         page.getByRole('heading', { name: 'No traces are currently in the Captured state.' }),
       )
       .toBeVisible();
-    await page.getByRole('button', { name: 'Sealed', exact: true }).click();
+    await page.getByText('Sealed', { exact: true }).first().click();
     await expect
       .element(page.getByRole('heading', { name: 'No traces have been sealed yet.' }))
       .toBeVisible();
@@ -828,7 +830,7 @@ describe('Notary admin dashboard', () => {
       },
     };
     renderDashboard('/traces', api);
-    await page.getByLabelText('Trace time filter').click();
+    await page.getByRole('combobox', { name: 'Trace time filter' }).click();
     await page.getByRole('option', { name: 'Last 24 hours' }).click();
     await expect.poll(() => filters.at(-1)?.created_from_unix_ms).toBeTypeOf('number');
   });
@@ -1392,11 +1394,11 @@ describe('Notary admin dashboard', () => {
 
     await page.getByRole('button', { name: 'Manage access' }).click();
     await expect.element(page.getByRole('heading', { name: 'Manage access' })).toBeVisible();
-    await page.getByLabelText('Share visibility').click();
+    await page.getByRole('combobox', { name: 'Share visibility' }).click();
     await page.getByRole('option', { name: 'Unlisted · link access' }).click();
-    await page.getByLabelText('Password protection').click();
+    await page.getByRole('combobox', { name: 'Password protection' }).click();
     await page.getByRole('option', { name: 'Remove password' }).click();
-    await page.getByLabelText('Share expiration').click();
+    await page.getByRole('combobox', { name: 'Share expiration' }).click();
     await page.getByRole('option', { name: 'No expiration' }).click();
     await page.getByRole('button', { name: 'Save access' }).click();
 
@@ -1437,6 +1439,7 @@ describe('Notary admin dashboard', () => {
     await expect.element(page.getByText('Verifying', { exact: true }).first()).toBeVisible();
 
     cleanup();
+    notifications.clean();
     const rejectedFixture = createFixtureApi({
       initialShare: {
         traceId,
@@ -1547,7 +1550,7 @@ describe('Notary admin dashboard', () => {
     await expect.element(page.getByRole('menuitem', { name: 'Delete Trace…' })).toBeEnabled();
     await userEvent.keyboard('{Escape}');
     await page.getByRole('button', { name: 'Manage access' }).click();
-    await page.getByLabelText('Share expiration').click();
+    await page.getByRole('combobox', { name: 'Share expiration' }).click();
     await page.getByRole('option', { name: '7 days from now' }).click();
     await page.getByRole('button', { name: 'Save access' }).click();
     await expect
@@ -1578,9 +1581,9 @@ describe('Notary admin dashboard', () => {
 
     await page.getByRole('button', { name: 'Resume sharing' }).click();
     await expect
-      .element(page.getByLabelText('Share expiration'))
-      .toHaveTextContent('No expiration');
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Resume sharing' }).click();
+      .element(page.getByRole('combobox', { name: 'Share expiration' }))
+      .toHaveValue('No expiration');
+    await page.getByRole('dialog').getByRole('button', { name: 'Resume sharing' }).click();
     expect(requestedSettings).toEqual({
       visibility: 'unlisted',
       expires_in_days: 0,
@@ -1642,20 +1645,22 @@ describe('Notary admin dashboard', () => {
     await expect
       .element(page.getByRole('heading', { name: 'Stop sharing this Trace?' }))
       .toBeVisible();
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Stop sharing' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Stop sharing' }).click();
     await expect
       .element(page.getByRole('button', { name: 'Stop sharing' }))
       .not.toBeInTheDocument();
     await expect.element(page.getByText('Public access is disabled for this share.')).toBeVisible();
+    notifications.clean();
 
     await page.getByRole('button', { name: 'Manage access' }).click();
     await page.getByRole('button', { name: 'Save access' }).click();
     await expect.element(page.getByText('Public access is disabled for this share.')).toBeVisible();
     expect(resharedSettings.at(-1)).toEqual({ visibility: 'unlisted' });
+    notifications.clean();
 
     await page.getByRole('button', { name: 'Resume sharing' }).click();
     await expect.element(page.getByRole('heading', { name: 'Resume sharing' })).toBeVisible();
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Resume sharing' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Resume sharing' }).click();
     await expect.element(page.getByRole('button', { name: 'Copy link' })).toBeVisible();
     expect(resharedSettings.at(-1)).toEqual({ visibility: 'unlisted', reactivate: true });
   });

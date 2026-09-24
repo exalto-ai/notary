@@ -191,10 +191,12 @@ describe('Exalto Capture desktop shell', () => {
       expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
       if (constraint.startsWith('state=')) {
         const labelName = constraint === 'state=notarized' ? 'Sealed' : 'Captured';
-        await expect.element(page.getByRole('button', { name: labelName, exact: true })).toHaveAttribute('aria-pressed', 'true');
+        await expect.element(page.getByRole('radio', { name: labelName, exact: true })).toBeChecked();
       } else {
         await expect.element(page.getByRole('button', { name: 'More filters' })).toHaveAttribute('aria-expanded', 'true');
-        expect(document.querySelector('.trace-filter-more')?.textContent).toContain(label);
+        await expect
+          .element(page.getByRole('combobox', { name: 'Operational status filter' }))
+          .toHaveValue(label);
       }
       await userEvent.click(page.getByRole('button', { name: 'Overview' }));
     }
@@ -237,9 +239,9 @@ describe('Exalto Capture desktop shell', () => {
   test('clears a Trace count filter when the native Traces destination is selected again', async () => {
     renderApp('?screen=capture-on');
     await userEvent.click(page.getByRole('button', { name: /Captured/ }));
-    await expect.element(page.getByRole('button', { name: 'Captured', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect.element(page.getByRole('radio', { name: 'Captured', exact: true })).toBeChecked();
     await userEvent.click(page.getByRole('button', { name: /^Traces/ }));
-    await expect.element(page.getByRole('button', { name: 'All', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect.element(page.getByRole('radio', { name: 'All', exact: true })).toBeChecked();
     expect(document.querySelector('.workspace-frame')).toBeNull();
   });
 

@@ -215,16 +215,16 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 .trace-layout { grid-template-columns: minmax(320px, .52fr) minmax(600px, 1.48fr); }
 .receipt dl div { border-color: var(--rule-strong); }
 
-.axis-select-field { display: grid; min-width: 0; gap: 6px; }
+.axis-select-field { min-width: 0; }
 .axis-select-label { color: var(--ink); font-size: 12px; font-weight: 600; }
 .axis-select-trigger {
   width: 100%;
   min-height: 34px;
-  justify-content: space-between;
   border: 1px solid var(--rule);
   border-radius: 0;
   background: var(--surface);
-  padding: 0 12px;
+  padding-block: 0;
+  padding-inline-start: 12px;
   color: var(--ink);
   font-family: var(--ui-font);
   font-size: 12px;
@@ -234,49 +234,56 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 .axis-select-trigger:focus-visible { border-color: var(--action); outline: 2px solid var(--action); outline-offset: 1px; box-shadow: none; }
 .axis-select-content {
   z-index: 400;
-  min-width: var(--radix-select-trigger-width);
   border: 1px solid var(--rule);
   border-radius: 0;
   background: var(--raised);
   color: var(--ink);
   box-shadow: 4px 4px 0 color-mix(in srgb, var(--ink) 16%, transparent);
 }
-.axis-select-content [data-slot='select-item'] {
+.axis-select-option {
   min-height: 32px;
   border-radius: 0;
-  padding-inline: 9px 30px;
+  padding-inline: 9px;
   font-family: var(--ui-font);
   font-size: 12px;
 }
-.axis-select-content [data-slot='select-item']:is(:focus, :focus-visible, [data-highlighted]) {
+.axis-select-option-content {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.axis-select-option-content > span { min-width: 0; }
+.axis-select-option-check { width: 14px; height: 14px; flex: 0 0 auto; color: var(--action); }
+.axis-select-option:is(:hover, [data-combobox-active], [data-combobox-selected]) {
   background: var(--subtle);
   color: var(--ink);
   outline: none;
   box-shadow: none;
 }
-[data-slot='alert-dialog-overlay'] { background: rgba(0, 0, 0, .52); backdrop-filter: none; }
+.axis-local-dialog-overlay { background: rgba(0, 0, 0, .52); backdrop-filter: none; }
 .axis-local-dialog {
   max-width: 430px;
-  gap: 18px;
   border: 1px solid var(--rule);
   border-radius: 0;
   background: var(--raised);
-  padding: 20px;
   color: var(--ink);
   box-shadow: 8px 8px 0 color-mix(in srgb, var(--ink) 18%, transparent);
 }
-.axis-local-dialog [data-slot='alert-dialog-header'] { place-items: start; gap: 7px; text-align: left; }
-.axis-local-dialog [data-slot='alert-dialog-title'] { font: 600 20px var(--ui-font); letter-spacing: -.02em; }
-.axis-local-dialog [data-slot='alert-dialog-description'] { color: var(--muted); font-size: 13px; line-height: 1.5; }
-.axis-local-dialog [data-slot='alert-dialog-footer'] { margin: 0; padding: 14px 0 0; border-top: 1px solid var(--rule); border-radius: 0; background: transparent; }
-.axis-local-dialog [data-slot='alert-dialog-action'],
-.axis-local-dialog [data-slot='alert-dialog-cancel'] { min-height: 34px; border-radius: 0; font-size: 12px; }
+.axis-local-dialog-header { align-items: start; padding: 20px 20px 0; background: transparent; }
+.axis-local-dialog-title { font: 600 20px var(--ui-font); letter-spacing: -.02em; }
+.axis-local-dialog-body { padding: 7px 20px 20px; }
+.axis-local-dialog-description { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.axis-local-dialog-description + .axis-local-dialog-description { margin-top: 8px; }
+.axis-local-dialog-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
 .next-action .mantine-Button-root { border-color: var(--action-fill); background: var(--action-fill); color: var(--action-contrast); }
 .next-action .mantine-Button-root:hover { border-color: var(--action-fill-hover); background: var(--action-fill-hover); color: var(--action-contrast); }
-.axis-local-dialog [data-slot='alert-dialog-action'] { background: var(--action-fill); color: var(--action-contrast); }
-.axis-local-dialog [data-slot='alert-dialog-action']:hover { background: var(--action-fill-hover); }
-.axis-local-dialog [data-slot='alert-dialog-action'].is-destructive { background: var(--danger); color: #fff; }
-.axis-local-dialog [data-slot='alert-dialog-action'].is-destructive:hover { background: color-mix(in srgb, var(--danger) 85%, var(--ink)); }
 
 /* Every list/inspector workspace starts from the same rail and shares one persisted divider. */
 .resizable-split {
@@ -414,7 +421,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 .auth-document h1,
 .empty-state h3,
 .error-state h2,
-.axis-local-dialog [data-slot='alert-dialog-title'] {
+.axis-local-dialog-title {
   font-family: var(--display-font);
 }
 
@@ -483,9 +490,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 .mantine-ActionIcon-root,
 .axis-select-trigger,
 .axis-select-content,
-.axis-local-dialog,
-.axis-local-dialog [data-slot='alert-dialog-action'],
-.axis-local-dialog [data-slot='alert-dialog-cancel'] {
+.axis-local-dialog {
   border-radius: 4px;
 }
 
@@ -511,9 +516,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 }
 .mantine-Notification-description { color: var(--muted); }
 
-.trace-state-filter { border-radius: 4px; overflow: hidden; }
-.trace-state-filter button { background: var(--raised); }
-.trace-state-filter button.is-active { background: var(--action-fill); color: var(--action-contrast); }
+.trace-state-filter { overflow: hidden; border: 1px solid var(--rule); border-radius: 0; background: var(--raised); }
 
 .capture-row:hover,
 .operation-row:hover { background: var(--subtle); }
@@ -644,7 +647,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
   margin: 0;
   padding-top: 0;
 }
-.dashboard-shell--inline .trace-state-filter button {
+.dashboard-shell--inline .trace-state-filter .mantine-SegmentedControl-label {
   min-height: 38px;
   padding-inline: 14px;
   font-size: 11px;
@@ -860,17 +863,14 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
    a recessed segmented control, pill switches, rounded menus and dialogs. */
 .dashboard-shell--inline .mantine-Button-root,
 .dashboard-shell--inline .mantine-Input-input,
-.dashboard-shell--inline .axis-select-trigger,
-:root[data-shell='desktop'] .axis-local-dialog [data-slot='alert-dialog-action'],
-:root[data-shell='desktop'] .axis-local-dialog [data-slot='alert-dialog-cancel'] {
+.dashboard-shell--inline .axis-select-trigger {
   min-height: 28px;
   border-radius: 6px;
   font-size: 13px;
 }
 .dashboard-shell--inline .mantine-Button-root { padding-inline: 12px; font-weight: 500; }
 .dashboard-shell--inline .mantine-Button-root:not([data-variant]),
-.dashboard-shell--inline .mantine-Button-root[data-variant='filled'],
-:root[data-shell='desktop'] .axis-local-dialog [data-slot='alert-dialog-action'] { font-weight: 600; }
+.dashboard-shell--inline .mantine-Button-root[data-variant='filled'] { font-weight: 600; }
 .dashboard-shell--inline .mantine-Input-input:focus,
 .dashboard-shell--inline .axis-select-trigger:focus-visible {
   outline-width: 3px;
@@ -881,29 +881,30 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 .dashboard-shell--inline .trace-filters .mantine-TextInput-input { border-radius: 7px; }
 
 .dashboard-shell--inline .trace-state-filter {
-  gap: 2px;
+  width: max-content;
   padding: 2px;
   border: 0;
   border-radius: 7px;
   background: var(--subtle);
   overflow: visible;
 }
-.dashboard-shell--inline .trace-state-filter button {
+.dashboard-shell--inline .trace-state-filter .mantine-SegmentedControl-label {
+  display: flex;
   min-height: 24px;
+  align-items: center;
+  justify-content: center;
   padding-inline: 12px;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
   color: var(--ink);
   font: 500 12px var(--ui-font);
 }
-.dashboard-shell--inline .trace-state-filter button + button { border-left: 0; }
-.dashboard-shell--inline .trace-state-filter button:hover:not(.is-active) { background: color-mix(in srgb, var(--ink) 6%, transparent); }
-.dashboard-shell--inline .trace-state-filter button.is-active {
+.dashboard-shell--inline .trace-state-filter .mantine-SegmentedControl-indicator {
+  border-radius: 5px;
   background: var(--raised);
-  color: var(--ink);
-  font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .18), 0 0 0 .5px rgba(0, 0, 0, .08);
+}
+.dashboard-shell--inline .trace-state-filter .mantine-SegmentedControl-control:hover .mantine-SegmentedControl-label {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  border-radius: 5px;
 }
 
 .dashboard-shell--inline .mantine-Switch-track,
@@ -917,7 +918,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
   border-radius: 8px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .28), 0 0 0 .5px rgba(0, 0, 0, .12);
 }
-:root[data-shell='desktop'] .axis-select-content [data-slot='select-item'] { min-height: 26px; border-radius: 5px; }
+:root[data-shell='desktop'] .axis-select-option { min-height: 26px; border-radius: 5px; }
 :root[data-shell='desktop'] .axis-local-dialog {
   border-radius: 10px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, .35), 0 0 0 .5px rgba(0, 0, 0, .15);
@@ -1118,27 +1119,3 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
 .dashboard-shell--inline .provider-route .receipt-list dd { font-size: 12.5px; text-align: right; }
 .dashboard-shell--inline .provider-route .json-view { margin-top: 10px; padding: 12px 14px; border-radius: 8px; max-height: none; }
 .dashboard-shell--inline .provider-route .notary-details .mantine-Button-root { margin-top: 10px; }
-
-/* macOS shell: dialogs present as sheets from the top edge of the pane. */
-:root[data-shell='desktop'] .axis-local-dialog {
-  top: 0;
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  border-top: 0;
-  border-radius: 0 0 12px 12px;
-  translate: -50% 0;
-  animation: desktop-sheet-in 220ms cubic-bezier(.2, .8, .2, 1);
-}
-:root[data-shell='desktop'] .axis-local-dialog[data-state='closed'] { animation: desktop-sheet-out 160ms ease-in forwards; }
-:root[data-shell='desktop'] [data-slot='alert-dialog-overlay'] { background: rgba(0, 0, 0, .28); }
-@keyframes desktop-sheet-in {
-  from { opacity: 0; translate: -50% -16px; }
-  to { opacity: 1; translate: -50% 0; }
-}
-@keyframes desktop-sheet-out {
-  from { opacity: 1; translate: -50% 0; }
-  to { opacity: 0; translate: -50% -16px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  :root[data-shell='desktop'] .axis-local-dialog { animation: none; }
-}
