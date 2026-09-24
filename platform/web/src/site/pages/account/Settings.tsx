@@ -645,7 +645,9 @@ export function Settings({
               {name}
             </Text>
             <Data c="var(--x-quiet)">
-              {account.provider_display_name}, signed in with {authProviderName(account)}
+              {account.provider_display_name === name
+                ? `signed in with ${authProviderName(account)}`
+                : `${account.provider_display_name}, signed in with ${authProviderName(account)}`}
             </Data>
           </Box>
         </Group>

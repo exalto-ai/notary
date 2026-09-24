@@ -1,3 +1,5 @@
+import './styles';
+
 import { MantineProvider } from '@mantine/core';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
@@ -207,12 +209,49 @@ test('leads the root with the macOS download for signed-out and signed-in alike'
   await expect.element(page.getByRole('link', { name: 'Open dashboard' })).toBeVisible();
 });
 
+test('the one filled action on a screen is actually filled', async () => {
+  // A hand-picked subset of Mantine's stylesheets once loaded UnstyledButton
+  // after Button, so its transparent background won and every primary control
+  // shipped unstyled without anything failing. Computed colour catches that;
+  // rendering without error does not.
+  mount(<SignIn loadProviders={async () => ({ google: true, github: true })} />);
+  const primary = page.getByRole('link', { name: /Continue with Google/ });
+  await expect.element(primary).toBeVisible();
+  await waitFor(() => {
+    const filled = document.querySelector('button.mantine-Button-root, a.mantine-Button-root');
+    expect(filled).toBeTruthy();
+  });
+  const styles = Array.from(document.querySelectorAll<HTMLElement>('.mantine-Button-root')).map(
+    (el) => getComputedStyle(el).backgroundColor,
+  );
+  // Every button here is the default variant, which paints a surface. None of
+  // them may be fully transparent.
+  expect(styles.length).toBeGreaterThan(0);
+  for (const background of styles) expect(background).not.toBe('rgba(0, 0, 0, 0)');
+});
+
 // ---- Sign in --------------------------------------------------------------
 
 test('shows only the providers the deployment configures', async () => {
   mount(<SignIn loadProviders={async () => ({ google: false, github: true })} />);
   await expect.element(page.getByRole('link', { name: /Continue with GitHub/ })).toBeVisible();
   expect(page.getByRole('link', { name: /Continue with Google/ }).elements()).toHaveLength(0);
+});
+
+test('each provider icon resolves to a real asset', async () => {
+  mount(<SignIn loadProviders={async () => ({ google: true, github: true })} />);
+  await expect.element(page.getByRole('link', { name: /Continue with Google/ })).toBeVisible();
+  const icons = Array.from(
+    document.querySelectorAll<HTMLImageElement>('[data-auth-provider-icon]'),
+  );
+  expect(icons.map((icon) => icon.dataset.authProviderIcon).sort()).toEqual(['github', 'google']);
+  for (const icon of icons) {
+    // The path that shipped doubled the assets directory and 404ed in silence,
+    // so this asserts the image actually decoded rather than the shape of its
+    // address, which differs between the dev server and a build.
+    expect(icon.src).not.toContain('/assets/assets/');
+    await waitFor(() => expect(icon.naturalWidth).toBeGreaterThan(0));
+  }
 });
 
 test('says so when a deployment configures no provider at all', async () => {

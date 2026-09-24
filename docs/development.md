@@ -260,7 +260,8 @@ Keep each surface focused:
   including the component/route map and documentation coverage checklist.
 - `runtime/README.md` and `runtime/docs/` are the independently publishable
   runtime entry point and full public-runtime references.
-- `platform/web/src/site/PublicDocs.tsx` contains the shorter public-site documentation journey.
+- `platform/web/src/content/docs.ts` contains the shorter public-site documentation
+  journey, rendered by `platform/web/src/site/pages/Docs.tsx`.
 - `platform/web/public/llms.txt` is the machine-readable public documentation index.
 - generated OpenAPI is the exact route and schema authority.
 - `AGENTS.md` contains repository constraints for coding agents.
