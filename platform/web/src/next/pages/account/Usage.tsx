@@ -8,7 +8,6 @@ import {
   getBillingPurchases,
   getCreditOffers,
 } from '../../../platform-api/client';
-import { listingDate, sessionDate } from '../../../site/format';
 import { Data, Fact, Facts, Lamp, Meter, SectionHead } from '../../components/primitives';
 import type { Account } from '../../data/account';
 import {
@@ -17,7 +16,7 @@ import {
   checkoutMessages,
   useCheckoutReturn,
 } from '../../data/billing';
-import { bytes, percent } from '../../format';
+import { bytes, listingDate, percent, sessionDate } from '../../format';
 import { planLabel, planPrice } from '../../plan';
 
 type CreditOffer = Awaited<ReturnType<typeof getCreditOffers>>[number];

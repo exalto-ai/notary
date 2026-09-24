@@ -1,13 +1,12 @@
-import { Alert, Anchor, Box, Text } from '@mantine/core';
+import { Alert, Anchor, Box } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import type { CreditHistoryEntry } from '../../../creditUtilization';
 import { aggregateDailyDebits, loadRecentDebits } from '../../../creditUtilization';
 import { getCreditHistory, getHostedTraces } from '../../../platform-api/client';
-import { listingDate, sessionDate } from '../../../site/format';
 import { CodeBlock } from '../../components/CodeBlock';
 import { Custody, Data, Empty, Lamp, Meter, SectionHead } from '../../components/primitives';
 import type { Account } from '../../data/account';
-import { bytes, percent } from '../../format';
+import { bytes, listingDate, percent, sessionDate } from '../../format';
 import { planLabel } from '../../plan';
 import { href } from '../../router';
 import type { HostedTrace } from './Traces';

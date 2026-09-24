@@ -21,11 +21,11 @@ import {
   revokeApiKey,
   revokeDevice,
 } from '../../../platform-api/client';
-import { sessionDate } from '../../../site/format';
 import { CodeBlock } from '../../components/CodeBlock';
 import { Data, Empty, Lamp, SectionHead } from '../../components/primitives';
 import { type Account, accountName, authProviderName } from '../../data/account';
 import { usePagedList } from '../../data/paged';
+import { sessionDate } from '../../format';
 
 type ConnectedDevice = Awaited<ReturnType<typeof getDevices>>['items'][number];
 type CreatedKey = Awaited<ReturnType<typeof createApiKey>>;

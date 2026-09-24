@@ -1,7 +1,7 @@
 import { Alert, Anchor, Box, Button, Loader, Text } from '@mantine/core';
 import { type MouseEvent, useEffect, useState } from 'react';
-import { AuthProviderIcon } from '../../AuthProviderIcon';
 import { apiHref, getAuthProviders } from '../../platform-api/client';
+import { AuthProviderIcon } from '../components/AuthProviderIcon';
 import { Wordmark } from '../components/Shell';
 import { type Account, accountName } from '../data/account';
 import { href } from '../router';
@@ -63,10 +63,14 @@ function Provider({
 export function SignIn({
   returnTo: requestedReturnTo,
   account,
+  loadError = null,
   loadProviders = getAuthProviders,
 }: {
   returnTo?: string | null;
   account?: Account | null;
+  /** Set when the account could not be read at all, which is not the same
+   *  thing as being signed out. */
+  loadError?: string | null;
   loadProviders?: typeof getAuthProviders;
 }) {
   const [providers, setProviders] = useState<Providers | null>(null);
@@ -120,6 +124,12 @@ export function SignIn({
     <Box className="x-centered">
       <Box className="x-record" p={32} w="100%" maw={420}>
         <Wordmark size={22} />
+        {loadError ? (
+          <Alert color="alert" variant="light" mt={20} title="Your account could not be read">
+            {loadError}. You may already be signed in; reloading is worth a try before signing in
+            again.
+          </Alert>
+        ) : null}
         <Text component="h1" fz={26} fw={600} mt={24} lh={1.15}>
           Sign in to manage what you share.
         </Text>

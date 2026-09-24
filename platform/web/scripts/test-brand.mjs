@@ -12,8 +12,8 @@ const captureTile = readFileSync(
   'utf8',
 );
 const preview = readFileSync(resolve(root, 'public/social-preview.png'));
-const siteApp = readFileSync(resolve(root, 'src/site/CaptureApp.tsx'), 'utf8');
-const accountDashboard = readFileSync(resolve(root, 'src/site/AccountDashboard.tsx'), 'utf8');
+const shell = readFileSync(resolve(root, 'src/next/components/Shell.tsx'), 'utf8');
+const traces = readFileSync(resolve(root, 'src/next/pages/account/Traces.tsx'), 'utf8');
 
 function requireText(source, expected, label) {
   if (!source.includes(expected))
@@ -36,24 +36,22 @@ for (const icon of ['favicon.ico', 'apple-touch-icon-180.png', 'icon-192.png', '
     throw new Error(`public/${icon} is empty`);
   }
 }
-requireText(siteApp, 'aria-label="Exalto Capture home"', 'site header identity');
-requireText(siteApp, '<span className="app-brand-family">Exalto</span>', 'site header family');
-requireText(siteApp, '<span className="app-brand-product">Capture</span>', 'site header product');
+requireText(shell, 'aria-label="Exalto Capture home"', 'site header identity');
+// The wordmark is typeset, never an image, and the product word sits beside it.
+requireText(shell, 'Exalto', 'site header family');
+requireText(shell, 'Capture', 'site header product');
+requireText(shell, "'Fraunces Variable'", 'wordmark typeface');
+requireText(shell, 'https://exalto.ai', 'site footer identity');
 requireText(
-  readFileSync(resolve(root, 'src/site/SharedShell.tsx'), 'utf8'),
-  '<a className="footer-copyright" href="https://exalto.ai">',
-  'site footer identity',
-);
-requireText(
-  accountDashboard,
-  'Sealed traces you’ve shared through Exalto Seal.',
-  'hosted Trace account identity',
+  traces,
+  'the hosted package holds the conversation you disclosed exactly as it was admitted',
+  'hosted Trace disclosure warning',
 );
 for (const [label, source] of [
   ['HTML metadata', html],
   ['llms.txt', llms],
-  ['site app', siteApp],
-  ['account dashboard', accountDashboard],
+  ['site shell', shell],
+  ['account traces', traces],
 ]) {
   for (const retired of ['Notary by Exalto', 'Continue to Notary', 'aria-label="Notary home"']) {
     if (source.includes(retired)) throw new Error(`${label} retains retired identity ${retired}`);

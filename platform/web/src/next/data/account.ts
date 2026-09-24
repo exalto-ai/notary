@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getCurrentUser, logoutBrowser } from '../../platform-api/client';
-import { rememberSession } from '../../site/session';
+import { rememberSession } from '../session';
 
 export type Account = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 

@@ -1,7 +1,7 @@
 import { Anchor, Box, Text, useComputedColorScheme } from '@mantine/core';
 import { useEffect } from 'react';
-import { useSettledWait } from '../site/LoadingStates';
 import { AccountPlaceholder } from './components/AccountPlaceholder';
+import { Lamp } from './components/primitives';
 import { Footer, Header, Page } from './components/Shell';
 import { useAccount } from './data/account';
 import { documentTitle } from './documentTitle';
@@ -15,7 +15,9 @@ import { Docs } from './pages/Docs';
 import { Landing } from './pages/Landing';
 import { Legal } from './pages/Legal';
 import { SignIn } from './pages/SignIn';
+import { localPreview } from './preview';
 import { go, href, query, segments, useLinkNavigation, usePath } from './router';
+import { useSettledWait } from './settledWait';
 
 const accountViews: AccountView[] = ['overview', 'traces', 'usage', 'settings'];
 
@@ -81,39 +83,26 @@ export function App() {
   else if (section === 'privacy' || section === 'terms') body = <Legal pageKey={section} />;
   else if (section === 'app' && waiting) body = placeholderVisible ? <AccountPlaceholder /> : null;
   else if (section === 'app' && !account)
-    body = (
-      <>
-        {error ? (
-          <Box className="x-prototype-notice" role="alert">
-            <Text component="span" fz={12.5} c="var(--x-alert)">
-              Your account could not be loaded: {error}
-            </Text>
-          </Box>
-        ) : null}
-        <SignIn returnTo={`/${path.replace(/^\//, '')}`} account={null} />
-      </>
-    );
+    body = <SignIn returnTo={`/${path.replace(/^\//, '')}`} account={null} loadError={error} />;
   else if (section === 'app' && account)
     body = (
-      <>
-        <AccountShell view={accountView} counts={{ traces: account.usage.hosted_traces.total }}>
-          {accountView === 'overview' ? (
-            <Overview account={account} />
-          ) : accountView === 'traces' ? (
-            <Traces />
-          ) : accountView === 'usage' ? (
-            <Usage account={account} route={path} onAccountChanged={refresh} />
-          ) : (
-            <Settings
-              account={account}
-              onAccountDeleted={() => {
-                forget();
-                go('/');
-              }}
-            />
-          )}
-        </AccountShell>
-      </>
+      <AccountShell view={accountView} counts={{ traces: account.usage.hosted_traces.total }}>
+        {accountView === 'overview' ? (
+          <Overview account={account} />
+        ) : accountView === 'traces' ? (
+          <Traces />
+        ) : accountView === 'usage' ? (
+          <Usage account={account} route={path} onAccountChanged={refresh} />
+        ) : (
+          <Settings
+            account={account}
+            onAccountDeleted={() => {
+              forget();
+              go('/');
+            }}
+          />
+        )}
+      </AccountShell>
     );
   else body = <NotFound path={path} />;
 
@@ -121,6 +110,14 @@ export function App() {
 
   return (
     <>
+      {localPreview ? (
+        <Box className="x-preview-notice" role="note">
+          <Lamp tone="local">Local preview</Lamp>
+          <Text component="span" fz={12.5}>
+            Sample data from a development fixture service. Nothing here is verified evidence.
+          </Text>
+        </Box>
+      ) : null}
       {!bare ? (
         <Header
           account={account}

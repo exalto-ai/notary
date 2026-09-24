@@ -22,18 +22,9 @@ import {
   stopHostedTraceSharing,
   updateHostedTrace,
 } from '../../../platform-api/client';
-import { sessionDate } from '../../../site/format';
-import {
-  Data,
-  Empty,
-  Fact,
-  Facts,
-  Lamp,
-  SectionHead,
-  type Tone,
-} from '../../components/primitives';
+import { Data, Empty, Fact, Facts, Lamp, type Tone } from '../../components/primitives';
 import { usePagedList } from '../../data/paged';
-import { bytes } from '../../format';
+import { bytes, sessionDate } from '../../format';
 import { href } from '../../router';
 
 type HostedTracePage = Awaited<ReturnType<typeof getHostedTraces>>;

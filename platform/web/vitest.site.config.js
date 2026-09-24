@@ -6,11 +6,11 @@ import { defineConfig } from 'vitest/config';
 const localBrowser = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
 
 export default defineConfig({
-  optimizeDeps: { include: ['cmdk', 'openapi-fetch', 'react-dom/client', 'react-markdown'] },
+  optimizeDeps: { include: ['openapi-fetch', 'react-dom/client'] },
   resolve: { alias: { '@': resolve(process.cwd(), 'src') } },
   plugins: [react()],
   test: {
-    include: ['src/Site.browser.test.jsx'],
+    include: ['src/next/App.browser.test.tsx'],
     browser: {
       enabled: true,
       headless: true,

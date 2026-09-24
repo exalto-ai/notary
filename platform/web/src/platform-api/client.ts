@@ -4,7 +4,14 @@ import type { components, paths } from './generated/api.generated';
 export const apiOrigin =
   typeof __API_ORIGIN__ === 'string' ? __API_ORIGIN__ : 'https://api.exalto.ai';
 export const apiHref = (path: string) => new URL(path, apiOrigin || window.location.origin).href;
-const client = createClient<paths>({ baseUrl: apiOrigin, credentials: 'include' });
+// openapi-fetch captures globalThis.fetch when the client is created, which
+// pins whatever was installed at module load. Resolving it per request keeps
+// the client honest under a test that replaces the global.
+const client = createClient<paths>({
+  baseUrl: apiOrigin,
+  credentials: 'include',
+  fetch: (...args) => globalThis.fetch(...args),
+});
 
 export class PlatformApiError extends Error {
   constructor(

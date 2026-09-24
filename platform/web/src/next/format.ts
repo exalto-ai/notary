@@ -14,3 +14,15 @@ export function percent(used: number, total: number): string {
   if (total <= 0) return '0%';
   return `${Math.round((used / total) * 100)}%`;
 }
+
+export function sessionDate(unixSeconds: number): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(unixSeconds * 1000));
+}
+export function listingDate(unixSeconds: number): string {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(
+    new Date(unixSeconds * 1000),
+  );
+}

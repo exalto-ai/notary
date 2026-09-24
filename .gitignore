@@ -25,7 +25,7 @@ apps/notary-app/src-tauri/icons/ios/
 runtime/apps/*/node_modules/
 .playwright-cli/
 .playwright-mcp/
-platform/web/src/__screenshots__/
+platform/web/src/**/__screenshots__/
 output/playwright/
 /.notary-server/
 

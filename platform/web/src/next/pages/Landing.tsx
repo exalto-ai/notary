@@ -1,14 +1,14 @@
 import { Anchor, Box, Button, Text } from '@mantine/core';
 import { IconArrowDown } from '@tabler/icons-react';
 import { Fragment, useEffect, useState } from 'react';
-import { websiteHref } from '../../site/origins';
-import { downloadSize, fetchLatestMacosDownload, type MacosDownload } from '../../site/release';
 import { CodeBlock } from '../components/CodeBlock';
 import { Data } from '../components/primitives';
 import { Page } from '../components/Shell';
 import { Topology } from '../components/Topology';
 import { TraceRecord } from '../components/TraceRecord';
 import { heroTrace } from '../content/heroTrace';
+import { websiteHref } from '../origins';
+import { downloadSize, fetchLatestMacosDownload, type MacosDownload } from '../release';
 import { href } from '../router';
 
 // Capture, seal, verify is a real sequence, so these carry their order.

@@ -1,25 +1,16 @@
 import { useEffect, useState } from 'react';
 
-// The prototype is mounted under a prefix so it can answer real URLs beside
-// the shipped application. At cutover this becomes '' and nothing else about
-// routing changes.
-export const basePath = '/next';
-
-function withoutBase(pathname: string): string {
-  if (pathname === basePath) return '/';
-  if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length) || '/';
-  return pathname;
-}
+// The application is mounted at the origin root. Vercel rewrites every path
+// that is not an asset to the index document, so a deep link resolves.
 
 /** The route, without the mount prefix, as `/docs/share?section=x`. */
 export function currentPath(): string {
-  return `${withoutBase(window.location.pathname)}${window.location.search}`;
+  return `${window.location.pathname || '/'}${window.location.search}`;
 }
 
 /** A route turned into an address the browser can follow. */
 export function href(path: string): string {
-  const route = path.startsWith('/') ? path : `/${path}`;
-  return route === '/' ? `${basePath}/` : `${basePath}${route}`;
+  return path.startsWith('/') ? path : `/${path}`;
 }
 
 export function go(path: string): void {
@@ -63,8 +54,6 @@ export function useLinkNavigation(): void {
       if (anchor.hasAttribute('download')) return;
       const url = new URL(anchor.href, window.location.origin);
       if (url.origin !== window.location.origin) return;
-      // Anything outside the mount prefix belongs to another application.
-      if (url.pathname !== basePath && !url.pathname.startsWith(`${basePath}/`)) return;
       // A link to an anchor on the page this already is belongs to the
       // browser, which knows how to scroll to it.
       const sameDocument =

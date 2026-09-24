@@ -75,16 +75,17 @@ surfaces. Do not edit them for marketing work.
 | Surface | System | Section |
 | --- | --- | --- |
 | exalto.ai landing ([`exalto-ai/website`](https://github.com/exalto-ai/website)) | **Ledger Phosphor** | Part II |
-| Hosted Exalto Seal site, docs, Account, and public traces (`platform/web`) | **Ledger Phosphor** | Parts I + II |
+| Hosted Exalto Capture site, docs, and Account (`platform/web`) | **Aperture** | Parts I + IIB |
 | Local admin dashboard (`runtime/apps/admin-dashboard`) | **Developer workspace** | Part III |
 | Exalto Capture desktop app (`apps/notary-app`) | **Developer workspace**, **Exalto Capture** app icon | Parts I + III |
 | Brand marks, icon kits, illustration | **Shared** | Part I |
 
-The split is settled. Ledger Phosphor carries Exalto's public story and the
-hosted Exalto Seal experience. Exalto Capture and the local dashboard use a
-quieter, system-native workspace for developers while keeping the same evidence
-colors, marks, and vocabulary. A rule scoped to one mode does not automatically
-apply to the other.
+The split is settled. Ledger Phosphor carries Exalto's public story on
+exalto.ai. Aperture carries the hosted site a person signs in to. Exalto
+Capture's desktop app and the local dashboard use a quieter, system-native
+workspace for developers. All four keep Part I: the same marks, the same
+attribution meanings, the same vocabulary. A rule scoped to one mode does not
+automatically apply to another.
 
 ---
 
@@ -180,7 +181,7 @@ the repo-wide product model is enforced by `scripts/check-terminology.mjs`.
 
 ---
 
-# Part II · Ledger Phosphor (public and hosted surfaces)
+# Part II · Ledger Phosphor (exalto.ai)
 
 "Record + Protocol" in Ledger Phosphor — option 7a of the homepage
 exploration, chosen over forest+amber, Sealing Wax, and Counterproof variants.
@@ -191,18 +192,10 @@ every section. The full decision history lives in the design handoff
 (`design_handoff_exalto_7a/`, kept outside the repo); the standalone website
 repository is the copy authority.
 
-Exalto Seal uses the same palette, typography, evidence grammar, and reading
-surfaces at greater operational density. Its account controls remain compact,
-but they do not revert to a separate product identity or design system.
-
-**Ledger Phosphor is being replaced on `capture.exalto.ai`.** The hosted site
-is moving to Aperture, specified in
-[`docs/design-aperture.md`](docs/design-aperture.md) and built in
-`platform/web/src/next/`. Until that port finishes, this part is still the
-authority for every shipped pixel on that surface; edit it for work that ships
-now, and edit the Aperture document for work on the replacement. This part is
-rewritten, not amended, when the new application becomes the site's index.
-exalto.ai keeps Ledger Phosphor and is not part of that move.
+This part governs exalto.ai only. `capture.exalto.ai` moved to Aperture in
+Part IIB; a rule here does not reach it, and the hosted site is no longer
+described by the plan-ledger and docs-shell set pieces below, which remain
+only as the record of what exalto.ai still carries.
 
 ## Tokens
 
@@ -321,6 +314,104 @@ stacking at ≤1100 (diagram swap, score card follows the copy, single-column
 grids, ecosystem rail above groups), density trims at ≤768 (ledger thins,
 compact rows hide). Test at 390, 768, 1100, 1440. Flex children that must
 shrink need `min-width: 0`; wide content scrolls inside its own container.
+
+---
+
+# Part IIB · Aperture (capture.exalto.ai)
+
+Aperture governs the hosted site: the landing page, documentation, sign in,
+device approval, the account, and the legal pages, all built in
+`platform/web/src/next`. It replaced Ledger Phosphor on this surface because
+the account is most of the surface area, and an editorial system that reads
+well on a marketing page reads badly above five numbers a person came to
+check. [`docs/design-aperture.md`](docs/design-aperture.md) keeps the
+reasoning and the record of the port; this part is the rule.
+
+Aperture keeps Part I whole. The wordmark, the product names, the marks, the
+attribution meanings, and the capture / seal / verify vocabulary are unchanged.
+
+## The three rules
+
+1. **Chrome is achromatic.** A hue always names a state or the single primary
+   action on a screen. There is one filled primary button per screen.
+2. **Sealed but undisclosed content is shown, not hidden.** It renders as
+   redaction at the width it occupies. An absent line and a sealed line never
+   look the same.
+3. **Machine-produced values keep their own typeface.** Digests, identifiers,
+   byte counts, UTC times, hostnames, and commands are mono because they are
+   read character by character. Labels and prose are not, and mono is never
+   texture.
+
+## Tokens
+
+Two surfaces and three signals, resolved per colour scheme in
+`src/next/theme.ts`.
+
+| Token | Light | Dark | Job |
+| --- | --- | --- | --- |
+| `shell` | `#eff0f2` | `#0d1013` | The page |
+| `record` | `#ffffff` | `#161a1f` | Anything holding a record |
+| `sunken` | `#e6e8eb` | `#10141a` | Inset bands, code, filled fields |
+| `ink` | `#171a1f` | `#e7eaee` | Text |
+| `quiet` | `#5a6069` | `#939aa4` | Secondary text |
+| `rule` | 13% ink | 13% ink | Hairlines |
+| `seal` | `#2b4acb` | `#8fa3f2` | The record, links, the primary action |
+| `custody` | `#0b6e4f` | `#3fcf8e` | Local, live, held by the person |
+| `alert` | `#c2321b` | `#f0705a` | Recording, failure, destruction |
+
+Status is never colour alone: every state pairs a square lamp with a word.
+`alert` appears for a real problem, which for an allowance means past ninety
+percent, not half spent.
+
+## Type
+
+**Archivo Variable** carries display and interface text, headings at
+`wdth 112` and interface text at normal width; the width axis does the work a
+second display family would. **Geist Mono Variable** carries machine-produced
+values and code. The **Exalto wordmark stays in Fraunces** at weight 640 per
+Part I, so the brand signs the product while the interface keeps its own
+voice. Scale 44 / 29 / 21 / 17 / 14.5 / 13 / 12.5 / 11.5px, prose at a 66ch
+measure.
+
+## Shape, density, motion
+
+Radius 4px on controls, 6px on records, round only on avatars. No shadow on a
+static surface: depth is the value difference between `shell` and `record`, and
+overlays are the exception. Grids draw one outer rule and single internal
+rules, taken from each cell's outline so a row that does not fill leaves record
+surface rather than a hole. Control height 34px, table row 48px, 4px spacing
+base. The recording lamp is the only looping animation, and it stops under
+`prefers-reduced-motion`; everything else answers an action.
+
+## The load-bearing components
+
+- **Trace record** — title, state lamp, provider and model, the disclosed lines
+  with sealed ones redacted, the witnessed time and digest, and the custody
+  strip, inside one perforated edge. That edge is the system's only ornament
+  and appears nowhere else.
+- **Custody strip** — recorded, sealed, shared, in order; a filled node and
+  solid rule for each step reached, hollow and dashed for each not reached.
+- **Status lamp** — an 8px square and a word, filled when the state is real and
+  outlined when it is absent.
+- **Segmented meter** — an allowance reads as a count of discrete units,
+  because what is being spent is discrete.
+- **Readout strip** — account facts in one ruled band, value loud, label quiet.
+- **Topology** — the true relay topology on one line, with the machine boundary
+  as a dashed enclosure that plaintext never crosses.
+
+## Deliberately absent
+
+Uppercase eyebrow labels above headings. Numbered markers on anything that is
+not a sequence. Metadata joined with middle dots. Card shadows, gradient
+washes, hover lift. Entrance animation.
+
+## Waiting, empty, failed
+
+Loading holds the geometry it replaces and appears only after the wait is worth
+acknowledging. An empty screen names what is absent and offers the next action.
+A failure says what failed and what to do, and is never dressed as an empty
+result: an account that could not be read is not a signed-out reader, and a
+trace list that could not load does not render as zero traces.
 
 ---
 
@@ -476,8 +567,8 @@ including compatible third-party and self-hosted notaries.
   and the deploy image build.
 - `scripts/check-terminology.mjs` — repo-wide retired-term and brand audit
   (scans tracked files; stage new files before running).
-- `platform/web/scripts/test-brand.mjs` — the hosted Exalto Seal identity and
-  retired-brand regression checks.
+- `platform/web/scripts/test-brand.mjs` — the hosted Exalto Capture identity,
+  the typeset wordmark, the disclosure warning, and retired-brand regressions.
 - Vercel deploys the standalone website repository on every merge to main and
   creates preview deployments for pull requests.
 

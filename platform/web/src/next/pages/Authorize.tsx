@@ -4,9 +4,9 @@ import {
   approveDeviceAuthorization,
   getDeviceAuthorizationApproval,
 } from '../../platform-api/client';
-import { sessionDate } from '../../site/format';
 import { Data, Fact, Facts, Lamp, type Tone } from '../components/primitives';
 import { type Account, accountName } from '../data/account';
+import { sessionDate } from '../format';
 import { href } from '../router';
 
 type Approval = Awaited<ReturnType<typeof getDeviceAuthorizationApproval>>;

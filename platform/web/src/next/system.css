@@ -760,9 +760,9 @@ h1 {
   }
 }
 
-/* ---- Prototype notice --------------------------------------------------- */
+/* ---- Preview notice ----------------------------------------------------- */
 
-.x-prototype-notice {
+.x-preview-notice {
   display: flex;
   align-items: center;
   gap: 10px;
