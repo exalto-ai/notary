@@ -8,7 +8,7 @@ import { Data } from '../components/primitives';
 import { Page } from '../components/Shell';
 import { Topology } from '../components/Topology';
 import { TraceRecord } from '../components/TraceRecord';
-import { heroTrace } from '../data/fixtures';
+import { heroTrace } from '../content/heroTrace';
 import { href } from '../router';
 
 // Capture, seal, verify is a real sequence, so these carry their order.
