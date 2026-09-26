@@ -2,13 +2,14 @@ import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
+import { docMdx, docMetadata } from './scripts/docs-mdx.mjs';
 
 const localBrowser = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
 
 export default defineConfig({
   optimizeDeps: { include: ['openapi-fetch', 'react-dom/client'] },
   resolve: { alias: { '@': resolve(process.cwd(), 'src') } },
-  plugins: [react()],
+  plugins: [docMetadata(), docMdx(), react({ include: /\.(js|jsx|ts|tsx|md|mdx)$/ })],
   test: {
     include: ['src/site/App.browser.test.tsx'],
     browser: {

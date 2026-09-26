@@ -153,6 +153,98 @@ test('serves the docs without an account and keeps only legal links in the foote
   await expect.element(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
 });
 
+test('renders MDX docs with generated headings and outline anchors', async () => {
+  window.history.replaceState({}, '', '/docs/getting-started');
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  const { container } = mount(<App />);
+
+  await expect
+    .element(page.getByRole('heading', { level: 1, name: 'Choose how to capture.' }))
+    .toBeVisible();
+  await expect
+    .element(page.getByRole('heading', { level: 2, name: /Choose an interface/ }))
+    .toBeVisible();
+  await expect
+    .element(page.getByText('curl -fsSL https://capture.exalto.ai/install.sh | sh'))
+    .toBeVisible();
+
+  const heading = container.querySelector('#choose-an-interface');
+  const outline = container.querySelector('.x-docs-outline a[href="#choose-an-interface"]');
+  expect(heading).not.toBeNull();
+  expect(outline?.textContent).toBe('Choose an interface');
+});
+
+test('switches provider instructions inside the MDX setup guide', async () => {
+  window.history.replaceState({}, '', '/docs/getting-started');
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  mount(<App />);
+
+  await page.getByRole('tab', { name: /OpenRouter/ }).click();
+  await expect.element(page.getByText(/evidence authenticates OpenRouter/)).toBeVisible();
+  await expect.element(page.getByText(/openrouter\/api\/v1\/chat\/completions/)).toBeVisible();
+});
+
+test('shows Captured and Sealed evidence in the interactive Trace anatomy', async () => {
+  window.history.replaceState({}, '', '/docs/trace-packages');
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  const { container } = mount(<App />);
+
+  await expect.element(page.getByText('capture.llmcapture', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Sealed' }).click();
+  const anatomy = page.getByRole('tabpanel');
+  await expect.element(anatomy.getByText('evidence.tlsn', { exact: true })).toBeVisible();
+  await waitFor(() =>
+    expect(container.querySelector('.x-trace-anatomy')?.textContent).toContain(
+      'Verifiable .llmtrace',
+    ),
+  );
+});
+
+test('searches text extracted from MDX at build time', async () => {
+  window.history.replaceState({}, '', '/docs/getting-started');
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  mount(<App />);
+
+  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByPlaceholder('Type to search').fill('Argon2id');
+  await expect
+    .element(page.getByRole('link', { name: /Protect local administration/ }))
+    .toBeVisible();
+});
+
+test('uses a compact mobile docs menu instead of a horizontal page rail', async () => {
+  await page.viewport(390, 844);
+  window.history.replaceState({}, '', '/docs/overview');
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  mount(<App />);
+
+  const menu = page.getByRole('button', { name: 'Open documentation navigation' });
+  await expect.element(menu).toBeVisible();
+  await expect.element(page.getByText('Overview', { exact: true }).first()).toBeVisible();
+  await menu.click();
+
+  const drawer = page.getByRole('dialog', { name: 'Documentation' });
+  await expect.element(drawer).toBeVisible();
+  await drawer.getByRole('link', { name: 'Trust model' }).click();
+  await expect
+    .element(page.getByRole('heading', { level: 1, name: 'Trust and guarantees' }))
+    .toBeVisible();
+  await expect.element(drawer).not.toBeInTheDocument();
+});
+
+test('opens docs search independently from the mobile navigation', async () => {
+  await page.viewport(390, 844);
+  window.history.replaceState({}, '', '/docs/getting-started');
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  mount(<App />);
+
+  await page.getByRole('button', { name: 'Search documentation' }).click();
+  await expect.element(page.getByRole('dialog', { name: 'Search the docs' })).toBeVisible();
+  await expect
+    .element(page.getByRole('button', { name: 'Open documentation navigation' }))
+    .toHaveAttribute('aria-expanded', 'false');
+});
+
 test('reserves the account control while the session is still resolving', async () => {
   stubApi({ '/api/account': () => new Promise(() => json({})) as unknown as Response });
   const { container } = mount(<App />);

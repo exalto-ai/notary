@@ -89,6 +89,7 @@ export function Header({
   return (
     <Box
       component="header"
+      className="x-header"
       style={{
         position: 'sticky',
         top: 0,
@@ -105,8 +106,15 @@ export function Header({
       }}
     >
       <Wordmark />
-      <Box style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Anchor href={href('/docs')} fz="sm" c="var(--x-quiet)" underline="never" px={8}>
+      <Box className="x-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Anchor
+          className="x-header-docs"
+          href={href('/docs')}
+          fz="sm"
+          c="var(--x-quiet)"
+          underline="never"
+          px={8}
+        >
           Docs
         </Anchor>
         <ColorSchemeToggle />
