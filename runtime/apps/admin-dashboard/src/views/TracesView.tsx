@@ -53,6 +53,7 @@ import { ProviderIdentity } from '../ProviderIdentity';
 import type { DashboardRoute } from '../routes';
 import {
   AxisSelect,
+  accountDisplayName,
   EmptyState,
   ErrorState,
   Fact,
@@ -67,7 +68,7 @@ import {
   stateTone,
   timeRangeStart,
 } from '../shared';
-import { AccountConnectionCard, accountDisplayName, useAccountConnection } from './SettingsView';
+import { AccountConnectionCard, useAccountConnection } from './SettingsView';
 
 type Route = DashboardRoute;
 
