@@ -118,7 +118,7 @@ const classified = [
     reason: 'asserts the retired crate path never reappears in documentation',
   },
   {
-    file: 'platform/web/src/theme.ts',
+    file: 'platform/web/src/site/colorScheme.ts',
     contains: 'llm-notary-theme',
     reason: 'reads the retired storage key so a visitor keeps their theme',
   },
