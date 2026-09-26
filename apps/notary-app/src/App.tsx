@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import type { DashboardRoute } from '../../../runtime/apps/admin-dashboard/src/routes';
+import { exaltoTheme } from '../../../runtime/apps/admin-dashboard/src/theme';
+import { BuiltinChat } from './BuiltinChat';
 import {
   checkForUpdates,
+  type DesktopState,
+  type DesktopUpdateState,
   errorMessage,
   getDesktopState,
   getUpdateState,
@@ -14,27 +19,22 @@ import {
   isTauri,
   setCaptureEnabled,
   startDaemon,
-  type DesktopState,
-  type DesktopUpdateState,
 } from './bridge';
 import { HomeView } from './HomeView';
 import { LoadingWindow, VaultUnlock } from './LockedState';
-import { BuiltinChat } from './BuiltinChat';
 import { Onboarding } from './Onboarding';
 import {
   pendingFirstProofTarget,
   persistPendingFirstProof,
-  viewMeta,
-  workspaceRoutes,
   type TraceConstraint,
   type TraceTarget,
   type View,
+  viewMeta,
   type WorkspaceView,
+  workspaceRoutes,
 } from './product';
-import { Sidebar } from './Shell';
 import { SettingsView } from './SettingsView';
-import type { DashboardRoute } from '../../../runtime/apps/admin-dashboard/src/routes';
-import { exaltoTheme } from '../../../runtime/apps/admin-dashboard/src/theme';
+import { Sidebar } from './Shell';
 
 export const SENSITIVE_INPUT_RESET_EVENT = 'exalto:sensitive-input-reset';
 export const CAPTURE_STATE_CHANGED_EVENT = 'exalto:capture-state-changed';

@@ -1,13 +1,14 @@
-import { cleanup, render } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
+import { cleanup, render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
-import { BuiltinChat, ProviderConnections } from './BuiltinChat';
-import * as bridge from './builtinBridge';
-import { getDesktopState } from './bridge';
 import { exaltoTheme } from '../../../runtime/apps/admin-dashboard/src/theme';
+import { BuiltinChat, ProviderConnections } from './BuiltinChat';
+import { getDesktopState } from './bridge';
+import * as bridge from './builtinBridge';
 import './styles.css';
+
 vi.mock('./builtinBridge', () => ({
   listConnections: vi.fn(),
   listModels: vi.fn(),

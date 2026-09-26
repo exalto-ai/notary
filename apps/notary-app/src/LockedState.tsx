@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { ChevronRight, KeyRound } from 'lucide-react';
+import { useState } from 'react';
 import { errorMessage, recoverTemporaryCapture, startDaemon, unlockVault } from './bridge';
 import notaryMark from './notary-mark.svg';
 
@@ -60,6 +60,7 @@ export function VaultUnlock({ refresh }: { refresh: () => Promise<void> }) {
             <input
               type="password"
               autoComplete="current-password"
+              // biome-ignore lint/a11y/noAutofocus: the lock screen's only task is entering the passphrase, so focus starts in its sole field.
               autoFocus
               value={passphrase}
               aria-invalid={Boolean(error)}

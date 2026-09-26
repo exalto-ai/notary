@@ -516,6 +516,10 @@ cargo test -p notary-app
 npm --prefix apps/notary-app run tauri:build:debug
 ```
 
+`run build` starts with `biome check .`, like the other frontends. Run
+`npm --prefix apps/notary-app run format` to apply Biome formatting and safe
+fixes.
+
 Check the installed Codex against the exact app-server launch settings before
 shipping authentication changes:
 

@@ -1,8 +1,8 @@
 import { FileCheck2, MessageSquare, Radio, Settings, Unplug } from 'lucide-react';
 import type { DesktopState } from './bridge';
 import notaryMark from './notary-mark.svg';
-import { Symbol } from './Symbol';
 import { DISPLAY_NAME, type View } from './product';
+import { SfSymbol } from './SfSymbol';
 
 export function Sidebar({
   state,
@@ -59,7 +59,7 @@ export function Sidebar({
               className={view === itemView ? 'is-selected' : ''}
               onClick={() => onNavigate(itemView)}
             >
-              <Symbol name={symbol} fallback={Icon} size={16} />
+              <SfSymbol name={symbol} fallback={Icon} size={16} />
               <span>{label}</span>
               {count ? <b>{count}</b> : null}
             </button>

@@ -1,5 +1,5 @@
-import { useEffect, useState, type ComponentType } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { type ComponentType, useEffect, useState } from 'react';
 import { isTauri } from './bridge';
 
 type SymbolWeight = 'regular' | 'medium' | 'semibold';
@@ -35,7 +35,7 @@ type FallbackIcon = ComponentType<{
  * Outside the Mac app, or for a symbol this macOS does not have, the Lucide
  * fallback draws instead so the shell keeps working in the browser tests.
  */
-export function Symbol({
+export function SfSymbol({
   name,
   fallback: Fallback,
   size = 16,

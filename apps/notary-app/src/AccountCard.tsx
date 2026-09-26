@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type {
   AccountConnection,
   AccountConnectionStarted,
@@ -46,9 +46,10 @@ export function DesktopAccountCard({
     }
   };
 
+  const refreshFromEffect = useEffectEvent(refresh);
   useEffect(() => {
     const generation = operation.current;
-    void refresh(generation);
+    void refreshFromEffect(generation);
     return () => {
       operation.current += 1;
     };
@@ -97,9 +98,10 @@ export function DesktopAccountCard({
     }
   };
 
+  const pollFromEffect = useEffectEvent(poll);
   useEffect(() => {
     if (!flow || expired || flow.value.poll_interval_seconds === 0 || !pollReady || polling) return;
-    void poll();
+    void pollFromEffect();
   }, [expired, flow, pollReady, polling]);
 
   const start = async () => {
@@ -163,6 +165,7 @@ export function DesktopAccountCard({
       setError(errorMessage(caught));
     }
   };
+  const links = account?.links;
 
   return (
     <section className={`native-account-card${compact ? ' is-compact' : ''}`}>
@@ -262,18 +265,18 @@ export function DesktopAccountCard({
               )}
             </div>
           )}
-          {account.links && (
+          {links && (
             <div className="native-account-links">
-              <button type="button" onClick={() => void action(account.links!.account)}>
+              <button type="button" onClick={() => void action(links.account)}>
                 Open account
               </button>
-              <button type="button" onClick={() => void action(account.links!.usage)}>
+              <button type="button" onClick={() => void action(links.usage)}>
                 Usage and credits
               </button>
-              <button type="button" onClick={() => void action(account.links!.plans)}>
+              <button type="button" onClick={() => void action(links.plans)}>
                 Plans and pricing
               </button>
-              <button type="button" onClick={() => void action(account.links!.settings)}>
+              <button type="button" onClick={() => void action(links.settings)}>
                 {account.credential_kind === 'api_key' ? 'Manage API keys' : 'Account settings'}
               </button>
             </div>

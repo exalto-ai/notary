@@ -2,22 +2,22 @@ import { useEffect, useState } from 'react';
 import { InlineDashboard } from '../../../runtime/apps/admin-dashboard/src/Dashboard';
 import type { DashboardRoute } from '../../../runtime/apps/admin-dashboard/src/routes';
 import {
+  type DesktopState,
+  type DesktopUpdateState,
   errorMessage,
   getLaunchAtLogin,
   localApi,
   setLaunchAtLogin,
-  type DesktopState,
-  type DesktopUpdateState,
 } from './bridge';
 import {
-  updateRestartBlockReason,
-  vaultProtection,
-  type View,
-  type WorkspaceView,
   type TraceConstraint,
   type TraceTarget,
+  updateRestartBlockReason,
+  type View,
+  vaultProtection,
+  type WorkspaceView,
 } from './product';
-import { type DesktopSettingsAction, type DesktopSettingsPayload } from './Shell';
+import type { DesktopSettingsAction, DesktopSettingsPayload } from './Shell';
 
 function dashboardRoute(
   route: WorkspaceView,
@@ -201,6 +201,7 @@ export function SettingsView({
                 type="checkbox"
                 role="switch"
                 checked={launch}
+                aria-checked={launch}
                 disabled={!launchReady}
                 onChange={(event) => void changeLaunch(event.target.checked)}
               />
@@ -214,6 +215,7 @@ export function SettingsView({
               </div>
               {updateState?.phase === 'ready' ? (
                 <button
+                  type="button"
                   className="mac-button is-primary"
                   disabled={Boolean(restartBlock) || updateBusy}
                   onClick={onRestartToUpdate}
@@ -222,6 +224,7 @@ export function SettingsView({
                 </button>
               ) : (
                 <button
+                  type="button"
                   className="mac-button"
                   disabled={!updateState?.enabled || updateBusy}
                   onClick={onCheckUpdate}

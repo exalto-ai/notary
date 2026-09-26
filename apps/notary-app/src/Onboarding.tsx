@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import {
   BadgeCheck,
@@ -13,24 +12,25 @@ import {
   ShieldCheck,
   SquareTerminal,
 } from 'lucide-react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { DesktopAccountCard } from './AccountCard';
+import { AgentSetup, agentSetupPrompt, CLAUDE_COMMAND, CODEX_CONFIG } from './AgentSetup';
+import { ProviderConnections } from './BuiltinChat';
 import {
   beginTemporaryCapture,
   completeOnboarding,
-  confirmDisposableTrace,
   configureVault,
+  confirmDisposableTrace,
+  type DesktopState,
   endTemporaryCapture,
   errorMessage,
   getDesktopState,
   getRecentTraceProbes,
   isTauri,
   startDaemon,
-  type DesktopState,
 } from './bridge';
-import { ProviderConnections } from './BuiltinChat';
-import { DesktopAccountCard } from './AccountCard';
-import { AgentSetup, agentSetupPrompt, CODEX_CONFIG, CLAUDE_COMMAND } from './AgentSetup';
-import { StatusDot, vaultProtection, type TraceTarget, type View } from './product';
 import notaryMark from './notary-mark.svg';
+import { StatusDot, type TraceTarget, type View, vaultProtection } from './product';
 import './onboarding.css';
 
 type OnboardingStep = 'welcome' | 'protection' | 'notary' | 'client' | 'test' | 'account';
@@ -210,6 +210,7 @@ export function Onboarding({
     await refresh();
   };
 
+  const invalidateTestWorkFromEffect = useEffectEvent(invalidateTestWork);
   useEffect(() => {
     if (!isTauri()) return;
     let disposed = false;
@@ -224,7 +225,7 @@ export function Onboarding({
         event.payload.window_generation,
       );
       const hadDisposableTest = Boolean(event.payload.lease_id || temporaryCaptureLease.current);
-      invalidateTestWork();
+      invalidateTestWorkFromEffect();
       setPassphrase('');
       setPassphraseConfirmation('');
       if (temporaryCaptureLease.current !== event.payload.lease_id) {
@@ -708,7 +709,7 @@ function WelcomeStep({ state, onContinue }: { state: DesktopState; onContinue: (
         </figure>
       </div>
       <div className="wizard-actions">
-        <button className="mac-button is-primary is-large" onClick={onContinue}>
+        <button type="button" className="mac-button is-primary is-large" onClick={onContinue}>
           Begin setup
         </button>
       </div>
@@ -863,6 +864,7 @@ function ProtectionStep({
       </div>
       <div className="wizard-actions">
         <button
+          type="button"
           className="mac-button is-primary is-large"
           onClick={onContinue}
           disabled={busy || (mode === 'passphrase' && (!advancedOpen || !passphraseValid))}

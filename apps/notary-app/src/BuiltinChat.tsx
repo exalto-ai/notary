@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Copy, Plus, Send, Settings, Square, ExternalLink } from 'lucide-react';
-import { Symbol } from './Symbol';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import { errorMessage, isTauri, setCaptureEnabled, startDaemon, type DesktopState } from './bridge';
-import * as bridge from './builtinBridge';
+import { ChevronRight, Copy, ExternalLink, Plus, Send, Settings, Square } from 'lucide-react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AxisSelect } from '../../../runtime/apps/admin-dashboard/src/shared';
+import { type DesktopState, errorMessage, isTauri, setCaptureEnabled, startDaemon } from './bridge';
+import * as bridge from './builtinBridge';
+import { SfSymbol } from './SfSymbol';
 import './chat.css';
+
 const names = {
   chatgpt: 'ChatGPT plan',
   openai: 'OpenAI API',
@@ -44,9 +45,10 @@ export function ProviderConnections({
     }
     return status;
   }
+  const refreshFromEffect = useEffectEvent(refresh);
   useEffect(() => {
     alive.current = true;
-    void refresh().catch((e) => {
+    void refreshFromEffect().catch((e) => {
       if (alive.current) setError(errorMessage(e));
     });
     return () => {
@@ -62,7 +64,7 @@ export function ProviderConnections({
     const timer = window.setInterval(() => {
       if (checking) return;
       checking = true;
-      void refresh()
+      void refreshFromEffect()
         .then((status) => {
           if (!disposed && status === 'connected') {
             loginRef.current = null;
@@ -125,6 +127,7 @@ export function ProviderConnections({
                 </span>
               </div>
               <button
+                type="button"
                 className="mac-button is-small"
                 disabled={blocked || !!login}
                 onClick={() => {
@@ -139,6 +142,7 @@ export function ProviderConnections({
                 {connection.status === 'locked' ? 'Unlock' : 'Reconnect'}
               </button>
               <button
+                type="button"
                 className="mac-button is-small"
                 disabled={blocked || !!login}
                 onClick={() => void action(() => bridge.removeConnection(connection.id))}
@@ -175,6 +179,7 @@ export function ProviderConnections({
             </p>
             {!login && (
               <button
+                type="button"
                 className="mac-button is-primary"
                 disabled={blocked}
                 onClick={() =>
@@ -198,6 +203,7 @@ export function ProviderConnections({
                 <code>{login.user_code}</code>
                 <div className="device-link-actions">
                   <button
+                    type="button"
                     className="mac-button is-primary"
                     onClick={() =>
                       void bridge
@@ -208,6 +214,7 @@ export function ProviderConnections({
                     Open OpenAI verification <ExternalLink size={12} />
                   </button>
                   <button
+                    type="button"
                     className="mac-button"
                     disabled={busy}
                     onClick={() =>
@@ -345,8 +352,10 @@ export function BuiltinChat({
   }, [exchanges]);
   const connection = connections.find((c) => c.id === selected);
   const connectionStatus = connection?.status;
+  const hasExchanges = exchanges.length > 0;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: modelsRevision is a reload trigger bumped to refetch models; the body does not read it.
   useEffect(() => {
-    if (!connectionStatus || showConnections || exchanges.length > 0) return;
+    if (!connectionStatus || showConnections || hasExchanges) return;
     if (connectionStatus === 'locked') {
       setModels([]);
       setModel('');
@@ -379,7 +388,7 @@ export function BuiltinChat({
     return () => {
       disposed = true;
     };
-  }, [selected, connectionStatus, showConnections, modelsRevision, exchanges.length > 0]);
+  }, [selected, connectionStatus, showConnections, modelsRevision, hasExchanges]);
   const unfinished = exchanges.some((e) => e.result?.status !== 'complete');
   async function send() {
     if (busy || !connection || !prompt.trim() || !model.trim() || unfinished) return;
@@ -469,6 +478,7 @@ export function BuiltinChat({
         )}
         <span className="chat-bar-spacer" />
         <button
+          type="button"
           className="mac-button is-small"
           disabled={busy}
           onClick={() => {
@@ -477,7 +487,7 @@ export function BuiltinChat({
             setError('');
           }}
         >
-          <Symbol name="plus" fallback={Plus} size={12} weight="semibold" /> New chat
+          <SfSymbol name="plus" fallback={Plus} size={12} weight="semibold" /> New chat
         </button>
       </header>
       {connections.length === 0 && (
@@ -496,6 +506,8 @@ export function BuiltinChat({
       )}
       {connections.length > 0 && showConnections && (
         /* Connections as a sheet: hangs from the top of the pane, dismisses with Done, Escape, or a click outside. */
+        // biome-ignore lint/a11y/noStaticElementInteractions: the backdrop click is a pointer-only shortcut; keyboard users dismiss the focused dialog with Escape or Done.
+        // biome-ignore lint/a11y/useKeyWithClickEvents: Escape on the focused dialog and the Done button are the keyboard equivalents of this backdrop click.
         <div className="chat-sheet-overlay" onClick={() => setShowConnections(false)}>
           <section
             className="chat-sheet"
@@ -539,6 +551,7 @@ export function BuiltinChat({
             <div className="chat-error" role="alert">
               {modelsError}{' '}
               <button
+                type="button"
                 className="mac-button is-small"
                 disabled={busy || modelsLoading}
                 onClick={() => setModelsRevision((n) => n + 1)}
@@ -552,6 +565,7 @@ export function BuiltinChat({
               const streaming = busy && i === exchanges.length - 1 && !exchange.result;
               const failed = exchange.result && exchange.result.status !== 'complete';
               return (
+                // biome-ignore lint/suspicious/noArrayIndexKey: exchanges are append-only and only ever cleared wholesale, so the index is a stable identity.
                 <article className="chat-exchange" key={i}>
                   <div className="chat-user">
                     <p className="selectable-text">{exchange.prompt}</p>
@@ -574,7 +588,7 @@ export function BuiltinChat({
                           title="Copy response"
                           onClick={() => void navigator.clipboard.writeText(exchange.response)}
                         >
-                          <Symbol name="doc.on.doc" fallback={Copy} size={12} />
+                          <SfSymbol name="doc.on.doc" fallback={Copy} size={12} />
                         </button>
                       )}
                     </div>
@@ -620,7 +634,7 @@ export function BuiltinChat({
                             <code>{shortTraceId(trace.id)}</code>
                             <span className="chat-ledger-open">
                               Open Trace{' '}
-                              <Symbol
+                              <SfSymbol
                                 name="chevron.right"
                                 fallback={ChevronRight}
                                 size={10}
@@ -646,6 +660,7 @@ export function BuiltinChat({
                     : 'The local capture service is off. Start it to record a Trace for each exchange.'}
                 </p>
                 <button
+                  type="button"
                   className="mac-button is-small"
                   disabled={busy}
                   onClick={() => {
@@ -685,7 +700,7 @@ export function BuiltinChat({
                 disabled={busy}
                 onClick={() => setShowConnections(true)}
               >
-                <Symbol name="gearshape" fallback={Settings} size={15} />
+                <SfSymbol name="gearshape" fallback={Settings} size={15} />
               </button>
               <textarea
                 ref={composer}
@@ -717,7 +732,7 @@ export function BuiltinChat({
                         .catch((e) => setError(errorMessage(e)));
                   }}
                 >
-                  <Symbol name="stop.fill" fallback={Square} size={11} /> Stop
+                  <SfSymbol name="stop.fill" fallback={Square} size={11} /> Stop
                 </button>
               ) : (
                 <button
@@ -732,7 +747,7 @@ export function BuiltinChat({
                     unfinished
                   }
                 >
-                  <Symbol name="paperplane.fill" fallback={Send} size={12} /> Send
+                  <SfSymbol name="paperplane.fill" fallback={Send} size={12} /> Send
                 </button>
               )}
             </form>

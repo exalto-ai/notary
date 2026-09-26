@@ -1,9 +1,9 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
+import { formatBytes } from '../../../runtime/apps/admin-dashboard/src/shared';
 import App, { DISPOSABLE_TEST_STOPPED_MESSAGE, SENSITIVE_INPUT_RESET_EVENT } from './App';
 import { createDisposableTestMarker } from './Onboarding';
-import { formatBytes } from '../../../runtime/apps/admin-dashboard/src/shared';
 import { pendingFirstProofTarget, persistPendingFirstProof } from './product';
 import './styles.css';
 
@@ -42,6 +42,11 @@ const browserTraceDetail = (traceId: string) => ({
   notarization: null,
   share: null,
 });
+
+function present<T>(value: T | null | undefined, what: string): T {
+  if (value == null) throw new Error(`Expected ${what} to be present`);
+  return value;
+}
 
 function renderApp(query: string) {
   window.history.replaceState({}, '', `/${query}`);
@@ -307,15 +312,14 @@ describe('Exalto Capture desktop shell', () => {
     renderApp('?screen=service-off&view=settings&service-start=fail');
     await userEvent.click(page.getByRole('button', { name: 'Start local service' }));
     await expect.element(page.getByRole('alert')).toHaveTextContent('could not start');
-    const alert = document.querySelector('[role="alert"]');
-    const advanced = Array.from(document.querySelectorAll('h2')).find(
-      (heading) => heading.textContent === 'Advanced',
+    const alert = present(document.querySelector('[role="alert"]'), 'the start failure alert');
+    const advanced = present(
+      Array.from(document.querySelectorAll('h2')).find(
+        (heading) => heading.textContent === 'Advanced',
+      ),
+      'the Advanced heading',
     );
-    expect(alert).not.toBeNull();
-    expect(advanced).not.toBeUndefined();
-    expect(
-      alert!.compareDocumentPosition(advanced!) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(alert.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   test('shows a neutral startup state instead of a false sealing failure', async () => {
@@ -351,9 +355,12 @@ describe('Exalto Capture desktop shell', () => {
     await expect
       .poll(() => document.querySelector<HTMLElement>('.capture-toast')?.textContent)
       .toBe('Capture is off.');
-    const toast = document.querySelector<HTMLElement>('.capture-toast');
-    expect(getComputedStyle(toast!).position).toBe('fixed');
-    expect(getComputedStyle(toast!).bottom).toBe('18px');
+    const toast = present(
+      document.querySelector<HTMLElement>('.capture-toast'),
+      'the capture toast',
+    );
+    expect(getComputedStyle(toast).position).toBe('fixed');
+    expect(getComputedStyle(toast).bottom).toBe('18px');
     expect(document.querySelector('.capture-page > .native-notice')).toBeNull();
   });
 
@@ -461,25 +468,31 @@ describe('Exalto Capture desktop shell', () => {
 
       const continueButton = page.getByRole('button', { name: /Try a chat/ });
       const bounds = continueButton.element().getBoundingClientRect();
-      const content = document.querySelector<HTMLElement>('.onboarding-content.is-client-step');
-      const actions = document.querySelector<HTMLElement>('.client-step-actions');
-      expect(content).not.toBeNull();
-      expect(actions).not.toBeNull();
+      const content = present(
+        document.querySelector<HTMLElement>('.onboarding-content.is-client-step'),
+        'the client step content',
+      );
+      const actions = present(
+        document.querySelector<HTMLElement>('.client-step-actions'),
+        'the client step actions',
+      );
       expect(bounds.top).toBeGreaterThanOrEqual(0);
       expect(bounds.bottom).toBeLessThanOrEqual(window.innerHeight);
-      expect(bounds.bottom).toBeLessThanOrEqual(content!.getBoundingClientRect().bottom);
-      expect(window.getComputedStyle(actions!).marginTop).toBe('0px');
+      expect(bounds.bottom).toBeLessThanOrEqual(content.getBoundingClientRect().bottom);
+      expect(window.getComputedStyle(actions).marginTop).toBe('0px');
       const headingBounds = page
         .getByRole('heading', { name: 'Where would you like to chat?' })
         .element()
         .getBoundingClientRect();
-      expect(headingBounds.top).toBeGreaterThanOrEqual(content!.getBoundingClientRect().top);
+      expect(headingBounds.top).toBeGreaterThanOrEqual(content.getBoundingClientRect().top);
 
       await userEvent.click(page.getByRole('radio', { name: /^Codex/ }));
       await userEvent.click(page.getByText('Review setup prompt', { exact: true }));
-      const setupPanel = document.querySelector<HTMLElement>('.agent-setup');
-      expect(setupPanel).not.toBeNull();
-      expect(setupPanel!.scrollHeight).toBeLessThanOrEqual(setupPanel!.clientHeight + 1);
+      const setupPanel = present(
+        document.querySelector<HTMLElement>('.agent-setup'),
+        'the agent setup panel',
+      );
+      expect(setupPanel.scrollHeight).toBeLessThanOrEqual(setupPanel.clientHeight + 1);
       await userEvent.click(page.getByRole('textbox', { name: 'Setup prompt' }));
       const promptBounds = page
         .getByRole('textbox', { name: 'Setup prompt' })
@@ -487,16 +500,18 @@ describe('Exalto Capture desktop shell', () => {
         .getBoundingClientRect();
       expect(promptBounds.top).toBeGreaterThanOrEqual(0);
       expect(promptBounds.top + promptBounds.height / 2).toBeLessThan(
-        actions!.getBoundingClientRect().top,
+        actions.getBoundingClientRect().top,
       );
 
       await userEvent.click(page.getByRole('radio', { name: /^Built-in/ }));
-      const scrollRegion = document.querySelector<HTMLElement>('.client-step-scroll');
-      expect(scrollRegion).not.toBeNull();
-      expect(window.getComputedStyle(scrollRegion!).overflowY).toBe('auto');
+      const scrollRegion = present(
+        document.querySelector<HTMLElement>('.client-step-scroll'),
+        'the client step scroll region',
+      );
+      expect(window.getComputedStyle(scrollRegion).overflowY).toBe('auto');
       const apiBounds = continueButton.element().getBoundingClientRect();
       expect(apiBounds.bottom).toBeLessThanOrEqual(window.innerHeight);
-      expect(apiBounds.bottom).toBeLessThanOrEqual(content!.getBoundingClientRect().bottom);
+      expect(apiBounds.bottom).toBeLessThanOrEqual(content.getBoundingClientRect().bottom);
     } finally {
       await page.viewport(1280, 900);
     }

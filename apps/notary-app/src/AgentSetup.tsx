@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import {
+  type AgentApps,
+  type AgentTarget,
   detectAgentApps,
   errorMessage,
   openAgentSetup,
-  type AgentApps,
-  type AgentTarget,
 } from './bridge';
 
 export const CODEX_CONFIG = `[profiles.exalto-capture]

@@ -1,7 +1,7 @@
 import { ChevronRight, FileCheck2, Play, Plug, ShieldCheck, Square } from 'lucide-react';
-import { Symbol } from './Symbol';
 import type { DesktopState } from './bridge';
-import { vaultProtection, type TraceConstraint, type View } from './product';
+import { type TraceConstraint, type View, vaultProtection } from './product';
+import { SfSymbol } from './SfSymbol';
 
 export function HomeView({
   state,
@@ -65,15 +65,17 @@ export function HomeView({
         </div>
         {recording ? (
           <button
+            type="button"
             className="mac-button capture-button is-stop"
             onClick={onStopCapture}
             disabled={busy !== null}
           >
-            <Symbol name="stop.fill" fallback={Square} size={11} />{' '}
+            <SfSymbol name="stop.fill" fallback={Square} size={11} />{' '}
             {busy === 'capture-stop' ? 'Stopping…' : 'Stop capturing'}
           </button>
         ) : (
           <button
+            type="button"
             className="mac-button capture-button is-primary"
             onClick={onStartCapture}
             disabled={busy !== null || !captureCanStart}
@@ -85,7 +87,7 @@ export function HomeView({
                   : 'Capture requires a reachable trusted transport. No Exalto Seal account is required.'
             }
           >
-            <Symbol name="play.fill" fallback={Play} size={12} />{' '}
+            <SfSymbol name="play.fill" fallback={Play} size={12} />{' '}
             {busy === 'capture-start' ? 'Starting…' : 'Start capturing'}
           </button>
         )}
@@ -150,44 +152,44 @@ export function HomeView({
                 <span className="section-label">Private traces</span>
                 <h2>{traceTotal ? `${traceTotal} on this Mac` : 'No traces yet'}</h2>
               </div>
-              <Symbol name="checkmark.seal" fallback={FileCheck2} size={18} />
+              <SfSymbol name="checkmark.seal" fallback={FileCheck2} size={18} />
             </header>
             {traceTotal ? (
               <div className="capture-counts">
-                <button onClick={() => onOpenTraces('state=captured')}>
+                <button type="button" onClick={() => onOpenTraces('state=captured')}>
                   <b>{state.counts.captured}</b>
                   <span>Captured</span>
-                  <Symbol
+                  <SfSymbol
                     name="chevron.right"
                     fallback={ChevronRight}
                     size={12}
                     weight="semibold"
                   />
                 </button>
-                <button onClick={() => onOpenTraces('status=notarizing')}>
+                <button type="button" onClick={() => onOpenTraces('status=notarizing')}>
                   <b>{state.counts.notarizing}</b>
                   <span>Sealing</span>
-                  <Symbol
+                  <SfSymbol
                     name="chevron.right"
                     fallback={ChevronRight}
                     size={12}
                     weight="semibold"
                   />
                 </button>
-                <button onClick={() => onOpenTraces('state=notarized')}>
+                <button type="button" onClick={() => onOpenTraces('state=notarized')}>
                   <b>{state.counts.notarized}</b>
                   <span>Sealed</span>
-                  <Symbol
+                  <SfSymbol
                     name="chevron.right"
                     fallback={ChevronRight}
                     size={12}
                     weight="semibold"
                   />
                 </button>
-                <button onClick={() => onOpenTraces('status=needs_attention')}>
+                <button type="button" onClick={() => onOpenTraces('status=needs_attention')}>
                   <b>{state.counts.needs_attention}</b>
                   <span>Needs attention</span>
-                  <Symbol
+                  <SfSymbol
                     name="chevron.right"
                     fallback={ChevronRight}
                     size={12}
@@ -200,7 +202,7 @@ export function HomeView({
                 <p>Start capturing, then make a request in a connected AI client.</p>
                 <button type="button" onClick={() => onNavigate('providers')}>
                   Set up an AI connection{' '}
-                  <Symbol
+                  <SfSymbol
                     name="chevron.right"
                     fallback={ChevronRight}
                     size={12}
@@ -209,9 +211,9 @@ export function HomeView({
                 </button>
               </div>
             )}
-            <button className="receipt-action" onClick={() => onNavigate('traces')}>
+            <button type="button" className="receipt-action" onClick={() => onNavigate('traces')}>
               Open traces{' '}
-              <Symbol name="chevron.right" fallback={ChevronRight} size={12} weight="semibold" />
+              <SfSymbol name="chevron.right" fallback={ChevronRight} size={12} weight="semibold" />
             </button>
           </div>
           <section className="capture-route-card">
@@ -260,7 +262,7 @@ export function HomeView({
                 <span className="section-label">AI connections</span>
                 <h2>Use the tools you already have</h2>
               </div>
-              <Symbol name="powerplug" fallback={Plug} size={17} />
+              <SfSymbol name="powerplug" fallback={Plug} size={17} />
             </header>
             <p>
               Codex CLI, Claude Code, and API clients can send their normal provider request through
@@ -268,7 +270,7 @@ export function HomeView({
             </p>
             <button type="button" onClick={() => onNavigate('providers')}>
               Set up a connection{' '}
-              <Symbol name="chevron.right" fallback={ChevronRight} size={12} weight="semibold" />
+              <SfSymbol name="chevron.right" fallback={ChevronRight} size={12} weight="semibold" />
             </button>
           </section>
           <section className="capture-protection-card">
@@ -277,7 +279,7 @@ export function HomeView({
                 <span className="section-label">Privacy and storage</span>
                 <h2>{vault.label}</h2>
               </div>
-              <Symbol name="checkmark.shield" fallback={ShieldCheck} size={17} />
+              <SfSymbol name="checkmark.shield" fallback={ShieldCheck} size={17} />
             </header>
             <p>{vault.detail}</p>
             <dl>
