@@ -980,24 +980,7 @@ fn validate_public_https_origin(value: &str, name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Finds the usual user-editable configuration location.
-pub fn default_config_path() -> Result<PathBuf> {
-    let base = if let Some(path) = env::var_os("XDG_CONFIG_HOME") {
-        PathBuf::from(path)
-    } else if let Some(path) = env::var_os("APPDATA") {
-        PathBuf::from(path)
-    } else if let Some(path) = env::var_os("HOME") {
-        let home = PathBuf::from(path);
-        if cfg!(target_os = "macos") {
-            home.join("Library/Application Support")
-        } else {
-            home.join(".config")
-        }
-    } else {
-        bail!("could not determine a configuration directory")
-    };
-    Ok(base.join("notary").join("config.toml"))
-}
+pub use notary_updater::default_config_path;
 
 fn default_listen() -> SocketAddr {
     "127.0.0.1:8787"
