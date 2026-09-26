@@ -1,17 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Copy, Plus, Send, Settings, Square, ExternalLink } from 'lucide-react';
-import { Symbol } from './Symbol';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import {
-  errorMessage,
-  isTauri,
-  setCaptureEnabled,
-  startDaemon,
-  type DesktopState,
-} from './bridge';
-import * as bridge from './builtinBridge';
+import { ChevronRight, Copy, ExternalLink, Plus, Send, Settings, Square } from 'lucide-react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AxisSelect } from '../../../runtime/apps/admin-dashboard/src/shared';
+import { type DesktopState, errorMessage, isTauri, setCaptureEnabled, startDaemon } from './bridge';
+import * as bridge from './builtinBridge';
+import { SfSymbol } from './SfSymbol';
 import './chat.css';
+
 const names = {
   chatgpt: 'ChatGPT plan',
   openai: 'OpenAI API',
@@ -50,17 +45,16 @@ export function ProviderConnections({
     }
     return status;
   }
+  const refreshFromEffect = useEffectEvent(refresh);
   useEffect(() => {
     alive.current = true;
-    void refresh().catch((e) => {
+    void refreshFromEffect().catch((e) => {
       if (alive.current) setError(errorMessage(e));
     });
     return () => {
       alive.current = false;
       if (loginRef.current)
-        void bridge
-          .cancelChatgptLogin(loginRef.current.login_id)
-          .catch(() => undefined);
+        void bridge.cancelChatgptLogin(loginRef.current.login_id).catch(() => undefined);
     };
   }, []);
   useEffect(() => {
@@ -70,7 +64,7 @@ export function ProviderConnections({
     const timer = window.setInterval(() => {
       if (checking) return;
       checking = true;
-      void refresh()
+      void refreshFromEffect()
         .then((status) => {
           if (!disposed && status === 'connected') {
             loginRef.current = null;
@@ -108,9 +102,7 @@ export function ProviderConnections({
         <h2>Connections</h2>
         <span>Saved on this Mac</span>
       </div>
-      <p className="panel-lead">
-        These credentials are used only by the chat in Capture.
-      </p>
+      <p className="panel-lead">These credentials are used only by the chat in Capture.</p>
       {connections.length === 0 ? (
         <p className="connection-empty">
           No connection is saved yet. Add one below to chat in Capture.
@@ -135,6 +127,7 @@ export function ProviderConnections({
                 </span>
               </div>
               <button
+                type="button"
                 className="mac-button is-small"
                 disabled={blocked || !!login}
                 onClick={() => {
@@ -149,11 +142,10 @@ export function ProviderConnections({
                 {connection.status === 'locked' ? 'Unlock' : 'Reconnect'}
               </button>
               <button
+                type="button"
                 className="mac-button is-small"
                 disabled={blocked || !!login}
-                onClick={() =>
-                  void action(() => bridge.removeConnection(connection.id))
-                }
+                onClick={() => void action(() => bridge.removeConnection(connection.id))}
               >
                 Remove {names[connection.id]}
               </button>
@@ -181,13 +173,13 @@ export function ProviderConnections({
         {provider === 'chatgpt' ? (
           <>
             <p>
-              Link through Codex using your ChatGPT plan. Requires an installed
-              Codex app or CLI and device-code login enabled for your account.
-              Capture uses a separate session; your usual Codex sign-in stays
-              unchanged.
+              Link through Codex using your ChatGPT plan. Requires an installed Codex app or CLI and
+              device-code login enabled for your account. Capture uses a separate session; your
+              usual Codex sign-in stays unchanged.
             </p>
             {!login && (
               <button
+                type="button"
                 className="mac-button is-primary"
                 disabled={blocked}
                 onClick={() =>
@@ -211,6 +203,7 @@ export function ProviderConnections({
                 <code>{login.user_code}</code>
                 <div className="device-link-actions">
                   <button
+                    type="button"
                     className="mac-button is-primary"
                     onClick={() =>
                       void bridge
@@ -221,6 +214,7 @@ export function ProviderConnections({
                     Open OpenAI verification <ExternalLink size={12} />
                   </button>
                   <button
+                    type="button"
                     className="mac-button"
                     disabled={busy}
                     onClick={() =>
@@ -234,10 +228,7 @@ export function ProviderConnections({
                     Cancel sign-in
                   </button>
                 </div>
-                <p>
-                  Waiting for approval… If the code expires, cancel and start
-                  again.
-                </p>
+                <p>Waiting for approval… If the code expires, cancel and start again.</p>
               </div>
             )}
           </>
@@ -283,8 +274,8 @@ export function ProviderConnections({
         </p>
       )}
       <p className="chat-fine-print">
-        Removing a connection deletes its saved credential, not existing Traces, and does not
-        revoke it at the provider. Private captures may retain encrypted credential bytes.
+        Removing a connection deletes its saved credential, not existing Traces, and does not revoke
+        it at the provider. Private captures may retain encrypted credential bytes.
       </p>
     </section>
   );
@@ -353,18 +344,18 @@ export function BuiltinChat({
     alive.current = true;
     return () => {
       alive.current = false;
-      if (request.current)
-        void bridge.cancelChat(request.current).catch(() => undefined);
+      if (request.current) void bridge.cancelChat(request.current).catch(() => undefined);
     };
   }, []);
   useEffect(() => {
-    if (exchanges.length > 0)
-      bottom.current?.scrollIntoView({ block: 'nearest' });
+    if (exchanges.length > 0) bottom.current?.scrollIntoView({ block: 'nearest' });
   }, [exchanges]);
   const connection = connections.find((c) => c.id === selected);
   const connectionStatus = connection?.status;
+  const hasExchanges = exchanges.length > 0;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: modelsRevision is a reload trigger bumped to refetch models; the body does not read it.
   useEffect(() => {
-    if (!connectionStatus || showConnections || exchanges.length > 0) return;
+    if (!connectionStatus || showConnections || hasExchanges) return;
     if (connectionStatus === 'locked') {
       setModels([]);
       setModel('');
@@ -377,28 +368,30 @@ export function BuiltinChat({
     setModelsError('');
     setModel('');
     setModels([]);
-    void bridge.listModels(selected).then((items) => {
-      if (disposed) return;
-      setModels(items);
-      setModel((items.find((item) => item.is_default) || items[0])?.id || '');
-      if (!items.length) setModelsError('No chat models are available for this connection. Reconnect or try another connection.');
-    }).catch((error) => {
-      if (!disposed) setModelsError(errorMessage(error));
-    }).finally(() => {
-      if (!disposed) setModelsLoading(false);
-    });
-    return () => { disposed = true; };
-  }, [selected, connectionStatus, showConnections, modelsRevision, exchanges.length > 0]);
+    void bridge
+      .listModels(selected)
+      .then((items) => {
+        if (disposed) return;
+        setModels(items);
+        setModel((items.find((item) => item.is_default) || items[0])?.id || '');
+        if (!items.length)
+          setModelsError(
+            'No chat models are available for this connection. Reconnect or try another connection.',
+          );
+      })
+      .catch((error) => {
+        if (!disposed) setModelsError(errorMessage(error));
+      })
+      .finally(() => {
+        if (!disposed) setModelsLoading(false);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [selected, connectionStatus, showConnections, modelsRevision, hasExchanges]);
   const unfinished = exchanges.some((e) => e.result?.status !== 'complete');
   async function send() {
-    if (
-      busy ||
-      !connection ||
-      !prompt.trim() ||
-      !model.trim() ||
-      unfinished
-    )
-      return;
+    if (busy || !connection || !prompt.trim() || !model.trim() || unfinished) return;
     const id = crypto.randomUUID();
     request.current = id;
     const message = prompt.trim();
@@ -410,28 +403,19 @@ export function BuiltinChat({
       { role: 'assistant' as const, content: e.response },
     ]);
     history.push({ role: 'user', content: message });
-    setExchanges((all) => [...all, { prompt: message, response: '', model: model.trim(), sentAt: Date.now() }]);
+    setExchanges((all) => [
+      ...all,
+      { prompt: message, response: '', model: model.trim(), sentAt: Date.now() },
+    ]);
     try {
-      const result = await bridge.sendChat(
-        id,
-        selected,
-        model.trim(),
-        history,
-        (text) => {
-          if (alive.current && request.current === id)
-            setExchanges((all) =>
-              all.map((e, i) =>
-                i === all.length - 1
-                  ? { ...e, response: e.response + text }
-                  : e,
-              ),
-            );
-        },
-      );
+      const result = await bridge.sendChat(id, selected, model.trim(), history, (text) => {
+        if (alive.current && request.current === id)
+          setExchanges((all) =>
+            all.map((e, i) => (i === all.length - 1 ? { ...e, response: e.response + text } : e)),
+          );
+      });
       if (alive.current)
-        setExchanges((all) =>
-          all.map((e, i) => (i === all.length - 1 ? { ...e, result } : e)),
-        );
+        setExchanges((all) => all.map((e, i) => (i === all.length - 1 ? { ...e, result } : e)));
     } catch (e) {
       if (alive.current)
         setExchanges((all) =>
@@ -494,6 +478,7 @@ export function BuiltinChat({
         )}
         <span className="chat-bar-spacer" />
         <button
+          type="button"
           className="mac-button is-small"
           disabled={busy}
           onClick={() => {
@@ -502,7 +487,7 @@ export function BuiltinChat({
             setError('');
           }}
         >
-          <Symbol name="plus" fallback={Plus} size={12} weight="semibold" /> New chat
+          <SfSymbol name="plus" fallback={Plus} size={12} weight="semibold" /> New chat
         </button>
       </header>
       {connections.length === 0 && (
@@ -521,6 +506,8 @@ export function BuiltinChat({
       )}
       {connections.length > 0 && showConnections && (
         /* Connections as a sheet: hangs from the top of the pane, dismisses with Done, Escape, or a click outside. */
+        // biome-ignore lint/a11y/noStaticElementInteractions: the backdrop click is a pointer-only shortcut; keyboard users dismiss the focused dialog with Escape or Done.
+        // biome-ignore lint/a11y/useKeyWithClickEvents: Escape on the focused dialog and the Done button are the keyboard equivalents of this backdrop click.
         <div className="chat-sheet-overlay" onClick={() => setShowConnections(false)}>
           <section
             className="chat-sheet"
@@ -547,7 +534,11 @@ export function BuiltinChat({
               />
             </div>
             <footer className="chat-sheet-footer">
-              <button className="mac-button is-primary" type="button" onClick={() => setShowConnections(false)}>
+              <button
+                className="mac-button is-primary"
+                type="button"
+                onClick={() => setShowConnections(false)}
+              >
                 Done
               </button>
             </footer>
@@ -556,12 +547,25 @@ export function BuiltinChat({
       )}
       {connections.length > 0 && (
         <>
-          {modelsError && <div className="chat-error" role="alert">{modelsError} <button className="mac-button is-small" disabled={busy || modelsLoading} onClick={() => setModelsRevision((n) => n + 1)}>Retry models</button></div>}
+          {modelsError && (
+            <div className="chat-error" role="alert">
+              {modelsError}{' '}
+              <button
+                type="button"
+                className="mac-button is-small"
+                disabled={busy || modelsLoading}
+                onClick={() => setModelsRevision((n) => n + 1)}
+              >
+                Retry models
+              </button>
+            </div>
+          )}
           <div className="chat-messages" role="log" aria-label="Conversation">
             {exchanges.map((exchange, i) => {
               const streaming = busy && i === exchanges.length - 1 && !exchange.result;
               const failed = exchange.result && exchange.result.status !== 'complete';
               return (
+                // biome-ignore lint/suspicious/noArrayIndexKey: exchanges are append-only and only ever cleared wholesale, so the index is a stable identity.
                 <article className="chat-exchange" key={i}>
                   <div className="chat-user">
                     <p className="selectable-text">{exchange.prompt}</p>
@@ -569,7 +573,9 @@ export function BuiltinChat({
                   <div className={`chat-response${streaming ? ' is-streaming' : ''}`}>
                     <div className="chat-meta">
                       <span className="chat-meta-model">
-                        {models.find((m) => m.id === exchange.model)?.name ?? exchange.model ?? names[selected]}
+                        {models.find((m) => m.id === exchange.model)?.name ??
+                          exchange.model ??
+                          names[selected]}
                       </span>
                       <time dateTime={new Date(exchange.sentAt).toISOString()}>
                         {timeFormat.format(exchange.sentAt)}
@@ -582,7 +588,7 @@ export function BuiltinChat({
                           title="Copy response"
                           onClick={() => void navigator.clipboard.writeText(exchange.response)}
                         >
-                          <Symbol name="doc.on.doc" fallback={Copy} size={12} />
+                          <SfSymbol name="doc.on.doc" fallback={Copy} size={12} />
                         </button>
                       )}
                     </div>
@@ -627,7 +633,13 @@ export function BuiltinChat({
                             <span>{trace.captured ? 'Captured' : 'Capture unconfirmed'}</span>
                             <code>{shortTraceId(trace.id)}</code>
                             <span className="chat-ledger-open">
-                              Open Trace <Symbol name="chevron.right" fallback={ChevronRight} size={10} weight="semibold" />
+                              Open Trace{' '}
+                              <SfSymbol
+                                name="chevron.right"
+                                fallback={ChevronRight}
+                                size={10}
+                                weight="semibold"
+                              />
                             </span>
                           </button>
                         ))
@@ -648,6 +660,7 @@ export function BuiltinChat({
                     : 'The local capture service is off. Start it to record a Trace for each exchange.'}
                 </p>
                 <button
+                  type="button"
                   className="mac-button is-small"
                   disabled={busy}
                   onClick={() => {
@@ -687,7 +700,7 @@ export function BuiltinChat({
                 disabled={busy}
                 onClick={() => setShowConnections(true)}
               >
-                <Symbol name="gearshape" fallback={Settings} size={15} />
+                <SfSymbol name="gearshape" fallback={Settings} size={15} />
               </button>
               <textarea
                 ref={composer}
@@ -719,7 +732,7 @@ export function BuiltinChat({
                         .catch((e) => setError(errorMessage(e)));
                   }}
                 >
-                  <Symbol name="stop.fill" fallback={Square} size={11} /> Stop
+                  <SfSymbol name="stop.fill" fallback={Square} size={11} /> Stop
                 </button>
               ) : (
                 <button
@@ -734,7 +747,7 @@ export function BuiltinChat({
                     unfinished
                   }
                 >
-                  <Symbol name="paperplane.fill" fallback={Send} size={12} /> Send
+                  <SfSymbol name="paperplane.fill" fallback={Send} size={12} /> Send
                 </button>
               )}
             </form>
