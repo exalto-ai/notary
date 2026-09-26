@@ -96,7 +96,9 @@ services:
     # Run as the image's unprivileged seaweed account so the entrypoint does
     # not need root to fix /data ownership.
     user: "1000:1000"
-    command: ["server", "-s3", "-ip=object-store", "-ip.bind=0.0.0.0", "-master.telemetry=false"]
+    # Only the authenticated S3 API listens on the network; SeaweedFS's master,
+    # volume, and filer APIs have no authentication, so they stay on loopback.
+    command: ["server", "-s3", "-ip=127.0.0.1", "-ip.bind=127.0.0.1", "-s3.ip.bind=0.0.0.0", "-master.telemetry=false"]
     environment:
       AWS_ACCESS_KEY_ID: daemon-e2e-access-key
       AWS_SECRET_ACCESS_KEY: synthetic-daemon-e2e-secret-key
