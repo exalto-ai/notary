@@ -74,7 +74,7 @@ export function TraceRecord({
       >
         {lines.map((line, index) => (
           <Box
-            // Lines are a fixed transcript slice; index is their identity.
+            // biome-ignore lint/suspicious/noArrayIndexKey: lines are a fixed transcript slice that never reorders; index is their identity.
             key={index}
             style={{
               display: 'grid',
@@ -92,6 +92,7 @@ export function TraceRecord({
             <Text fz={compact ? 13.5 : 14.5} lh={1.5}>
               {line.text ??
                 line.sealed?.map((width, wordIndex) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: sealed word widths are a fixed, non-reorderable list.
                   <span key={wordIndex}>
                     <Redacted width={width} />
                     {wordIndex < (line.sealed?.length ?? 0) - 1 ? ' ' : null}

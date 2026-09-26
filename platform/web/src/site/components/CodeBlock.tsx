@@ -28,7 +28,7 @@ export function CodeBlock({ lines }: { lines: string[] }) {
       <Box component="pre" m={0} style={{ overflowX: 'auto' }}>
         {lines.map((line, index) => (
           <Text
-            // Commands are a fixed list; index is their identity.
+            // biome-ignore lint/suspicious/noArrayIndexKey: lines of a static command block never reorder; index is their identity.
             key={index}
             component="div"
             className="x-data"
