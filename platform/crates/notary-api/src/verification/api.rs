@@ -22,7 +22,7 @@ use uuid::Uuid;
 use crate::{
     DatabasePool, ErrorResponse, NotaryApiState, unix_timestamp,
     verification::{
-        process::{VerificationError, VerifiedPackage, verify_anonymous},
+        process::{VerificationError, VerificationResponse, VerifiedPackage, verify_anonymous},
         worker::try_acquire_verification_capacity,
     },
 };
@@ -38,26 +38,13 @@ const VERIFICATION_LEASE_SECS: i64 = 5 * 60;
 static ANONYMOUS_IN_FLIGHT: LazyLock<Mutex<HashSet<String>>> =
     LazyLock::new(|| Mutex::new(HashSet::new()));
 
+// OpenAPI-only descriptor for the raw `.llmtrace` request body. The handler
+// reads the body itself so it can enforce the size and time bounds before
+// buffering, so this type is never constructed.
 #[derive(ToSchema)]
 #[schema(value_type = String, format = Binary)]
-#[allow(dead_code)]
+#[expect(dead_code, reason = "OpenAPI-only request body descriptor")]
 struct TracePackageBody(Vec<u8>);
-
-#[derive(ToSchema)]
-#[allow(dead_code)]
-struct VerificationResponse {
-    verified: bool,
-    trace_id: String,
-    authenticated_at_unix_ms: u64,
-    provider: String,
-    host: String,
-    notary_key_id: String,
-    registry_generation: u64,
-    trust_source: String,
-    package_sha256: String,
-    content_sha256: String,
-    trace: serde_json::Value,
-}
 
 struct LocalPermit {
     client: String,
