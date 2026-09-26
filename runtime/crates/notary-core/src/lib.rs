@@ -2130,16 +2130,26 @@ fn verify_capture_value_with_provider(
     ))
 }
 
-fn validate_trace_id(trace_id: &str) -> Result<()> {
-    if !trace_id.starts_with("trc-")
-        || trace_id.len() <= 4
-        || trace_id.len() > 128
-        || trace_id.contains('/')
-        || trace_id.contains('\\')
-        || !trace_id
+/// Maximum length of a trace ID in bytes.
+const MAX_TRACE_ID_BYTES: usize = 128;
+
+/// Returns whether `trace_id` is a well-formed trace ID.
+///
+/// A trace ID is `trc-` followed by 1 to 124 ASCII letters, digits, `-`, `_`,
+/// or `.`. The prefix and character set together guarantee the value is a
+/// single path component that cannot be empty, `.`, `..`, or contain a path
+/// separator, so it is safe to use as a file name or object-key segment.
+pub fn is_valid_trace_id(trace_id: &str) -> bool {
+    trace_id.starts_with("trc-")
+        && trace_id.len() > 4
+        && trace_id.len() <= MAX_TRACE_ID_BYTES
+        && trace_id
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
-    {
+}
+
+fn validate_trace_id(trace_id: &str) -> Result<()> {
+    if !is_valid_trace_id(trace_id) {
         bail!("trace ID must use the trc- prefix and be a bounded safe ASCII path component");
     }
     Ok(())
@@ -2984,6 +2994,10 @@ mod tests {
         assert!(validate_trace_id("../outside").is_err());
         assert!(validate_trace_id("nested/capture").is_err());
         assert!(validate_trace_id("").is_err());
+        assert!(validate_trace_id("trc-").is_err());
+        assert!(validate_trace_id(r"trc-a\b").is_err());
+        assert!(validate_trace_id(&format!("trc-{}", "a".repeat(124))).is_ok());
+        assert!(validate_trace_id(&format!("trc-{}", "a".repeat(125))).is_err());
     }
 
     #[test]
