@@ -1,5 +1,15 @@
-import { Anchor, Box, Button, Modal, Text, TextInput, UnstyledButton } from '@mantine/core';
-import { IconSearch } from '@tabler/icons-react';
+import {
+  ActionIcon,
+  Anchor,
+  Box,
+  Button,
+  Drawer,
+  Modal,
+  Text,
+  TextInput,
+  UnstyledButton,
+} from '@mantine/core';
+import { IconMenu2, IconSearch } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   type DocBlock,
@@ -10,11 +20,16 @@ import {
   docSubheadings,
   isDocPageKey,
 } from '../../content/docs';
+import { mdxDocs } from '../../content/mdxDocs';
 import { CodeBlock } from '../components/CodeBlock';
+import { mdxComponents } from '../components/docs/DocComponents';
 import { Data, Fact, Facts } from '../components/primitives';
 import { href } from '../router';
 
 const order = docNavigation.flatMap((group) => group.pages.map(([key]) => key));
+const navigationLabels = new Map(
+  docNavigation.flatMap((group) => group.pages.map(([key, label]) => [key, label])),
+);
 
 function slug(value: string) {
   return value
@@ -25,6 +40,27 @@ function slug(value: string) {
 
 function level(pageKey: DocPageKey, block: DocBlock) {
   return docSubheadings[pageKey]?.has(block.heading) ? 3 : 2;
+}
+
+function blockText(block: DocBlock) {
+  return [
+    block.heading,
+    block.body,
+    block.note,
+    block.code,
+    ...(block.items ?? []),
+    ...(block.steps?.flatMap((step) => [step.title, step.body]) ?? []),
+    ...(block.cards?.flatMap((card) => [card.meta, card.title, card.body]) ?? []),
+    ...(block.columns?.flatMap((column) => [column.title, ...column.items]) ?? []),
+    ...(block.definitions?.flatMap((definition) => [definition.term, definition.description]) ??
+      []),
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+function docTitle(key: DocPageKey) {
+  return mdxDocs[key]?.title ?? docPages[key].title;
 }
 
 function Block({ block, pageKey }: { block: DocBlock; pageKey: DocPageKey }) {
@@ -153,12 +189,26 @@ function Search({ open, onClose }: { open: boolean; onClose: () => void }) {
     const needle = term.toLowerCase();
     return order.flatMap((key) => {
       const page = docPages[key];
-      return page.blocks
-        .filter((block) =>
-          `${page.title} ${block.heading} ${block.body ?? ''}`.toLowerCase().includes(needle),
+      const mdx = mdxDocs[key];
+      const sections = mdx
+        ? mdx.sections.map((section) => ({
+            heading: section.heading,
+            id: section.id,
+            text: section.text,
+          }))
+        : page.blocks.map((block) => ({
+            heading: block.heading,
+            id: slug(block.heading),
+            text: blockText(block),
+          }));
+      return sections
+        .filter((section) =>
+          `${docTitle(key)} ${mdx?.lead ?? page.lead} ${section.heading} ${section.text}`
+            .toLowerCase()
+            .includes(needle),
         )
         .slice(0, 4)
-        .map((block) => ({ key, page: page.title, block }));
+        .map((section) => ({ key, page: docTitle(key), ...section }));
     });
   }, [term]);
 
@@ -174,15 +224,15 @@ function Search({ open, onClose }: { open: boolean; onClose: () => void }) {
       <Box mt="md" style={{ display: 'grid', gap: 1, background: 'var(--x-rule)' }}>
         {results.slice(0, 10).map((result) => (
           <UnstyledButton
-            key={`${result.key}-${result.block.heading}`}
+            key={`${result.key}-${result.id}`}
             component="a"
-            href={href(`/docs/${result.key}?section=${slug(result.block.heading)}`)}
+            href={href(`/docs/${result.key}?section=${result.id}`)}
             onClick={onClose}
             p="sm"
             style={{ background: 'var(--x-record)' }}
           >
             <Text fz="sm" fw={550}>
-              {result.block.heading}
+              {result.heading}
             </Text>
             <Text fz={12.5} c="var(--x-quiet)">
               {result.page}
@@ -202,7 +252,9 @@ function Search({ open, onClose }: { open: boolean; onClose: () => void }) {
 export function Docs({ pageKey, section }: { pageKey: string; section?: string }) {
   const key: DocPageKey = isDocPageKey(pageKey) ? pageKey : (docAliases[pageKey] ?? 'overview');
   const page = docPages[key];
+  const mdx = mdxDocs[key];
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const index = order.indexOf(key);
   const previous = index > 0 ? order[index - 1] : null;
   const next = index >= 0 && index < order.length - 1 ? order[index + 1] : null;
@@ -223,12 +275,52 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
     document.getElementById(section)?.scrollIntoView({ behavior: 'instant', block: 'start' });
   }, [section]);
 
-  const outline = page.blocks.filter((block) => level(key, block) === 2);
+  const outline = mdx
+    ? mdx.sections
+        .filter((item) => item.level === 2)
+        .map((item) => ({ heading: item.heading, id: item.id }))
+    : page.blocks
+        .filter((block) => level(key, block) === 2)
+        .map((block) => ({ heading: block.heading, id: slug(block.heading) }));
+  const title = mdx?.title ?? page.title;
+  const lead = mdx?.lead ?? page.lead;
+  const navigationLabel = navigationLabels.get(key) ?? title;
 
   return (
     <Box className="x-docs">
       <Box component="nav" className="x-docs-nav" aria-label="Documentation">
+        <Box className="x-docs-mobile-bar">
+          <UnstyledButton
+            className="x-docs-mobile-menu"
+            aria-label="Open documentation navigation"
+            aria-expanded={mobileNavOpen}
+            aria-controls="documentation-navigation"
+            onClick={() => setMobileNavOpen(true)}
+          >
+            <IconMenu2 size={17} stroke={1.7} aria-hidden="true" />
+            <Text component="span" className="x-docs-mobile-root">
+              Docs
+            </Text>
+            <Text component="span" className="x-docs-mobile-divider" aria-hidden="true">
+              /
+            </Text>
+            <Text component="span" className="x-docs-mobile-current">
+              {navigationLabel}
+            </Text>
+          </UnstyledButton>
+          <ActionIcon
+            className="x-docs-mobile-search"
+            variant="subtle"
+            color="gray"
+            size={34}
+            aria-label="Search documentation"
+            onClick={() => setSearchOpen(true)}
+          >
+            <IconSearch size={17} stroke={1.7} />
+          </ActionIcon>
+        </Box>
         <Button
+          className="x-docs-search"
           variant="default"
           size="xs"
           h={32}
@@ -240,38 +332,84 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
         >
           Search
         </Button>
-        {docNavigation.map((group) => (
-          <Box key={group.label} mb="md">
-            <Text fz={12.5} c="var(--x-faint)" mb={4} px={10}>
-              {group.label}
-            </Text>
-            {group.pages.map(([pageId, label]) => (
-              <Box
-                key={pageId}
-                component="a"
-                href={href(`/docs/${pageId}`)}
-                className="x-rail-item"
-                data-active={pageId === key || undefined}
-              >
-                <Text component="span" fz="sm" fw={pageId === key ? 570 : 450}>
-                  {label}
-                </Text>
-              </Box>
-            ))}
-          </Box>
-        ))}
+        <Box className="x-docs-pages">
+          {docNavigation.map((group) => (
+            <Box key={group.label} className="x-docs-group" mb="md">
+              <Text fz={12.5} c="var(--x-faint)" mb={4} px={10}>
+                {group.label}
+              </Text>
+              {group.pages.map(([pageId, label]) => (
+                <Box
+                  key={pageId}
+                  component="a"
+                  href={href(`/docs/${pageId}`)}
+                  className="x-rail-item"
+                  data-active={pageId === key || undefined}
+                  aria-current={pageId === key ? 'page' : undefined}
+                >
+                  <Text component="span" fz="sm" fw={pageId === key ? 570 : 450}>
+                    {label}
+                  </Text>
+                </Box>
+              ))}
+            </Box>
+          ))}
+        </Box>
       </Box>
+
+      <Drawer
+        opened={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        position="left"
+        size={320}
+        title="Documentation"
+        padding={0}
+        overlayProps={{ backgroundOpacity: 0.32, blur: 2 }}
+        transitionProps={{ duration: 160 }}
+        closeButtonProps={{ 'aria-label': 'Close documentation navigation' }}
+        classNames={{
+          content: 'x-docs-drawer-content',
+          header: 'x-docs-drawer-header',
+          body: 'x-docs-drawer-body',
+          title: 'x-docs-drawer-title',
+        }}
+      >
+        <Box component="nav" id="documentation-navigation" aria-label="Documentation pages">
+          {docNavigation.map((group) => (
+            <Box key={group.label} className="x-docs-drawer-group">
+              <Text className="x-docs-drawer-group-label">{group.label}</Text>
+              {group.pages.map(([pageId, label]) => (
+                <Box
+                  key={pageId}
+                  component="a"
+                  href={href(`/docs/${pageId}`)}
+                  className="x-docs-drawer-item"
+                  data-active={pageId === key || undefined}
+                  aria-current={pageId === key ? 'page' : undefined}
+                  onClick={() => setMobileNavOpen(false)}
+                >
+                  {label}
+                </Box>
+              ))}
+            </Box>
+          ))}
+        </Box>
+      </Drawer>
 
       <Box component="article" className="x-docs-body">
         <Text component="h1" fz={{ base: 30, md: 38 }} lh={1.1} fw={620} m={0} maw="20ch">
-          {page.title}
+          {title}
         </Text>
         <Text fz="lg" c="var(--x-quiet)" mt="md" maw="var(--x-measure)">
-          {page.lead}
+          {lead}
         </Text>
-        {page.blocks.map((block) => (
-          <Block key={block.heading} block={block} pageKey={key} />
-        ))}
+        {mdx ? (
+          <Box className="x-mdx-body">
+            <mdx.Content components={mdxComponents} />
+          </Box>
+        ) : (
+          page.blocks.map((block) => <Block key={block.heading} block={block} pageKey={key} />)
+        )}
 
         <Box
           mt={56}
@@ -288,7 +426,7 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
               <Text fz={12.5} c="var(--x-quiet)">
                 Previous
               </Text>
-              {docPages[previous].title}
+              {docTitle(previous)}
             </Anchor>
           ) : (
             <span />
@@ -298,7 +436,7 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
               <Text fz={12.5} c="var(--x-quiet)">
                 Next
               </Text>
-              {docPages[next].title}
+              {docTitle(next)}
             </Anchor>
           ) : null}
         </Box>
@@ -308,10 +446,10 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
         <Text fz={12.5} c="var(--x-faint)" mb={8}>
           On this page
         </Text>
-        {outline.map((block) => (
+        {outline.map((item) => (
           <Anchor
-            key={block.heading}
-            href={`#${slug(block.heading)}`}
+            key={item.id}
+            href={`#${item.id}`}
             fz={13}
             c="var(--x-quiet)"
             underline="never"
@@ -319,10 +457,10 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
             py={4}
             onClick={(event) => {
               event.preventDefault();
-              document.getElementById(slug(block.heading))?.scrollIntoView({ behavior: 'smooth' });
+              document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
             }}
           >
-            {block.heading}
+            {item.heading}
           </Anchor>
         ))}
       </Box>

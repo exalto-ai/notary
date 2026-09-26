@@ -70,6 +70,10 @@ for (const file of markdown) {
 const publicDocs = [
   readFileSync(resolve(appRoot, 'src/content/docs.ts'), 'utf8'),
   readFileSync(resolve(appRoot, 'src/site/pages/Docs.tsx'), 'utf8'),
+  ...readdirSync(resolve(appRoot, 'src/content/docs'))
+    .filter((name) => extname(name) === '.mdx')
+    .sort()
+    .map((name) => readFileSync(resolve(appRoot, 'src/content/docs', name), 'utf8')),
 ].join('\n');
 const llms = readFileSync(resolve(appRoot, 'public/llms.txt'), 'utf8');
 for (const [name, source] of [

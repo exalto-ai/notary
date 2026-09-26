@@ -2,7 +2,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { docMdx, docMetadata } from './scripts/docs-mdx.mjs';
 import { localPreviewApi } from './scripts/local-preview-api.mjs';
+
 export default defineConfig(({ command }) => {
   const local = command === 'serve';
   const sample = local && process.env.EXALTO_LOCAL_PREVIEW === '1';
@@ -29,7 +31,9 @@ export default defineConfig(({ command }) => {
       __BRAND_ASSET_VERSION__: JSON.stringify('capture'),
     },
     plugins: [
-      react(),
+      docMetadata(),
+      docMdx(),
+      react({ include: /\.(js|jsx|ts|tsx|md|mdx)$/ }),
       ...(sample ? [localPreviewApi({ capture, website })] : []),
       {
         name: 'site-html',

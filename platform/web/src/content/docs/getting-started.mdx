@@ -1,0 +1,269 @@
+export const title = 'Choose how to capture.'
+export const lead = 'Use the guided macOS app for everyday capture and review. Use the CLI and local service when you are integrating an SDK, coding agent, server, or automated workflow.'
+
+## Choose an interface
+
+<Cards>
+  <Card eyebrow="MOST MAC USERS" title="macOS app">
+    Guided setup, menu-bar service controls, and the complete native capture workspace in one signed application. No terminal is required for normal use.
+  </Card>
+  <Card eyebrow="DEVELOPERS AND OPERATORS" title="CLI + local service">
+    Two command-line programs for SDK routing, coding-agent configuration, scripting, automation, and explicit service supervision.
+  </Card>
+</Cards>
+
+### Install the macOS app
+
+Download Exalto Capture below. Open the DMG, move Exalto Capture to Applications, then launch it. The app guides first-time setup and supervises its bundled local service.
+
+<DownloadCard />
+
+<Callout title="System requirements" tone="local">
+
+- A Mac with Apple silicon (M1 or newer).
+- macOS 12 Monterey or later.
+- A supported model provider account when you are ready to capture a real interaction.
+
+</Callout>
+
+The app configures capture protection, helps connect a provider or coding tool, starts and stops its bundled `notaryd`, and renders the capture workspace natively. Provider credentials stay on your machine; the remote notary never receives them.
+
+## Install the CLI and local service
+
+The shell installer supports Apple silicon Macs and x86-64 or ARM64 Linux systems. It selects the complete `latest` stable Runtime release and checks the archive against its published SHA-256 value. The checksum detects corruption, but is not an independent signature because it shares the archive publisher.
+
+```sh
+curl -fsSL https://capture.exalto.ai/install.sh | sh
+```
+
+`notaryd` is the long-running local service. `notaryctl` is its short-lived REST client. The command-line archive installs both together.
+
+### Build from source
+
+Use Rust 1.95.0 and the toolchain file in the [public runtime repository](https://github.com/exalto-ai/notary-runtime). That repository contains the protocol, daemon, CLI, generic notary, local dashboard, updater, and verification implementation. Hosted accounts, billing, admission policy, and this public website are operated separately.
+
+```sh
+git clone https://github.com/exalto-ai/notary-runtime.git
+cd notary-runtime/runtime
+cargo install --locked --path crates/notaryd --bin notaryd
+cargo install --locked --path crates/notaryctl --bin notaryctl
+```
+
+### Install the agent skill
+
+The CLI bundles portable instructions for finding Traces, sealing with approval, verifying packages, diagnosing operations, and protecting private evidence. Install them for Codex, Claude Code, or both. This command neither contacts nor starts the daemon.
+
+```sh
+notaryctl skill install --target codex
+notaryctl skill install --target claude
+notaryctl skill install --target all
+```
+
+Use `--skills-dir /path/to/agent/skills` for another Agent Skills compatible client. Re-run with `--force` only after inspecting a different existing skill. Claude Code uses `$CLAUDE_CONFIG_DIR/skills` when that variable is nonempty and `~/.claude/skills` otherwise. Restart Claude Code if its personal skills directory did not exist when the current session started.
+
+### Start the service
+
+```sh
+notaryd
+```
+
+Open `http://127.0.0.1:8788` to use the local dashboard. The default loopback configuration opens directly. If `admin.auth` is enabled, sign in with the configured username and password; the dashboard exchanges them for an `HttpOnly` session and does not store the password.
+
+### Configuration file
+
+The first service start creates an editable `config.toml` at the standard configuration location. It is written once and never replaced.
+
+| System | Default path |
+| --- | --- |
+| macOS | `~/Library/Application Support/notary/config.toml` |
+| Linux | `~/.config/notary/config.toml` |
+| Windows | `%APPDATA%\notary\config.toml` |
+
+Start with an explicit file when needed:
+
+```sh
+notaryd --config /path/to/config.toml
+```
+
+## Operate the service
+
+### Use the command client
+
+`notaryctl` talks to the daemon's versioned loopback API. It checks daemon health and never opens the metadata store or vault directly. Add `--json` for automation. Raw Trace-list JSON includes stored prompt and output previews, so add `--metadata-only` before sending structured results to an agent transcript.
+
+```sh
+notaryctl status
+notaryctl traces list --provider openai
+notaryctl --json traces list --provider openai --metadata-only
+notaryctl traces show trc-example --json
+notaryctl open
+```
+
+### Connect a hosted account when needed
+
+Local capture, sealing, and verification do not require an account. Connect one to use account allowances, share a Sealed Trace, or manage the same device from hosted Settings. The rotating device credential is stored only in the daemon credential vault.
+
+```sh
+notaryctl account connect
+notaryctl account show
+notaryctl account disconnect
+```
+
+For an unattended host, create a deployment-specific, least-privilege key in hosted Account settings and inject it through `NOTARYD_PLATFORM_API_KEY` or the private `NOTARYD_PLATFORM_API_KEY_FILE`. The complete key is shown once and never belongs in `config.toml`, logs, or artifacts. One daemon can use an injected key or a browser-approved device session, never both.
+
+```sh
+export NOTARYD_PLATFORM_API_KEY_FILE=/run/secrets/notary-platform-api-key
+notaryd
+```
+
+### What configuration controls
+
+`config.toml` holds the listener address, optional admin authentication, an optional local or self-hosted notary endpoint, filesystem or private S3-compatible artifact settings, SQLite or PostgreSQL metadata settings and preview limits, and enabled provider routes. SQLite and filesystem storage are the defaults. Provider hostnames and API behavior remain fixed; configuration cannot direct the proxy to an arbitrary upstream host.
+
+Turn Capture requests off in the dashboard or macOS app to keep the same provider proxy URLs while bypassing admission, the remote notary, capture storage, and evidence creation for new requests. In-flight requests keep the mode they started with. Turning capture back on initializes the notary first; if that fails, capture stays off rather than silently falling back.
+
+### Protect local administration
+
+The loopback administration API is available to local processes without credentials by default. To require sign-in, configure a username and an Argon2id PHC password hash. Store the hash, including its salt and work parameters, rather than the plaintext password.
+
+```toml
+[admin.auth]
+username = "local-admin"
+password_hash = "$argon2id$v=19$m=32768,t=2,p=1$..."
+```
+
+Capture encryption is automatic. On first use, the proxy creates a random key and stores it in Keychain on macOS, Credential Manager on Windows, or the desktop secret service on Linux. The operating system may ask you to unlock that credential.
+
+If you prefer a passphrase, point `NOTARYD_VAULT_PASSPHRASE_FILE` at a private UTF-8 file before the first service start. An empty passphrase is accepted for local testing, but offers no meaningful protection if someone obtains both the captures and vault configuration.
+
+```sh
+export NOTARYD_VAULT_PASSPHRASE_FILE=/private/local/path/vault-passphrase
+notaryd
+```
+
+## Understand the capture lifecycle
+
+<Steps>
+  <Step title="Request">
+    The local proxy handles plaintext while the notary participates in the provider TLS connection without seeing application data. Provider response bytes stream back to your agent as they arrive.
+  </Step>
+  <Step title="Commit">
+    At end-of-stream, the proxy commits encrypted deferred state into one `.llmcapture`. It does not perform the expensive final proof before returning control to your workflow.
+  </Step>
+  <Step title="Seal later">
+    Stopping the proxy does not invalidate a committed capture. Retry a failed or interrupted sealing attempt through its Trace; the unchanged capture remains available, though interrupted proof computation starts over.
+  </Step>
+</Steps>
+
+## Connect a provider
+
+Keep credentials where your SDK or agent already expects them—for example, `OPENAI_API_KEY` in your shell or secret manager. Exalto Capture neither creates nor requires a `.env` file.
+
+<ProviderTabs>
+  <Provider name="OpenAI" auth="API key">
+
+Set the SDK base URL to `http://127.0.0.1:8787/openai/v1` and continue using the Responses API.
+
+```toml
+# ~/.codex/config.toml
+model_provider = "notary"
+model = "YOUR_RESPONSES_MODEL"
+
+[model_providers.notary]
+name = "Exalto local proxy"
+base_url = "http://127.0.0.1:8787/openai/v1"
+env_key = "OPENAI_API_KEY"
+wire_api = "responses"
+supports_websockets = false
+```
+
+  </Provider>
+  <Provider name="Codex" auth="ChatGPT plan">
+
+This flow is live-tested with Codex CLI. Run `codex login status` first and confirm that Codex reports a ChatGPT login. Codex owns and refreshes that login; the local service forwards its headers and hides every header value from the Sealed package.
+
+```toml
+# ~/.codex/config.toml
+model_provider = "notary-chatgpt"
+
+[model_providers.notary-chatgpt]
+name = "Exalto local proxy · ChatGPT plan"
+base_url = "http://127.0.0.1:8787/codex"
+requires_openai_auth = true
+wire_api = "responses"
+supports_websockets = false
+```
+
+```sh
+codex exec --ephemeral --skip-git-repo-check \
+  'Reply with exactly: hello'
+```
+
+  </Provider>
+  <Provider name="Claude" auth="API key or plan">
+
+Claude Code can use an Anthropic API key or its saved claude.ai login. An Anthropic API-key run looks like this:
+
+```sh
+ANTHROPIC_BASE_URL=http://127.0.0.1:8787/anthropic \
+claude --bare --no-session-persistence \
+  -p --model YOUR_MODEL \
+  'Reply with exactly: hello'
+```
+
+For a claude.ai plan, run `claude auth status` first. Remove `apiKeyHelper` and do not set `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`.
+
+```sh
+env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN \
+  ANTHROPIC_BASE_URL=http://127.0.0.1:8787/anthropic \
+  claude -p 'Reply with exactly: notary'
+```
+
+  </Provider>
+  <Provider name="OpenRouter" auth="API key">
+
+Use the OpenAI-compatible base URL and keep `OPENROUTER_API_KEY` in the client environment. The evidence authenticates OpenRouter—not the vendor named in a model slug. Authorization, HTTP-Referer, and X-Title header values are hidden in the Sealed package.
+
+```sh
+curl http://127.0.0.1:8787/openrouter/api/v1/chat/completions \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "HTTP-Referer: https://example.test" \
+  -H "X-Title: Exalto example" \
+  -d '{"model":"YOUR_MODEL","stream":true,"messages":[{"role":"user","content":"Reply with exactly: notary"}]}'
+```
+
+  </Provider>
+  <Provider name="DeepSeek" auth="API key">
+
+Set the OpenAI-compatible base URL to `http://127.0.0.1:8787/deepseek`, retain `DEEPSEEK_API_KEY` in the client environment, and continue using `/chat/completions`. OpenCode can use the same route.
+
+  </Provider>
+</ProviderTabs>
+
+<Callout title="Where subscription login works">
+
+The supported, live-tested clients are Codex CLI with its saved ChatGPT login and Claude Code with its saved claude.ai login. Exalto Capture supervises the local proxy, but does not configure or sign in to either client. Native Claude Desktop is not supported. Codex desktop is not yet end-to-end tested. Browser, Slack, remote, and cloud sessions cannot reach the loopback route.
+
+</Callout>
+
+The first local path segment selects a fixed adapter: `/openai`, `/codex`, `/anthropic`, `/deepseek`, or `/openrouter`. Each adapter fixes the upstream hostname and path to an explicit allowlist. The notary—not a caller-supplied URL—resolves and opens the provider connection.
+
+## Find local Traces
+
+Each completed provider interaction keeps its vault-encrypted capture in the selected private artifact store and gains a row in the metadata store. Use the native app, local dashboard, or live administration API.
+
+```sh
+curl "http://127.0.0.1:8788/v1/traces?query=pricing&provider=openai"
+```
+
+Search treats punctuation as text boundaries rather than raw full-text-search syntax. Hyphenated terms, emphasis marks, multiple words, and double-quoted phrases return matches or an empty list through the normal JSON response.
+
+The service applies state, status, provider, event type, severity, and time filters before returning bounded results. Coding agents should discover the available filters from the live OpenAPI document instead of reimplementing them client-side.
+
+```http
+GET /v1/traces?status=notarization_failed&limit=20
+GET /v1/activity?severity=error&event_type=notarization_failed&limit=20
+```
+
+A Trace records its provider, request and response model when available, HTTP status, sizes, duration, state, operational status, and retained artifact facts. By default, the first 1,000 characters of the request prompt and output are indexed as plain local text. Header values, cookies, and credentials are never included. You can change the metadata path, disable full-text search, or set either preview limit to `0` in `config.toml`.
