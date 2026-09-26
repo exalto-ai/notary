@@ -1,10 +1,7 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
-import App, {
-  DISPOSABLE_TEST_STOPPED_MESSAGE,
-  SENSITIVE_INPUT_RESET_EVENT,
-} from './App';
+import App, { DISPOSABLE_TEST_STOPPED_MESSAGE, SENSITIVE_INPUT_RESET_EVENT } from './App';
 import { createDisposableTestMarker } from './Onboarding';
 import { formatBytes } from '../../../runtime/apps/admin-dashboard/src/shared';
 import { pendingFirstProofTarget, persistPendingFirstProof } from './product';
@@ -35,11 +32,13 @@ const browserTraceSummary = (traceId = 'trc-browser-detail') => ({
 
 const browserTraceDetail = (traceId: string) => ({
   ...browserTraceSummary(traceId),
-  artifacts: [{
-    kind: 'capture_checkpoint',
-    size_bytes: 1_024,
-    sha256: 'a'.repeat(64),
-  }],
+  artifacts: [
+    {
+      kind: 'capture_checkpoint',
+      size_bytes: 1_024,
+      sha256: 'a'.repeat(64),
+    },
+  ],
   notarization: null,
   share: null,
 });
@@ -60,87 +59,112 @@ afterEach(() => {
 });
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-    const requestUrl = typeof input === 'string'
-      ? new URL(input, window.location.origin)
-      : input instanceof URL
-        ? input
-        : new URL(input.url, window.location.origin);
-    const path = requestUrl.pathname;
-    const response = (value: unknown, status = 200) => new Response(
-      JSON.stringify(value),
-      { status, headers: { 'content-type': 'application/json' } },
-    );
-    if (path === '/v1/session') return new Response(null, { status: 204 });
-    if (path === '/admin-api/v1/status') {
-      return response({ error: { code: 'service_unavailable', message: 'The local service is off.' } }, 503);
-    }
-    if (path === '/v1/status') {
-      return response({
-        version: '0.1.9',
-        build_id: 'browser-test',
-        runtime_profile: 'local',
-        instance_id: null,
-        incarnation_id: null,
-        lifecycle: 'ready',
-        capture_enabled: false,
-        proxy_listener: '127.0.0.1:8787',
-        admin_listener: '127.0.0.1:8788',
-        proxy_origin: 'http://127.0.0.1:8787',
-        admin_origin: 'http://127.0.0.1:8788',
-        metadata_backend: 'sqlite',
-        metadata_status: 'ready',
-        artifact_backend: 'filesystem',
-        artifact_status: 'ready',
-        vault: 'OS vault',
-        notary: 'registry',
-        preview_chars: 1_000,
-        counts: {
-          captured: 3,
-          notarizing: 1,
-          notarized: 8,
-          needs_attention: 2,
-          capturing: 0,
-          capture_failed: 0,
-        },
-        updates: {
-          enabled: false,
-          current_build_id: 'browser-test',
-          latest_build_id: null,
-          update_available: false,
-          last_checked_unix_ms: null,
-          error_code: null,
-        },
-      });
-    }
-    if (path === '/v1/traces') {
-      return response({ items: [browserTraceSummary()], next_cursor: null });
-    }
-    if (/^\/v1\/traces\/[^/]+\/notarizations$/.test(path)) {
-      return response({ operation_id: 'op-browser-proof', deduplicated: false, state: 'queued' }, 202);
-    }
-    if (/^\/v1\/traces\/[^/]+$/.test(path)) {
-      return response(browserTraceDetail(decodeURIComponent(path.split('/').at(-1) ?? 'trc-browser-detail')));
-    }
-    if (path === '/v1/activity') return response({ items: [], next_cursor: null, high_water: null });
-    if (path === '/v1/providers') {
-      return response({ providers: [{
-        id: 'openai',
-        name: 'OpenAI',
-        host: 'api.openai.com',
-        client_api: 'OpenAI Responses and Chat Completions',
-        route_prefix: '/openai',
-        proxy_base_url: 'http://127.0.0.1:8787/openai',
-        ready: true,
-      }] });
-    }
-    if (path === '/v1/notaries') {
-      return response({ source: 'registry', registry_source: null, generation: null, active_key_id: null, notaries: [] });
-    }
-    if (path === '/v1/account') return response({ signed_in: false, connection_state: 'disconnected' });
-    if (path === '/v1/settings/capture') return response({ enabled: false });
-    return response({});
-  }));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const requestUrl =
+        typeof input === 'string'
+          ? new URL(input, window.location.origin)
+          : input instanceof URL
+            ? input
+            : new URL(input.url, window.location.origin);
+      const path = requestUrl.pathname;
+      const response = (value: unknown, status = 200) =>
+        new Response(JSON.stringify(value), {
+          status,
+          headers: { 'content-type': 'application/json' },
+        });
+      if (path === '/v1/session') return new Response(null, { status: 204 });
+      if (path === '/admin-api/v1/status') {
+        return response(
+          { error: { code: 'service_unavailable', message: 'The local service is off.' } },
+          503,
+        );
+      }
+      if (path === '/v1/status') {
+        return response({
+          version: '0.1.9',
+          build_id: 'browser-test',
+          runtime_profile: 'local',
+          instance_id: null,
+          incarnation_id: null,
+          lifecycle: 'ready',
+          capture_enabled: false,
+          proxy_listener: '127.0.0.1:8787',
+          admin_listener: '127.0.0.1:8788',
+          proxy_origin: 'http://127.0.0.1:8787',
+          admin_origin: 'http://127.0.0.1:8788',
+          metadata_backend: 'sqlite',
+          metadata_status: 'ready',
+          artifact_backend: 'filesystem',
+          artifact_status: 'ready',
+          vault: 'OS vault',
+          notary: 'registry',
+          preview_chars: 1_000,
+          counts: {
+            captured: 3,
+            notarizing: 1,
+            notarized: 8,
+            needs_attention: 2,
+            capturing: 0,
+            capture_failed: 0,
+          },
+          updates: {
+            enabled: false,
+            current_build_id: 'browser-test',
+            latest_build_id: null,
+            update_available: false,
+            last_checked_unix_ms: null,
+            error_code: null,
+          },
+        });
+      }
+      if (path === '/v1/traces') {
+        return response({ items: [browserTraceSummary()], next_cursor: null });
+      }
+      if (/^\/v1\/traces\/[^/]+\/notarizations$/.test(path)) {
+        return response(
+          { operation_id: 'op-browser-proof', deduplicated: false, state: 'queued' },
+          202,
+        );
+      }
+      if (/^\/v1\/traces\/[^/]+$/.test(path)) {
+        return response(
+          browserTraceDetail(decodeURIComponent(path.split('/').at(-1) ?? 'trc-browser-detail')),
+        );
+      }
+      if (path === '/v1/activity')
+        return response({ items: [], next_cursor: null, high_water: null });
+      if (path === '/v1/providers') {
+        return response({
+          providers: [
+            {
+              id: 'openai',
+              name: 'OpenAI',
+              host: 'api.openai.com',
+              client_api: 'OpenAI Responses and Chat Completions',
+              route_prefix: '/openai',
+              proxy_base_url: 'http://127.0.0.1:8787/openai',
+              ready: true,
+            },
+          ],
+        });
+      }
+      if (path === '/v1/notaries') {
+        return response({
+          source: 'registry',
+          registry_source: null,
+          generation: null,
+          active_key_id: null,
+          notaries: [],
+        });
+      }
+      if (path === '/v1/account')
+        return response({ signed_in: false, connection_state: 'disconnected' });
+      if (path === '/v1/settings/capture') return response({ enabled: false });
+      return response({});
+    }),
+  );
 });
 
 describe('Exalto Capture desktop shell', () => {
@@ -192,9 +216,13 @@ describe('Exalto Capture desktop shell', () => {
       expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
       if (constraint.startsWith('state=')) {
         const labelName = constraint === 'state=notarized' ? 'Sealed' : 'Captured';
-        await expect.element(page.getByRole('radio', { name: labelName, exact: true })).toBeChecked();
+        await expect
+          .element(page.getByRole('radio', { name: labelName, exact: true }))
+          .toBeChecked();
       } else {
-        await expect.element(page.getByRole('button', { name: 'More filters' })).toHaveAttribute('aria-expanded', 'true');
+        await expect
+          .element(page.getByRole('button', { name: 'More filters' }))
+          .toHaveAttribute('aria-expanded', 'true');
         await expect
           .element(page.getByRole('combobox', { name: 'Operational status filter' }))
           .toHaveValue(label);
@@ -218,7 +246,9 @@ describe('Exalto Capture desktop shell', () => {
     expect(document.querySelector('.workspace-frame')).toBeNull();
     expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
     await userEvent.click(page.getByRole('button', { name: 'Connection setup' }));
-    await expect.element(page.getByRole('heading', { name: 'Where would you like to chat?' })).toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'Where would you like to chat?' }))
+      .toBeVisible();
     await userEvent.click(page.getByRole('button', { name: 'Done' }));
     await userEvent.click(page.getByRole('button', { name: 'Preferences' }));
     await expect.element(page.getByRole('heading', { name: 'Preferences' })).toBeVisible();
@@ -248,9 +278,17 @@ describe('Exalto Capture desktop shell', () => {
 
   test('keeps the primary capture control on Capture', async () => {
     renderApp('?screen=service-off&view=traces');
-    await expect.element(page.getByText('Start the local service to inspect private traces and connections. Capture remains off.')).toBeVisible();
+    await expect
+      .element(
+        page.getByText(
+          'Start the local service to inspect private traces and connections. Capture remains off.',
+        ),
+      )
+      .toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Start local service' })).toBeVisible();
-    await expect.element(page.getByRole('button', { name: 'Start capturing' })).not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('button', { name: 'Start capturing' }))
+      .not.toBeInTheDocument();
     await userEvent.click(page.getByRole('button', { name: 'Overview' }));
     await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeVisible();
   });
@@ -275,19 +313,25 @@ describe('Exalto Capture desktop shell', () => {
     );
     expect(alert).not.toBeNull();
     expect(advanced).not.toBeUndefined();
-    expect(alert!.compareDocumentPosition(advanced!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      alert!.compareDocumentPosition(advanced!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   test('shows a neutral startup state instead of a false sealing failure', async () => {
     renderApp('?screen=service-off');
     await expect.element(page.getByRole('heading', { name: 'Capture is off' })).toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeEnabled();
-    await expect.element(page.getByRole('button', { name: 'Start capturing' })).toHaveAttribute(
-      'title',
-      'Start the local service and connect its trusted capture transport.',
-    );
+    await expect
+      .element(page.getByRole('button', { name: 'Start capturing' }))
+      .toHaveAttribute(
+        'title',
+        'Start the local service and connect its trusted capture transport.',
+      );
     await expect.element(page.getByText('Exalto Seal · Service off')).toBeVisible();
-    await expect.element(page.getByText(/is starting|needs attention|cannot be reached/)).not.toBeInTheDocument();
+    await expect
+      .element(page.getByText(/is starting|needs attention|cannot be reached/))
+      .not.toBeInTheDocument();
 
     cleanup();
     renderApp('?screen=service-starting');
@@ -295,7 +339,9 @@ describe('Exalto Capture desktop shell', () => {
     await expect.element(page.getByText(/Checking the trusted capture transport/)).toBeVisible();
     await expect.element(page.getByText('Sealing service is unavailable')).not.toBeInTheDocument();
     await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeDisabled();
-    await expect.element(page.getByText(/Capture will be available when this check succeeds/)).toBeVisible();
+    await expect
+      .element(page.getByText(/Capture will be available when this check succeeds/))
+      .toBeVisible();
     await expect.element(page.getByText(/Exalto Seal account is not required/)).toBeVisible();
   });
 
@@ -323,7 +369,9 @@ describe('Exalto Capture desktop shell', () => {
     cleanup();
     renderApp('?screen=seal-trust-unavailable');
     await expect.element(page.getByText('Sealing trust needs attention')).toBeVisible();
-    await expect.element(page.getByText(/could not resolve a trusted sealing endpoint/)).toBeVisible();
+    await expect
+      .element(page.getByText(/could not resolve a trusted sealing endpoint/))
+      .toBeVisible();
     await expect.element(page.getByText('Exalto Seal · Trust unavailable')).toBeVisible();
     await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeDisabled();
   });
@@ -331,7 +379,9 @@ describe('Exalto Capture desktop shell', () => {
   test('reports Seal ready only after trust and transport checks succeed', async () => {
     renderApp('?screen=capture-off');
     await expect.element(page.getByText('Exalto Seal · Ready')).toBeVisible();
-    await expect.element(page.getByText(/Exalto Seal is ready to receive ciphertext/)).toBeVisible();
+    await expect
+      .element(page.getByText(/Exalto Seal is ready to receive ciphertext/))
+      .toBeVisible();
     await expect.element(page.getByText(/cannot be reached/)).not.toBeInTheDocument();
     await expect.element(page.getByRole('button', { name: 'Start capturing' })).toBeEnabled();
   });
@@ -341,7 +391,9 @@ describe('Exalto Capture desktop shell', () => {
     await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
     await userEvent.click(page.getByRole('button', { name: /Protect traces/ }));
     await userEvent.click(page.getByRole('button', { name: /Continue with Exalto Seal/ }));
-    await expect.element(page.getByRole('radio', { name: 'Built-in', exact: true })).toHaveAttribute('aria-checked', 'true');
+    await expect
+      .element(page.getByRole('radio', { name: 'Built-in', exact: true }))
+      .toHaveAttribute('aria-checked', 'true');
     await expect.element(page.getByRole('button', { name: 'Link ChatGPT plan' })).toBeVisible();
     expect(document.body.textContent).not.toMatch(/Grok|xAI|API or SDK|temporary key/);
     await userEvent.click(page.getByRole('radio', { name: 'Codex', exact: true }));
@@ -349,10 +401,16 @@ describe('Exalto Capture desktop shell', () => {
     await expect.element(page.getByLabelText('Connection type')).not.toBeInTheDocument();
     await userEvent.click(page.getByText('Review setup prompt', { exact: true }));
     const setup = page.getByRole('textbox', { name: 'Setup prompt' });
-    await expect.element(setup).toHaveValue(expect.stringContaining('Preserve its existing authentication method'));
+    await expect
+      .element(setup)
+      .toHaveValue(expect.stringContaining('Preserve its existing authentication method'));
     await userEvent.click(page.getByRole('button', { name: 'Continue without a test' }));
-    await expect.element(page.getByRole('heading', { name: 'Exalto Capture is ready' })).toBeVisible();
-    await expect.element(page.getByText('Test trace captured', { exact: true })).not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('heading', { name: 'Exalto Capture is ready' }))
+      .toBeVisible();
+    await expect
+      .element(page.getByText('Test trace captured', { exact: true }))
+      .not.toBeInTheDocument();
   });
 
   test('blocks manual disposable capture until the trusted transport is ready', async () => {
@@ -364,18 +422,26 @@ describe('Exalto Capture desktop shell', () => {
     await userEvent.click(page.getByRole('radio', { name: /^Codex/ }));
     await userEvent.click(page.getByRole('button', { name: /Start service and prepare test/ }));
 
-    await expect.element(page.getByRole('heading', { name: 'Where would you like to chat?' })).toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'Where would you like to chat?' }))
+      .toBeVisible();
     await expect.element(page.getByText(/trusted capture transport is not ready/)).toBeVisible();
     await expect.element(page.getByText(/No Exalto Seal account is required/)).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'Capture one disposable trace' })).not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('heading', { name: 'Capture one disposable trace' }))
+      .not.toBeInTheDocument();
   });
 
   test('preserves a third-party sealing service across onboarding and Capture', async () => {
     renderApp('?screen=onboarding-third-party');
     await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
     await userEvent.click(page.getByRole('button', { name: /Protect traces/ }));
-    await expect.element(page.getByRole('heading', { name: 'Continue with Northstar Seal' })).toBeVisible();
-    await expect.element(page.getByRole('button', { name: /Continue with Northstar Seal/ })).toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'Continue with Northstar Seal' }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole('button', { name: /Continue with Northstar Seal/ }))
+      .toBeVisible();
     await expect.element(page.getByText('Northstar Seal', { exact: true }).last()).toBeVisible();
     await expect.element(page.getByText('Exalto Seal', { exact: true })).not.toBeInTheDocument();
 
@@ -403,7 +469,10 @@ describe('Exalto Capture desktop shell', () => {
       expect(bounds.bottom).toBeLessThanOrEqual(window.innerHeight);
       expect(bounds.bottom).toBeLessThanOrEqual(content!.getBoundingClientRect().bottom);
       expect(window.getComputedStyle(actions!).marginTop).toBe('0px');
-      const headingBounds = page.getByRole('heading', { name: 'Where would you like to chat?' }).element().getBoundingClientRect();
+      const headingBounds = page
+        .getByRole('heading', { name: 'Where would you like to chat?' })
+        .element()
+        .getBoundingClientRect();
       expect(headingBounds.top).toBeGreaterThanOrEqual(content!.getBoundingClientRect().top);
 
       await userEvent.click(page.getByRole('radio', { name: /^Codex/ }));
@@ -412,9 +481,14 @@ describe('Exalto Capture desktop shell', () => {
       expect(setupPanel).not.toBeNull();
       expect(setupPanel!.scrollHeight).toBeLessThanOrEqual(setupPanel!.clientHeight + 1);
       await userEvent.click(page.getByRole('textbox', { name: 'Setup prompt' }));
-      const promptBounds = page.getByRole('textbox', { name: 'Setup prompt' }).element().getBoundingClientRect();
+      const promptBounds = page
+        .getByRole('textbox', { name: 'Setup prompt' })
+        .element()
+        .getBoundingClientRect();
       expect(promptBounds.top).toBeGreaterThanOrEqual(0);
-      expect(promptBounds.top + promptBounds.height / 2).toBeLessThan(actions!.getBoundingClientRect().top);
+      expect(promptBounds.top + promptBounds.height / 2).toBeLessThan(
+        actions!.getBoundingClientRect().top,
+      );
 
       await userEvent.click(page.getByRole('radio', { name: /^Built-in/ }));
       const scrollRegion = document.querySelector<HTMLElement>('.client-step-scroll');
@@ -473,9 +547,7 @@ describe('Exalto Capture desktop shell', () => {
     await userEvent.click(page.getByRole('radio', { name: /^Built-in/ }));
     await page.getByRole('combobox', { name: 'Connection type' }).click();
     await page.getByRole('option', { name: 'OpenAI API' }).click();
-    await expect
-      .element(page.getByLabelText('OpenAI API key'))
-      .toHaveValue('');
+    await expect.element(page.getByLabelText('OpenAI API key')).toHaveValue('');
 
     cleanup();
     renderApp('?screen=capture-on&view=traces');
@@ -491,25 +563,37 @@ describe('Exalto Capture desktop shell', () => {
     renderApp('?screen=onboarding');
     await expect.element(page.getByRole('button', { name: /Begin setup/ })).toBeVisible();
     await act(async () => {
-      window.dispatchEvent(new CustomEvent(SENSITIVE_INPUT_RESET_EVENT, {
-        detail: { resumeDisposableSetup: true },
-      }));
+      window.dispatchEvent(
+        new CustomEvent(SENSITIVE_INPUT_RESET_EVENT, {
+          detail: { resumeDisposableSetup: true },
+        }),
+      );
     });
-    await expect.element(page.getByRole('heading', { name: 'Where would you like to chat?' })).toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'Where would you like to chat?' }))
+      .toBeVisible();
     await expect.element(page.getByText(DISPOSABLE_TEST_STOPPED_MESSAGE)).toBeVisible();
   });
 
   test('uses private Trace language in the locked state', async () => {
     renderApp('?screen=unlock');
     await expect.element(page.getByText('Private trace vault')).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'Unlock private traces on this Mac' })).toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'Unlock private traces on this Mac' }))
+      .toBeVisible();
   });
 
   test('uses one native desktop-and-service Settings surface', async () => {
     renderApp('?screen=capture-on&view=settings&update=ready');
-    await expect.element(page.getByRole('heading', { name: 'Preferences', exact: true })).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'Sealing & account', exact: true })).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'AI connections', exact: true })).not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('heading', { name: 'Preferences', exact: true }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'Sealing & account', exact: true }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole('heading', { name: 'AI connections', exact: true }))
+      .not.toBeInTheDocument();
     expect(document.querySelector('.workspace-frame')).toBeNull();
     expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
     await expect
@@ -518,7 +602,11 @@ describe('Exalto Capture desktop shell', () => {
     await expect
       .element(page.getByRole('link', { name: 'Open generated OpenAPI' }))
       .toHaveAttribute('href', 'http://127.0.0.1:8788/openapi.json');
-    (page.getByRole('switch', { name: 'Open Exalto Capture at sign-in' }).element() as HTMLInputElement).click();
+    (
+      page
+        .getByRole('switch', { name: 'Open Exalto Capture at sign-in' })
+        .element() as HTMLInputElement
+    ).click();
     await expect.poll(() => localStorage.getItem('notary-launch-at-login')).toBe('true');
   });
 
@@ -531,8 +619,12 @@ describe('Exalto Capture desktop shell', () => {
         ),
       )
       .toEqual(['Sealing & account', 'Privacy & storage', 'App', 'Advanced']);
-    await expect.element(page.getByRole('switch', { name: 'Capture new requests' })).not.toBeInTheDocument();
-    await expect.element(page.getByRole('button', { name: 'Start capturing' })).not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('switch', { name: 'Capture new requests' }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole('button', { name: 'Start capturing' }))
+      .not.toBeInTheDocument();
     await expect.element(page.getByRole('button', { name: 'Start local service' })).toBeVisible();
   });
 });

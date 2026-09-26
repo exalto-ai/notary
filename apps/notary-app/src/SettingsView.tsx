@@ -9,11 +9,15 @@ import {
   type DesktopState,
   type DesktopUpdateState,
 } from './bridge';
-import { updateRestartBlockReason, vaultProtection, type View, type WorkspaceView, type TraceConstraint, type TraceTarget } from './product';
 import {
-  type DesktopSettingsAction,
-  type DesktopSettingsPayload,
-} from './Shell';
+  updateRestartBlockReason,
+  vaultProtection,
+  type View,
+  type WorkspaceView,
+  type TraceConstraint,
+  type TraceTarget,
+} from './product';
+import { type DesktopSettingsAction, type DesktopSettingsPayload } from './Shell';
 
 function dashboardRoute(
   route: WorkspaceView,
@@ -27,16 +31,20 @@ function dashboardRoute(
     const [key, value] = constraint.split('=');
     return {
       view: route,
-      filters: key === 'state'
-        ? { state: value as 'captured' | 'notarized' }
-        : { status: value as 'notarizing' | 'needs_attention' },
+      filters:
+        key === 'state'
+          ? { state: value as 'captured' | 'notarized' }
+          : { status: value as 'notarizing' | 'needs_attention' },
     };
   }
   return { view: route };
 }
 
 export function SettingsView({
-  route, constraint, traceTarget, onTraceActionConsumed,
+  route,
+  constraint,
+  traceTarget,
+  onTraceActionConsumed,
   state,
   updateState,
   busy,
@@ -119,7 +127,11 @@ export function SettingsView({
           >
             {busy === 'service-start' ? 'Starting local service…' : 'Start local service'}
           </button>
-          {serviceError && <p className="preference-note native-notice service-start-notice" role="alert">{serviceError}</p>}
+          {serviceError && (
+            <p className="preference-note native-notice service-start-notice" role="alert">
+              {serviceError}
+            </p>
+          )}
         </section>
       </div>
     );
@@ -138,12 +150,23 @@ export function SettingsView({
                 <strong>AI connections and Exalto account</strong>
                 <span>Start the local service to manage connections. Capture remains off.</span>
               </div>
-              <button className="mac-button is-primary" type="button" onClick={onStartService} disabled={busy === 'service-start'}>
+              <button
+                className="mac-button is-primary"
+                type="button"
+                onClick={onStartService}
+                disabled={busy === 'service-start'}
+              >
                 {busy === 'service-start' ? 'Starting…' : 'Start local service'}
               </button>
             </div>
-            <p className="preference-note">Connecting an account never uploads or shares a local trace automatically.</p>
-            {serviceError && <p className="preference-note native-notice service-start-notice" role="alert">{serviceError}</p>}
+            <p className="preference-note">
+              Connecting an account never uploads or shares a local trace automatically.
+            </p>
+            {serviceError && (
+              <p className="preference-note native-notice service-start-notice" role="alert">
+                {serviceError}
+              </p>
+            )}
           </div>
         </section>
         <section className="preference-section">
@@ -161,7 +184,9 @@ export function SettingsView({
                 <span>Sealing-service details are available after the local service starts.</span>
               </div>
             </div>
-            <p className="preference-note">Changing protection requires a guided migration of existing private traces.</p>
+            <p className="preference-note">
+              Changing protection requires a guided migration of existing private traces.
+            </p>
           </div>
         </section>
         <section className="preference-section">
@@ -183,7 +208,9 @@ export function SettingsView({
             <div className="preference-row">
               <div>
                 <strong>Exalto Capture {state.app_version}</strong>
-                <span>{updateState?.message ?? 'Signed release updates are unavailable in this build.'}</span>
+                <span>
+                  {updateState?.message ?? 'Signed release updates are unavailable in this build.'}
+                </span>
               </div>
               {updateState?.phase === 'ready' ? (
                 <button
@@ -204,16 +231,30 @@ export function SettingsView({
               )}
             </div>
             {restartBlock && <p className="preference-note update-block-note">{restartBlock}</p>}
-            <p className="preference-note">Updates are checked against this app's installed macOS identity before installation.</p>
+            <p className="preference-note">
+              Updates are checked against this app's installed macOS identity before installation.
+            </p>
           </div>
         </section>
         <section className="preference-section">
           <h2>Advanced</h2>
           <div className="preference-group compact-rows">
-            <div className="preference-row"><strong>Service · Provider proxy</strong><code>{state.proxy_listener}</code></div>
-            <div className="preference-row"><strong>Service · Administration</strong><code>{state.admin_listener}</code></div>
-            <div className="preference-row"><strong>Service build</strong><code>Not running</code></div>
-            <div className="preference-row"><strong>Developer · App build</strong><code>{state.app_build_id}</code></div>
+            <div className="preference-row">
+              <strong>Service · Provider proxy</strong>
+              <code>{state.proxy_listener}</code>
+            </div>
+            <div className="preference-row">
+              <strong>Service · Administration</strong>
+              <code>{state.admin_listener}</code>
+            </div>
+            <div className="preference-row">
+              <strong>Service build</strong>
+              <code>Not running</code>
+            </div>
+            <div className="preference-row">
+              <strong>Developer · App build</strong>
+              <code>{state.app_build_id}</code>
+            </div>
           </div>
         </section>
         {(notice || message) && <div className="native-notice">{message ?? notice}</div>}

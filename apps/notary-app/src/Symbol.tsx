@@ -24,7 +24,11 @@ function loadSymbol(name: string, pointSize: number, weight: SymbolWeight) {
   return pending;
 }
 
-type FallbackIcon = ComponentType<{ size?: number; strokeWidth?: number; 'aria-hidden'?: boolean | 'true' }>;
+type FallbackIcon = ComponentType<{
+  size?: number;
+  strokeWidth?: number;
+  'aria-hidden'?: boolean | 'true';
+}>;
 
 /**
  * An SF Symbol rendered by the system and tinted with the current text colour.
@@ -59,7 +63,12 @@ export function Symbol({
     <span
       className={`sf-symbol${className ? ` ${className}` : ''}`}
       aria-hidden="true"
-      style={{ width: size, height: size, WebkitMaskImage: `url(${image})`, maskImage: `url(${image})` }}
+      style={{
+        width: size,
+        height: size,
+        WebkitMaskImage: `url(${image})`,
+        maskImage: `url(${image})`,
+      }}
     />
   );
 }

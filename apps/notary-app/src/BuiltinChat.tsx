@@ -2,13 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Copy, Plus, Send, Settings, Square, ExternalLink } from 'lucide-react';
 import { Symbol } from './Symbol';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import {
-  errorMessage,
-  isTauri,
-  setCaptureEnabled,
-  startDaemon,
-  type DesktopState,
-} from './bridge';
+import { errorMessage, isTauri, setCaptureEnabled, startDaemon, type DesktopState } from './bridge';
 import * as bridge from './builtinBridge';
 import { AxisSelect } from '../../../runtime/apps/admin-dashboard/src/shared';
 import './chat.css';
@@ -58,9 +52,7 @@ export function ProviderConnections({
     return () => {
       alive.current = false;
       if (loginRef.current)
-        void bridge
-          .cancelChatgptLogin(loginRef.current.login_id)
-          .catch(() => undefined);
+        void bridge.cancelChatgptLogin(loginRef.current.login_id).catch(() => undefined);
     };
   }, []);
   useEffect(() => {
@@ -108,9 +100,7 @@ export function ProviderConnections({
         <h2>Connections</h2>
         <span>Saved on this Mac</span>
       </div>
-      <p className="panel-lead">
-        These credentials are used only by the chat in Capture.
-      </p>
+      <p className="panel-lead">These credentials are used only by the chat in Capture.</p>
       {connections.length === 0 ? (
         <p className="connection-empty">
           No connection is saved yet. Add one below to chat in Capture.
@@ -151,9 +141,7 @@ export function ProviderConnections({
               <button
                 className="mac-button is-small"
                 disabled={blocked || !!login}
-                onClick={() =>
-                  void action(() => bridge.removeConnection(connection.id))
-                }
+                onClick={() => void action(() => bridge.removeConnection(connection.id))}
               >
                 Remove {names[connection.id]}
               </button>
@@ -181,10 +169,9 @@ export function ProviderConnections({
         {provider === 'chatgpt' ? (
           <>
             <p>
-              Link through Codex using your ChatGPT plan. Requires an installed
-              Codex app or CLI and device-code login enabled for your account.
-              Capture uses a separate session; your usual Codex sign-in stays
-              unchanged.
+              Link through Codex using your ChatGPT plan. Requires an installed Codex app or CLI and
+              device-code login enabled for your account. Capture uses a separate session; your
+              usual Codex sign-in stays unchanged.
             </p>
             {!login && (
               <button
@@ -234,10 +221,7 @@ export function ProviderConnections({
                     Cancel sign-in
                   </button>
                 </div>
-                <p>
-                  Waiting for approval… If the code expires, cancel and start
-                  again.
-                </p>
+                <p>Waiting for approval… If the code expires, cancel and start again.</p>
               </div>
             )}
           </>
@@ -283,8 +267,8 @@ export function ProviderConnections({
         </p>
       )}
       <p className="chat-fine-print">
-        Removing a connection deletes its saved credential, not existing Traces, and does not
-        revoke it at the provider. Private captures may retain encrypted credential bytes.
+        Removing a connection deletes its saved credential, not existing Traces, and does not revoke
+        it at the provider. Private captures may retain encrypted credential bytes.
       </p>
     </section>
   );
@@ -353,13 +337,11 @@ export function BuiltinChat({
     alive.current = true;
     return () => {
       alive.current = false;
-      if (request.current)
-        void bridge.cancelChat(request.current).catch(() => undefined);
+      if (request.current) void bridge.cancelChat(request.current).catch(() => undefined);
     };
   }, []);
   useEffect(() => {
-    if (exchanges.length > 0)
-      bottom.current?.scrollIntoView({ block: 'nearest' });
+    if (exchanges.length > 0) bottom.current?.scrollIntoView({ block: 'nearest' });
   }, [exchanges]);
   const connection = connections.find((c) => c.id === selected);
   const connectionStatus = connection?.status;
@@ -377,28 +359,30 @@ export function BuiltinChat({
     setModelsError('');
     setModel('');
     setModels([]);
-    void bridge.listModels(selected).then((items) => {
-      if (disposed) return;
-      setModels(items);
-      setModel((items.find((item) => item.is_default) || items[0])?.id || '');
-      if (!items.length) setModelsError('No chat models are available for this connection. Reconnect or try another connection.');
-    }).catch((error) => {
-      if (!disposed) setModelsError(errorMessage(error));
-    }).finally(() => {
-      if (!disposed) setModelsLoading(false);
-    });
-    return () => { disposed = true; };
+    void bridge
+      .listModels(selected)
+      .then((items) => {
+        if (disposed) return;
+        setModels(items);
+        setModel((items.find((item) => item.is_default) || items[0])?.id || '');
+        if (!items.length)
+          setModelsError(
+            'No chat models are available for this connection. Reconnect or try another connection.',
+          );
+      })
+      .catch((error) => {
+        if (!disposed) setModelsError(errorMessage(error));
+      })
+      .finally(() => {
+        if (!disposed) setModelsLoading(false);
+      });
+    return () => {
+      disposed = true;
+    };
   }, [selected, connectionStatus, showConnections, modelsRevision, exchanges.length > 0]);
   const unfinished = exchanges.some((e) => e.result?.status !== 'complete');
   async function send() {
-    if (
-      busy ||
-      !connection ||
-      !prompt.trim() ||
-      !model.trim() ||
-      unfinished
-    )
-      return;
+    if (busy || !connection || !prompt.trim() || !model.trim() || unfinished) return;
     const id = crypto.randomUUID();
     request.current = id;
     const message = prompt.trim();
@@ -410,28 +394,19 @@ export function BuiltinChat({
       { role: 'assistant' as const, content: e.response },
     ]);
     history.push({ role: 'user', content: message });
-    setExchanges((all) => [...all, { prompt: message, response: '', model: model.trim(), sentAt: Date.now() }]);
+    setExchanges((all) => [
+      ...all,
+      { prompt: message, response: '', model: model.trim(), sentAt: Date.now() },
+    ]);
     try {
-      const result = await bridge.sendChat(
-        id,
-        selected,
-        model.trim(),
-        history,
-        (text) => {
-          if (alive.current && request.current === id)
-            setExchanges((all) =>
-              all.map((e, i) =>
-                i === all.length - 1
-                  ? { ...e, response: e.response + text }
-                  : e,
-              ),
-            );
-        },
-      );
+      const result = await bridge.sendChat(id, selected, model.trim(), history, (text) => {
+        if (alive.current && request.current === id)
+          setExchanges((all) =>
+            all.map((e, i) => (i === all.length - 1 ? { ...e, response: e.response + text } : e)),
+          );
+      });
       if (alive.current)
-        setExchanges((all) =>
-          all.map((e, i) => (i === all.length - 1 ? { ...e, result } : e)),
-        );
+        setExchanges((all) => all.map((e, i) => (i === all.length - 1 ? { ...e, result } : e)));
     } catch (e) {
       if (alive.current)
         setExchanges((all) =>
@@ -547,7 +522,11 @@ export function BuiltinChat({
               />
             </div>
             <footer className="chat-sheet-footer">
-              <button className="mac-button is-primary" type="button" onClick={() => setShowConnections(false)}>
+              <button
+                className="mac-button is-primary"
+                type="button"
+                onClick={() => setShowConnections(false)}
+              >
                 Done
               </button>
             </footer>
@@ -556,7 +535,18 @@ export function BuiltinChat({
       )}
       {connections.length > 0 && (
         <>
-          {modelsError && <div className="chat-error" role="alert">{modelsError} <button className="mac-button is-small" disabled={busy || modelsLoading} onClick={() => setModelsRevision((n) => n + 1)}>Retry models</button></div>}
+          {modelsError && (
+            <div className="chat-error" role="alert">
+              {modelsError}{' '}
+              <button
+                className="mac-button is-small"
+                disabled={busy || modelsLoading}
+                onClick={() => setModelsRevision((n) => n + 1)}
+              >
+                Retry models
+              </button>
+            </div>
+          )}
           <div className="chat-messages" role="log" aria-label="Conversation">
             {exchanges.map((exchange, i) => {
               const streaming = busy && i === exchanges.length - 1 && !exchange.result;
@@ -569,7 +559,9 @@ export function BuiltinChat({
                   <div className={`chat-response${streaming ? ' is-streaming' : ''}`}>
                     <div className="chat-meta">
                       <span className="chat-meta-model">
-                        {models.find((m) => m.id === exchange.model)?.name ?? exchange.model ?? names[selected]}
+                        {models.find((m) => m.id === exchange.model)?.name ??
+                          exchange.model ??
+                          names[selected]}
                       </span>
                       <time dateTime={new Date(exchange.sentAt).toISOString()}>
                         {timeFormat.format(exchange.sentAt)}
@@ -627,7 +619,13 @@ export function BuiltinChat({
                             <span>{trace.captured ? 'Captured' : 'Capture unconfirmed'}</span>
                             <code>{shortTraceId(trace.id)}</code>
                             <span className="chat-ledger-open">
-                              Open Trace <Symbol name="chevron.right" fallback={ChevronRight} size={10} weight="semibold" />
+                              Open Trace{' '}
+                              <Symbol
+                                name="chevron.right"
+                                fallback={ChevronRight}
+                                size={10}
+                                weight="semibold"
+                              />
                             </span>
                           </button>
                         ))

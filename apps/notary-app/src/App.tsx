@@ -38,12 +38,15 @@ import { exaltoTheme } from '../../../runtime/apps/admin-dashboard/src/theme';
 
 export const SENSITIVE_INPUT_RESET_EVENT = 'exalto:sensitive-input-reset';
 export const CAPTURE_STATE_CHANGED_EVENT = 'exalto:capture-state-changed';
-export const DISPOSABLE_TEST_STOPPED_MESSAGE = 'The disposable test stopped when setup closed. Prepare it again when you are ready.';
+export const DISPOSABLE_TEST_STOPPED_MESSAGE =
+  'The disposable test stopped when setup closed. Prepare it again when you are ready.';
 
 function AppContent() {
   const query = useMemo(() => new URLSearchParams(window.location.search), []);
   const requestedView = query.get('view') as View | null;
-  const [view, setView] = useState<View>(requestedView && requestedView in viewMeta ? requestedView : 'home');
+  const [view, setView] = useState<View>(
+    requestedView && requestedView in viewMeta ? requestedView : 'home',
+  );
   const [traceConstraint, setTraceConstraint] = useState<TraceConstraint | null>(null);
   const [traceTarget, setTraceTarget] = useState<TraceTarget | null>(pendingFirstProofTarget);
   const [state, setState] = useState<DesktopState | null>(null);
@@ -96,9 +99,7 @@ function AppContent() {
   useEffect(() => {
     const resetSensitiveInputs = (event: Event) => {
       const detail = (event as CustomEvent<{ resumeDisposableSetup?: boolean }>).detail;
-      setSetupResumeError(
-        detail?.resumeDisposableSetup ? DISPOSABLE_TEST_STOPPED_MESSAGE : null,
-      );
+      setSetupResumeError(detail?.resumeDisposableSetup ? DISPOSABLE_TEST_STOPPED_MESSAGE : null);
       setSensitiveInputGeneration((current) => current + 1);
     };
     window.addEventListener(SENSITIVE_INPUT_RESET_EVENT, resetSensitiveInputs);
@@ -164,11 +165,15 @@ function AppContent() {
     let disposed = false;
     let unlisten: UnlistenFn | null = null;
     void listen<boolean>(CAPTURE_STATE_CHANGED_EVENT, (event) => {
-      setState((current) => current ? {
-        ...current,
-        running: current.running || event.payload,
-        capture_enabled: event.payload,
-      } : current);
+      setState((current) =>
+        current
+          ? {
+              ...current,
+              running: current.running || event.payload,
+              capture_enabled: event.payload,
+            }
+          : current,
+      );
     }).then((stopListening) => {
       if (disposed) stopListening();
       else unlisten = stopListening;
@@ -186,19 +191,25 @@ function AppContent() {
     void listen<{ window_generation: number; lease_id: string | null }>(
       'exalto:temporary-capture-cancelled',
       (event) => {
-        const resumeDisposableSetup = Boolean(event.payload.lease_id)
-          || disposableTestInProgress.current;
+        const resumeDisposableSetup =
+          Boolean(event.payload.lease_id) || disposableTestInProgress.current;
         disposableTestInProgress.current = false;
-        window.dispatchEvent(new CustomEvent(SENSITIVE_INPUT_RESET_EVENT, {
-          detail: { resumeDisposableSetup },
-        }));
-        setState((current) => current ? {
-          ...current,
-          temporary_capture_generation: Math.max(
-            current.temporary_capture_generation,
-            event.payload.window_generation,
-          ),
-        } : current);
+        window.dispatchEvent(
+          new CustomEvent(SENSITIVE_INPUT_RESET_EVENT, {
+            detail: { resumeDisposableSetup },
+          }),
+        );
+        setState((current) =>
+          current
+            ? {
+                ...current,
+                temporary_capture_generation: Math.max(
+                  current.temporary_capture_generation,
+                  event.payload.window_generation,
+                ),
+              }
+            : current,
+        );
       },
     ).then((stopListening) => {
       if (disposed) stopListening();
@@ -282,17 +293,21 @@ function AppContent() {
         readinessError = null;
         if (currentState.sealing_service_readiness.phase === 'ready') break;
         if (
-          currentState.sealing_service_readiness.phase === 'unreachable'
-          || currentState.sealing_service_readiness.phase === 'trust_unavailable'
-        ) break;
+          currentState.sealing_service_readiness.phase === 'unreachable' ||
+          currentState.sealing_service_readiness.phase === 'trust_unavailable'
+        )
+          break;
       } catch (error) {
         readinessError = error;
       }
       await new Promise((resolve) => window.setTimeout(resolve, 250));
     }
     if (currentState?.sealing_service_readiness.phase !== 'ready') {
-      throw readinessError ?? new Error(
-        'Capture needs a reachable trusted transport. No Exalto Seal account is required. Try the connection again before capturing.',
+      throw (
+        readinessError ??
+        new Error(
+          'Capture needs a reachable trusted transport. No Exalto Seal account is required. Try the connection again before capturing.',
+        )
       );
     }
     let lastError: unknown = null;
@@ -338,28 +353,34 @@ function AppContent() {
     return <VaultUnlock key={`unlock-${sensitiveInputGeneration}`} refresh={refresh} />;
   }
   if (!state.onboarding_complete || setupOpen) {
-    return <Onboarding
-      key={`onboarding-${sensitiveInputGeneration}`}
-      state={state}
-      refresh={refresh}
-      initialStep={setupOpen || setupResumeError ? 'client' : 'welcome'}
-      initialError={setupResumeError}
-      onDisposableTestChange={(active) => {
-        disposableTestInProgress.current = active;
-      }}
-      onCancel={setupOpen ? () => {
-        setSetupOpen(false);
-        setSetupResumeError(null);
-      } : undefined}
-      onFinish={(next, target) => {
-        setSetupOpen(false);
-        setSetupResumeError(null);
-        setTraceConstraint(null);
-        persistPendingFirstProof(target?.action === 'first-proof' ? target : null);
-        setTraceTarget(target ?? null);
-        setView(next);
-      }}
-    />;
+    return (
+      <Onboarding
+        key={`onboarding-${sensitiveInputGeneration}`}
+        state={state}
+        refresh={refresh}
+        initialStep={setupOpen || setupResumeError ? 'client' : 'welcome'}
+        initialError={setupResumeError}
+        onDisposableTestChange={(active) => {
+          disposableTestInProgress.current = active;
+        }}
+        onCancel={
+          setupOpen
+            ? () => {
+                setSetupOpen(false);
+                setSetupResumeError(null);
+              }
+            : undefined
+        }
+        onFinish={(next, target) => {
+          setSetupOpen(false);
+          setSetupResumeError(null);
+          setTraceConstraint(null);
+          persistPendingFirstProof(target?.action === 'first-proof' ? target : null);
+          setTraceTarget(target ?? null);
+          setView(next);
+        }}
+      />
+    );
   }
 
   const route = workspaceRoutes[view];
@@ -371,17 +392,20 @@ function AppContent() {
   };
   const syncWorkspaceRoute = (next: View, dashboardRoute?: DashboardRoute) => {
     const filters = dashboardRoute?.filters;
-    const constraint = next === 'traces'
-      ? filters?.state
-        ? `state=${filters.state}` as TraceConstraint
-        : filters?.status
-          ? `status=${filters.status}` as TraceConstraint
-          : null
-      : null;
+    const constraint =
+      next === 'traces'
+        ? filters?.state
+          ? (`state=${filters.state}` as TraceConstraint)
+          : filters?.status
+            ? (`status=${filters.status}` as TraceConstraint)
+            : null
+        : null;
     setTraceConstraint(constraint);
-    setTraceTarget(next === 'traces' && dashboardRoute?.id
-      ? { traceId: dashboardRoute.id, action: dashboardRoute.action }
-      : null);
+    setTraceTarget(
+      next === 'traces' && dashboardRoute?.id
+        ? { traceId: dashboardRoute.id, action: dashboardRoute.action }
+        : null,
+    );
     setView(next);
   };
   const openTraces = (constraint: TraceConstraint) => {
@@ -391,13 +415,11 @@ function AppContent() {
   };
   return (
     <div className="native-window" key={`shell-${sensitiveInputGeneration}`}>
-      <Sidebar
-        state={state}
-        view={view}
-        onNavigate={navigate}
-      />
+      <Sidebar state={state} view={view} onNavigate={navigate} />
       <section className="window-content">
-        <main className={`native-content ${route ? 'has-workspace' : ''} ${view === 'home' ? 'has-view-toolbar' : ''}`}>
+        <main
+          className={`native-content ${route ? 'has-workspace' : ''} ${view === 'home' ? 'has-view-toolbar' : ''}`}
+        >
           {view === 'home' && (
             <header className="view-toolbar" data-tauri-drag-region="deep">
               <h1 data-tauri-drag-region>Overview</h1>
@@ -410,13 +432,27 @@ function AppContent() {
                 <p>{viewMeta[view].subtitle}</p>
               </div>
               {view === 'providers' && (
-                <button className="mac-button is-primary" type="button" onClick={() => setSetupOpen(true)}>
+                <button
+                  className="mac-button is-primary"
+                  type="button"
+                  onClick={() => setSetupOpen(true)}
+                >
                   Connection setup
                 </button>
               )}
             </header>
           )}
-          <div className="chat-view-container" hidden={view !== 'chat'}><BuiltinChat state={state} refresh={refresh} onOpenTrace={(id) => { setTraceTarget({ traceId: id }); setTraceConstraint(null); setView('traces'); }} /></div>
+          <div className="chat-view-container" hidden={view !== 'chat'}>
+            <BuiltinChat
+              state={state}
+              refresh={refresh}
+              onOpenTrace={(id) => {
+                setTraceTarget({ traceId: id });
+                setTraceConstraint(null);
+                setView('traces');
+              }}
+            />
+          </div>
           {view === 'home' && (
             <HomeView
               state={state}
@@ -425,30 +461,52 @@ function AppContent() {
               captureToast={captureToast}
               onNavigate={navigate}
               onOpenTraces={openTraces}
-              onStartCapture={() => void runAction('capture-start', startCapturing, 'Capture is on.', { onSuccess: setCaptureToast })}
-              onStopCapture={() => void runAction('capture-stop', async () => { await setCaptureEnabled(false); }, 'Capture is off.', { onSuccess: setCaptureToast })}
+              onStartCapture={() =>
+                void runAction('capture-start', startCapturing, 'Capture is on.', {
+                  onSuccess: setCaptureToast,
+                })
+              }
+              onStopCapture={() =>
+                void runAction(
+                  'capture-stop',
+                  async () => {
+                    await setCaptureEnabled(false);
+                  },
+                  'Capture is off.',
+                  { onSuccess: setCaptureToast },
+                )
+              }
               onRetryConnections={() => void refresh(true)}
             />
           )}
-          {lastWorkspaceRoute.current && <div className="workspace-view-container" hidden={!route}><SettingsView
-            route={lastWorkspaceRoute.current}
-            constraint={route === 'traces' ? traceConstraint : null}
-            traceTarget={route === 'traces' ? traceTarget : null}
-            onTraceActionConsumed={(traceId, action) => {
-              if (action !== 'first-proof' || traceTarget?.action !== action || traceTarget.traceId !== traceId) return;
-              persistPendingFirstProof(null);
-              setTraceTarget(null);
-            }}
-            state={state}
-            updateState={updateState}
-            busy={busy}
-            notice={notice}
-            serviceError={serviceStartError ?? state.message}
-            onCheckUpdate={() => void checkForDesktopUpdate()}
-            onRestartToUpdate={() => void restartToUpdate()}
-            onStartService={startLocalServiceFromWorkspace}
-            onNavigate={syncWorkspaceRoute}
-          /></div>}
+          {lastWorkspaceRoute.current && (
+            <div className="workspace-view-container" hidden={!route}>
+              <SettingsView
+                route={lastWorkspaceRoute.current}
+                constraint={route === 'traces' ? traceConstraint : null}
+                traceTarget={route === 'traces' ? traceTarget : null}
+                onTraceActionConsumed={(traceId, action) => {
+                  if (
+                    action !== 'first-proof' ||
+                    traceTarget?.action !== action ||
+                    traceTarget.traceId !== traceId
+                  )
+                    return;
+                  persistPendingFirstProof(null);
+                  setTraceTarget(null);
+                }}
+                state={state}
+                updateState={updateState}
+                busy={busy}
+                notice={notice}
+                serviceError={serviceStartError ?? state.message}
+                onCheckUpdate={() => void checkForDesktopUpdate()}
+                onRestartToUpdate={() => void restartToUpdate()}
+                onStartService={startLocalServiceFromWorkspace}
+                onNavigate={syncWorkspaceRoute}
+              />
+            </div>
+          )}
         </main>
       </section>
     </div>
@@ -456,9 +514,12 @@ function AppContent() {
 }
 
 function App() {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: { queries: { staleTime: 2_000, retry: 1, refetchOnWindowFocus: true } },
-  }));
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { staleTime: 2_000, retry: 1, refetchOnWindowFocus: true } },
+      }),
+  );
   return (
     <MantineProvider theme={exaltoTheme} defaultColorScheme="auto">
       <Notifications position="bottom-right" />

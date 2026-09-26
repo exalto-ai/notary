@@ -23,11 +23,11 @@ vi.mock('./builtinBridge', () => ({
 }));
 beforeEach(() => {
   window.history.replaceState({}, '', '/?screen=capture-on');
-  vi.mocked(bridge.listConnections).mockResolvedValue([
-    { id: 'openai', status: 'saved' },
-  ]);
+  vi.mocked(bridge.listConnections).mockResolvedValue([{ id: 'openai', status: 'saved' }]);
   vi.mocked(bridge.chatgptStatus).mockResolvedValue('disconnected');
-  vi.mocked(bridge.listModels).mockResolvedValue([{ id: 'offline-test-model', name: 'Test model', is_default: true }]);
+  vi.mocked(bridge.listModels).mockResolvedValue([
+    { id: 'offline-test-model', name: 'Test model', is_default: true },
+  ]);
   for (const fn of [
     bridge.saveConnection,
     bridge.removeConnection,
@@ -60,7 +60,9 @@ async function chat() {
   await expect
     .element(page.getByRole('combobox', { name: 'Chat connection' }))
     .toHaveValue('OpenAI API');
-  await expect.element(page.getByRole('combobox', { name: 'Model' })).toHaveValue('Test model (default)');
+  await expect
+    .element(page.getByRole('combobox', { name: 'Model' }))
+    .toHaveValue('Test model (default)');
   return open;
 }
 
@@ -74,24 +76,14 @@ test('saves a key through native storage and clears the field without browser pe
   renderWithTheme(<ProviderConnections />);
   await page.getByRole('combobox', { name: 'Connection type' }).click();
   await page.getByRole('option', { name: 'OpenAI API' }).click();
-  await userEvent.fill(
-    page.getByLabelText('OpenAI API key'),
-    'sk-explicit-user-secret',
-  );
+  await userEvent.fill(page.getByLabelText('OpenAI API key'), 'sk-explicit-user-secret');
   await userEvent.click(page.getByRole('button', { name: 'Save connection' }));
-  expect(bridge.saveConnection).toHaveBeenCalledWith(
-    'openai',
-    'sk-explicit-user-secret',
-  );
+  expect(bridge.saveConnection).toHaveBeenCalledWith('openai', 'sk-explicit-user-secret');
   await expect.element(page.getByLabelText('OpenAI API key')).toHaveValue('');
   expect(document.body.textContent).not.toContain('sk-explicit-user-secret');
   expect(JSON.stringify(localStorage)).not.toContain('sk-explicit-user-secret');
-  expect(JSON.stringify(sessionStorage)).not.toContain(
-    'sk-explicit-user-secret',
-  );
-  await userEvent.click(
-    page.getByRole('button', { name: 'Remove OpenAI API' }),
-  );
+  expect(JSON.stringify(sessionStorage)).not.toContain('sk-explicit-user-secret');
+  await userEvent.click(page.getByRole('button', { name: 'Remove OpenAI API' }));
   expect(bridge.removeConnection).toHaveBeenCalledWith('openai');
 });
 
@@ -102,17 +94,10 @@ test('does not pretend to save a key when the vault is locked', async () => {
   renderWithTheme(<ProviderConnections />);
   await page.getByRole('combobox', { name: 'Connection type' }).click();
   await page.getByRole('option', { name: 'Anthropic API' }).click();
-  await userEvent.fill(
-    page.getByLabelText('Anthropic API key'),
-    'sk-offline-secret',
-  );
+  await userEvent.fill(page.getByLabelText('Anthropic API key'), 'sk-offline-secret');
   await userEvent.click(page.getByRole('button', { name: 'Save connection' }));
-  await expect
-    .element(page.getByRole('alert'))
-    .toHaveTextContent('Unlock the vault');
-  await expect
-    .element(page.getByLabelText('Anthropic API key'))
-    .toHaveValue('');
+  await expect.element(page.getByRole('alert')).toHaveTextContent('Unlock the vault');
+  await expect.element(page.getByLabelText('Anthropic API key')).toHaveValue('');
 });
 
 test('links with a device code and cancels pending authorization when the panel closes', async () => {
@@ -122,17 +107,11 @@ test('links with a device code and cancels pending authorization when the panel 
     verification_url: 'https://auth.openai.com/codex/device',
   });
   const view = renderWithTheme(<ProviderConnections />);
-  await userEvent.click(
-    page.getByRole('button', { name: 'Link ChatGPT plan' }),
-  );
+  await userEvent.click(page.getByRole('button', { name: 'Link ChatGPT plan' }));
   await expect.element(page.getByText('ABCD-EFGH')).toBeVisible();
   expect(bridge.openVerification).not.toHaveBeenCalled();
-  await userEvent.click(
-    page.getByRole('button', { name: /Open OpenAI verification/ }),
-  );
-  expect(bridge.openVerification).toHaveBeenCalledWith(
-    'https://auth.openai.com/codex/device',
-  );
+  await userEvent.click(page.getByRole('button', { name: /Open OpenAI verification/ }));
+  expect(bridge.openVerification).toHaveBeenCalledWith('https://auth.openai.com/codex/device');
   view.unmount();
   expect(bridge.cancelChatgptLogin).toHaveBeenCalledWith('test-login');
 });
@@ -150,20 +129,12 @@ test('streams multi-turn messages and opens the exact Trace', async () => {
   );
   const open = await chat();
   await userEvent.fill(page.getByLabelText('Message'), 'First question');
-  await userEvent.click(
-    page.getByRole('button', { name: 'Send', exact: true }),
-  );
-  await expect
-    .element(page.getByText('First response', { exact: true }))
-    .toBeVisible();
-  await userEvent.click(
-    page.getByRole('button', { name: /^Captured .*Open Trace$/ }),
-  );
+  await userEvent.click(page.getByRole('button', { name: 'Send', exact: true }));
+  await expect.element(page.getByText('First response', { exact: true })).toBeVisible();
+  await userEvent.click(page.getByRole('button', { name: /^Captured .*Open Trace$/ }));
   expect(open).toHaveBeenCalledWith('trc-exact-response');
   await userEvent.fill(page.getByLabelText('Message'), 'Follow-up question');
-  await userEvent.click(
-    page.getByRole('button', { name: 'Send', exact: true }),
-  );
+  await userEvent.click(page.getByRole('button', { name: 'Send', exact: true }));
   await expect.poll(() => vi.mocked(bridge.sendChat).mock.calls.length).toBe(2);
   expect(vi.mocked(bridge.sendChat).mock.calls[1][3]).toEqual([
     { role: 'user', content: 'First question' },
@@ -179,13 +150,9 @@ test('keeps an unconfirmed capture distinct from a completed response', async ()
   });
   await chat();
   await userEvent.fill(page.getByLabelText('Message'), 'Test');
-  await userEvent.click(
-    page.getByRole('button', { name: 'Send', exact: true }),
-  );
+  await userEvent.click(page.getByRole('button', { name: 'Send', exact: true }));
   await expect
-    .element(
-      page.getByRole('button', { name: /^Capture unconfirmed .*Open Trace$/ }),
-    )
+    .element(page.getByRole('button', { name: /^Capture unconfirmed .*Open Trace$/ }))
     .toBeVisible();
   await expect
     .element(page.getByRole('button', { name: /^Captured .*Open Trace$/ }))
@@ -199,12 +166,8 @@ test('shows expired credentials without claiming capture and allows a fresh conv
   });
   await chat();
   await userEvent.fill(page.getByLabelText('Message'), 'Test');
-  await userEvent.click(
-    page.getByRole('button', { name: 'Send', exact: true }),
-  );
-  await expect
-    .element(page.getByRole('alert'))
-    .toHaveTextContent('Reconnect this provider');
+  await userEvent.click(page.getByRole('button', { name: 'Send', exact: true }));
+  await expect.element(page.getByRole('alert')).toHaveTextContent('Reconnect this provider');
   await expect.element(page.getByText('Capture not confirmed')).toBeVisible();
   await expect.element(page.getByLabelText('Message')).toBeDisabled();
   await userEvent.click(page.getByRole('button', { name: 'New chat' }));
@@ -223,44 +186,41 @@ test('marks an expired connection with the reconnect warning dot', async () => {
 
 test('stops the exact active request and retains its partial response', async () => {
   let complete: ((result: bridge.ChatResult) => void) | undefined;
-  vi.mocked(bridge.sendChat).mockImplementation(
-    (_id, _connection, _model, _messages, delta) => {
-      delta('Partial response');
-      return new Promise((resolve) => {
-        complete = resolve;
-      });
-    },
-  );
+  vi.mocked(bridge.sendChat).mockImplementation((_id, _connection, _model, _messages, delta) => {
+    delta('Partial response');
+    return new Promise((resolve) => {
+      complete = resolve;
+    });
+  });
   await chat();
   await userEvent.fill(page.getByLabelText('Message'), 'Test');
-  await userEvent.click(
-    page.getByRole('button', { name: 'Send', exact: true }),
-  );
+  await userEvent.click(page.getByRole('button', { name: 'Send', exact: true }));
   await expect.element(page.getByText('Partial response')).toBeVisible();
-  await userEvent.click(
-    page.getByRole('button', { name: 'Stop', exact: true }),
-  );
-  expect(bridge.cancelChat).toHaveBeenCalledWith(
-    vi.mocked(bridge.sendChat).mock.calls[0][0],
-  );
+  await userEvent.click(page.getByRole('button', { name: 'Stop', exact: true }));
+  expect(bridge.cancelChat).toHaveBeenCalledWith(vi.mocked(bridge.sendChat).mock.calls[0][0]);
   complete?.({
     status: 'Response stopped. Any partial Trace remains local.',
     traces: [],
   });
-  await expect
-    .element(page.getByRole('alert'))
-    .toHaveTextContent('Response stopped');
+  await expect.element(page.getByRole('alert')).toHaveTextContent('Response stopped');
   await expect.element(page.getByText('Partial response')).toBeVisible();
 });
-
 
 test('loads connection models and selects the catalog default automatically', async () => {
   vi.mocked(bridge.listModels).mockResolvedValue([
     { id: 'first-model', name: 'First model', is_default: false },
     { id: 'preferred-model', name: 'Preferred model', is_default: true },
   ]);
-  renderWithTheme(<BuiltinChat state={await getDesktopState()} refresh={async () => undefined} onOpenTrace={() => undefined} />);
-  await expect.element(page.getByRole('combobox', { name: 'Model' })).toHaveValue('Preferred model (default)');
+  renderWithTheme(
+    <BuiltinChat
+      state={await getDesktopState()}
+      refresh={async () => undefined}
+      onOpenTrace={() => undefined}
+    />,
+  );
+  await expect
+    .element(page.getByRole('combobox', { name: 'Model' }))
+    .toHaveValue('Preferred model (default)');
   expect(bridge.listModels).toHaveBeenCalledWith('openai');
   await page.getByRole('combobox', { name: 'Model' }).click();
   await page.getByRole('option', { name: 'First model' }).click();
@@ -269,20 +229,35 @@ test('loads connection models and selects the catalog default automatically', as
 
 test('model discovery failure can be retried without inventing an available model', async () => {
   vi.mocked(bridge.listModels).mockRejectedValueOnce(new Error('Model service unavailable.'));
-  renderWithTheme(<BuiltinChat state={await getDesktopState()} refresh={async () => undefined} onOpenTrace={() => undefined} />);
+  renderWithTheme(
+    <BuiltinChat
+      state={await getDesktopState()}
+      refresh={async () => undefined}
+      onOpenTrace={() => undefined}
+    />,
+  );
   await expect.element(page.getByRole('alert')).toHaveTextContent('Model service unavailable.');
   await expect.element(page.getByRole('combobox', { name: 'Model' })).toHaveValue('');
   await expect.element(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled();
   await userEvent.click(page.getByRole('button', { name: 'Retry models' }));
-  await expect.element(page.getByRole('combobox', { name: 'Model' })).toHaveValue('Test model (default)');
+  await expect
+    .element(page.getByRole('combobox', { name: 'Model' }))
+    .toHaveValue('Test model (default)');
 });
-
 
 test('locked connections do not load credentials in the background and unlock is explicit', async () => {
   vi.mocked(bridge.listConnections).mockResolvedValue([{ id: 'openai', status: 'locked' }]);
   vi.mocked(bridge.unlockConnections).mockResolvedValue(undefined);
-  renderWithTheme(<BuiltinChat state={await getDesktopState()} refresh={async () => undefined} onOpenTrace={() => undefined} />);
-  await expect.element(page.getByRole('alert')).toHaveTextContent('Unlock the vault in Connections');
+  renderWithTheme(
+    <BuiltinChat
+      state={await getDesktopState()}
+      refresh={async () => undefined}
+      onOpenTrace={() => undefined}
+    />,
+  );
+  await expect
+    .element(page.getByRole('alert'))
+    .toHaveTextContent('Unlock the vault in Connections');
   expect(bridge.listModels).not.toHaveBeenCalled();
   expect(bridge.unlockConnections).not.toHaveBeenCalled();
   await userEvent.click(page.getByRole('button', { name: 'Connections', exact: true }));
