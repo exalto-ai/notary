@@ -1,6 +1,8 @@
 # Exalto Capture desktop redesign
 
-Status: implemented for review in the first redesign PR
+Status: historical design record. It describes the desktop app before the
+native desktop shell cutover (#478), which superseded it; see
+[Desktop app](desktop-app.md) for current behavior.
 
 Reviewed application: Notary 0.1.4, source commit `2be864...`
 

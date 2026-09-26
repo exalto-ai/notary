@@ -49,7 +49,8 @@ Seven layers, each landing on its own: the design system and a parallel
 prototype, a real shell, the session, traces, settings, usage and billing, and
 this cutover. The old application is gone, and with it twelve hand-written
 stylesheets, the shadcn and Radix primitives, Tailwind, cmdk, lucide, recharts,
-and three webfont families.
+and three webfont families. Those removals apply to `platform/web` only; the
+desktop app and the local admin dashboard still use `lucide-react`.
 
 Two bugs turned up in the billing layer, which is why it was scheduled last.
 The account hook returned a new `refresh` function on every render, so a poll
@@ -63,5 +64,7 @@ than by reading the code.
 - Whether the wordmark keeps Fraunces, which costs a font payload for one word.
 - Whether the local admin dashboard follows Aperture or stays on the developer
   workspace rules in Part III.
-- Whether the shared appearance preference should gain a fourth state now that
-  the desktop app and the site read the same key.
+- Whether the appearance preference should be shared. Today each surface keeps
+  its own: the site reads and writes `notary-theme`, the local admin dashboard
+  uses `notary-admin-dashboard-color-scheme`, and the desktop app uses
+  Mantine's default color scheme manager and key.

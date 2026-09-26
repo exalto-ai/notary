@@ -18,6 +18,7 @@ Use the generated contract when prose and an installed service disagree.
 | Install the guided macOS app | [Desktop app](desktop-app.md) |
 | Install the CLI and local service | [Runtime getting started](../runtime/docs/getting-started.md) |
 | Understand the runtime trust boundary | [Runtime architecture](../runtime/docs/architecture.md) |
+| Understand the full system, including hosted components | [Architecture and trust model](architecture.md) |
 | Connect an SDK or agent | [Runtime provider setup](../runtime/docs/provider-setup.md) |
 | Understand `.llmcapture` and `.llmtrace` | [Runtime artifact formats](../runtime/docs/artifact-formats.md) |
 | Operate the daemon or local REST API | [Runtime local service](../runtime/docs/local-service.md) |
@@ -42,12 +43,13 @@ Use the generated contract when prose and an installed service disagree.
 ## Contributors
 
 - [Development and validation](development.md)
+- [Capture and public website](capture-seal-spas.md): run and build `platform/web`
 - [Agent onboarding and subscription policy](agent-onboarding-policy.md)
 - [Documentation coverage checklist](documentation-coverage.md)
 - [Cursor-pagination contract and array inventory](adr/0001-cursor-pagination.md)
 - [Provider-neutral account identities](adr/0002-provider-neutral-identities.md)
 - [Design language](../DESIGN.md)
-- [Aperture design system proposal](design-aperture.md)
+- [Aperture design system rationale](design-aperture.md)
 - [Provider icon assets and usage terms](provider-icons.md)
 - [OpenCode production canary](../runtime/benchmarks/opencode-e2e/README.md)
 - [Repository agent instructions](../AGENTS.md)
@@ -63,4 +65,7 @@ The hosted API contract is committed at
 `platform/web/src/platform-api/generated/openapi.json`. Regenerate both through the
 npm scripts described in [Development and validation](development.md).
 
-- [Capture and Seal local frontends](capture-seal-spas.md): run and build the separate SPAs.
+## Historical design records
+
+- [Exalto Capture desktop redesign](exalto-capture-desktop-redesign.md): the
+  0.1.4 review, superseded by the native desktop shell (#478)

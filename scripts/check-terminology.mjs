@@ -137,9 +137,9 @@ const classified = [
     contains: 'llm-notary-prod-api.internal',
     reason: 'regression fixture for the provisioned Fly API hostname',
   },
-  // The three Fly applications keep their provisioned names for now. Renaming a
-  // Fly app means creating a new one and migrating every secret and hostname,
-  // which is tracked separately rather than bundled into a rename.
+  // The two Fly applications keep their provisioned names permanently. Renaming
+  // a Fly app means creating a new one and migrating every secret and hostname,
+  // which is not planned (#362).
   {
     file: 'deploy/fly/README.md',
     contains: 'llm-notary-prod',
