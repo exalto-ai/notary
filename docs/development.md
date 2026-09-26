@@ -164,7 +164,7 @@ and recreated with its durable volume.
 The S3 entries add a pinned SeaweedFS S3 server and AWS CLI client, create a
 bucket inside the Compose project's disposable volume, and use explicit
 synthetic credentials. The generated daemon configuration enables path-style access and
-the fixed `daemon-e2e/artifacts` prefix; insecure HTTP is enabled only for this
+the fixed `notaryd` prefix in the `notaryd-e2e` bucket; insecure HTTP is enabled only for this
 internal SeaweedFS endpoint. The harness verifies that deferred captures and
 notarized packages use the configured prefix and private namespace, survive
 daemon recreation, and complete the same capture, list/detail, notarization,
