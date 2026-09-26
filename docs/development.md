@@ -161,11 +161,11 @@ notarization enqueue and bounded failure history, events, SQLite integrity,
 and preservation of exact artifact bytes after the daemon container is removed
 and recreated with its durable volume.
 
-The S3 entries add pinned MinIO server and client containers, create a bucket
-inside the Compose project's disposable volume, and use explicit synthetic
-credentials. The generated daemon configuration enables path-style access and
+The S3 entries add a pinned SeaweedFS S3 server and AWS CLI client, create a
+bucket inside the Compose project's disposable volume, and use explicit
+synthetic credentials. The generated daemon configuration enables path-style access and
 the fixed `daemon-e2e/artifacts` prefix; insecure HTTP is enabled only for this
-internal MinIO endpoint. The harness verifies that deferred captures and
+internal SeaweedFS endpoint. The harness verifies that deferred captures and
 notarized packages use the configured prefix and private namespace, survive
 daemon recreation, and complete the same capture, list/detail, notarization,
 download, verification, and exact-byte sharing path as filesystem storage.
@@ -174,7 +174,7 @@ the real proxy/notary fixture, produce notarized packages, and upload those
 exact verified bytes to a loopback-only hosted-share fixture with a synthetic
 API key.
 
-The two-replica row uses PostgreSQL 17 and MinIO behind a health-aware Caddy
+The two-replica row uses PostgreSQL 17 and SeaweedFS behind a health-aware Caddy
 frontend with retries and buffering disabled. It verifies distinct replica
 incarnations, cross-replica dashboard sessions, fenced notarization ownership,
 cross-replica capture/package access, and safe peer removal.
@@ -183,7 +183,7 @@ S3 recovery coverage includes a metadata row whose object is missing, a
 same-size object whose digest does not match its metadata, and a package that
 was published before the daemon was killed but whose metadata transaction was
 not completed. The first two must fail closed; retrying the last case must
-reuse the exact immutable object. The harness also stops MinIO beneath the
+reuse the exact immutable object. The harness also stops SeaweedFS beneath the
 running daemon and checks that `/healthz` remains live while `/readyz` and
 `/v1/status` return `503`, then verifies readiness recovery. Object-size
 rejection and a conflicting same-key write are exercised by the artifact-store
