@@ -175,9 +175,9 @@ protocol is drawn with its true relay topology (see Part II). Rendered copy
 contains no em- or en-dashes. Required doctrine strings (the four-sentence
 legal footer, "A trace proves presence, never absence.", the one-notary-among-
 many sentence, the diagram caption, "Nothing readable ever leaves your
-machine.") are enforced verbatim by the website repository's
-`scripts/check-copy.mjs`;
-the repo-wide product model is enforced by `scripts/check-terminology.mjs`.
+machine.") are enforced verbatim by `scripts/check-copy.mjs` in the separate
+`exalto-ai/website` repository, not this one; the repo-wide product model is
+enforced by this repository's `scripts/check-terminology.mjs`.
 
 ---
 

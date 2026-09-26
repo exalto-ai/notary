@@ -241,7 +241,7 @@ fixed, clearly synthetic test credential; never substitute a real key.
 ## Frontend source and embedded output
 
 The hosted SPA is split by domain under `platform/web/src/site/`, with
-`platform/web/src/main.tsx` as the application entry point. The public runtime
+`platform/web/src/site/main.tsx` as the application entry point. The public runtime
 dashboard lives independently under `runtime/apps/admin-dashboard/`.
 
 `runtime/crates/notaryd/dashboard/` is intentionally committed build
