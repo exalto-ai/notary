@@ -52,11 +52,6 @@ h1 {
   letter-spacing: -0.005em;
 }
 
-.x-num {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
-}
-
 /* ---- Surfaces ---------------------------------------------------------- */
 
 .x-record {
@@ -291,36 +286,6 @@ h1 {
   border-top: 0;
 }
 
-/* ---- Prose ------------------------------------------------------------- */
-
-.x-prose {
-  max-width: var(--x-measure);
-}
-
-.x-prose p,
-.x-prose ul,
-.x-prose ol {
-  margin: 0 0 16px;
-}
-
-.x-prose li {
-  margin-bottom: 6px;
-}
-
-.x-prose code {
-  font-family: var(--mantine-font-family-monospace);
-  font-size: 0.87em;
-  padding: 1px 4px;
-  border-radius: 3px;
-  background: var(--x-sunken);
-}
-
-.x-prose a {
-  color: var(--x-seal);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
-
 /* ---- Focus ------------------------------------------------------------- */
 
 :where(a, button, [tabindex]):focus-visible {
@@ -454,10 +419,6 @@ h1 {
     bottom: 0;
     width: 1px;
     height: auto;
-  }
-
-  .x-topology-return {
-    display: none;
   }
 }
 

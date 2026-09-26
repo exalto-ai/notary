@@ -1,10 +1,11 @@
 import type { MantineColorScheme, MantineColorSchemeManager } from '@mantine/core';
-import {
-  legacyThemeStorageKey,
-  type ThemePreference,
-  themeOptions,
-  themeStorageKey,
-} from '../theme';
+
+const themeOptions = ['auto', 'light', 'dark'] as const;
+type ThemePreference = (typeof themeOptions)[number];
+
+const themeStorageKey = 'notary-theme';
+// Visitors who chose a theme before the storage key was renamed keep it.
+const legacyThemeStorageKey = 'llm-notary-theme';
 
 // Mantine's color scheme values and the site's own theme preference are the
 // same three words, so the prototype reads and writes the key the shipped site
