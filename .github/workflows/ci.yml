@@ -168,7 +168,7 @@ jobs:
       - name: Run PostgreSQL-backed daemon metadata tests
         run: cargo test --manifest-path runtime/Cargo.toml -p notaryd postgres_metadata_store::tests -- --ignored --nocapture
       - name: Run S3-compatible daemon artifact tests
-        run: cargo test --manifest-path runtime/Cargo.toml -p notaryd s3_artifact_store::tests::minio_conforms_and_detects_missing_corrupt_and_oversized_objects -- --ignored --nocapture
+        run: cargo test --manifest-path runtime/Cargo.toml -p notaryd s3_artifact_store::tests::seaweedfs_conforms_and_detects_missing_corrupt_and_oversized_objects -- --ignored --nocapture
       - name: Run daemon persistence and server matrix
         run: |
           runtime/test-daemon-persistence-e2e.sh sqlite filesystem 1 full

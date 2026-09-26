@@ -1316,7 +1316,7 @@ mod tests {
         config.validate().unwrap();
 
         let s3 = config.storage.s3.as_mut().unwrap();
-        s3.endpoint = Some("http://minio:9000".to_owned());
+        s3.endpoint = Some("http://object-store:8333".to_owned());
         assert!(config.validate().is_err());
         config.storage.s3.as_mut().unwrap().allow_insecure_http = true;
         config.validate().unwrap();
