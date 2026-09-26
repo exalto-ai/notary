@@ -28,11 +28,11 @@
     "@mantine/core": "^9.6.1",
     "@mantine/hooks": "^9.6.1",
     "@tabler/icons-react": "^3.47.0",
-    "@vitejs/plugin-react": "latest",
+    "@vitejs/plugin-react": "^6.0.4",
     "openapi-fetch": "^0.15.2",
-    "react": "latest",
-    "react-dom": "latest",
-    "vite": "latest"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vite": "^8.1.5"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
