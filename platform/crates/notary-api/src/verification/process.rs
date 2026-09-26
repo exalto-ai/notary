@@ -95,8 +95,8 @@ pub(crate) struct VerificationResponse<'a> {
     trust_source: &'static str,
     package_sha256: &'a str,
     content_sha256: &'a str,
-    // Emitted byte-for-byte as the worker produced it; `content_sha256` covers
-    // these bytes.
+    // Emitted byte-for-byte as the worker produced it, including the canonical
+    // trailing newline; `content_sha256` covers these bytes.
     #[schema(value_type = Value)]
     trace: &'a RawValue,
 }
@@ -105,7 +105,9 @@ impl VerifiedPackage {
     pub(crate) fn anonymous_response_body(&self) -> Result<Vec<u8>, VerificationError> {
         let trace = serde_json::from_slice::<&RawValue>(&self.trace)
             .map_err(|_| VerificationError::Unavailable)?;
-        let body = serde_json::to_vec(&VerificationResponse {
+        let value_start = trace.get().as_ptr() as usize - self.trace.as_ptr() as usize;
+        let value_end = value_start + trace.get().len();
+        let mut body = serde_json::to_vec(&VerificationResponse {
             verified: true,
             trace_id: &self.source_trace_id,
             authenticated_at_unix_ms: self.authenticated_at_unix_ms,
@@ -119,6 +121,22 @@ impl VerifiedPackage {
             trace,
         })
         .map_err(|_| VerificationError::Unavailable)?;
+        // `RawValue` spans only the JSON value, so restore the whitespace around
+        // it (the canonical trailing newline). `trace` is the last field, so the
+        // body ends with the value and the closing brace.
+        let Some(close) = body
+            .len()
+            .checked_sub(1)
+            .filter(|&close| body[close] == b'}')
+        else {
+            return Err(VerificationError::Unavailable);
+        };
+        body.splice(close..close, self.trace[value_end..].iter().copied());
+        let embedded_start = close - trace.get().len();
+        body.splice(
+            embedded_start..embedded_start,
+            self.trace[..value_start].iter().copied(),
+        );
         if body.len() as u64 > MAX_WORKER_OUTPUT_BYTES {
             return Err(VerificationError::Unavailable);
         }
@@ -503,7 +521,7 @@ mod tests {
 
     #[test]
     fn anonymous_response_body_embeds_trace_bytes_verbatim() {
-        let trace = br#"{"b":1.50,"a":[true]}"#.to_vec();
+        let trace = b"{\"b\":1.50,\"a\":[true]}\n".to_vec();
         let package = VerifiedPackage {
             source_trace_id: "trace-id".to_owned(),
             authenticated_at_unix_ms: 1,
@@ -519,7 +537,7 @@ mod tests {
         };
         let body = package.anonymous_response_body().unwrap();
         let text = std::str::from_utf8(&body).unwrap();
-        assert!(text.ends_with(r#","trace":{"b":1.50,"a":[true]}}"#));
+        assert!(text.ends_with(",\"trace\":{\"b\":1.50,\"a\":[true]}\n}"));
         let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(value["verified"], true);
         assert_eq!(value["trust_source"], TRUST_SOURCE);
