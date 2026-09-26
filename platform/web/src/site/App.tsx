@@ -61,6 +61,7 @@ export function App() {
       ?.setAttribute('content', scheme === 'dark' ? '#0d1013' : '#eff0f2');
   }, [scheme]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: path is intentional; scroll to top on every route change, not only section changes.
   useEffect(() => {
     if (section !== 'docs') window.scrollTo({ top: 0, behavior: 'instant' });
   }, [section, path]);

@@ -180,6 +180,7 @@ export function useAccountConnection(api: LocalApi) {
     poll.reset();
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: checkAuthorization is a per-render handler; the effect re-runs on the poll, readiness, and flow state it reads.
   useEffect(() => {
     // A zero interval is used by deterministic dashboard fixtures to require
     // an explicit check. The daemon clamps real intervals to at least one

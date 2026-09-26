@@ -101,6 +101,7 @@ export function Meter({
       aria-label={`${Math.round(total <= 0 ? 0 : (used / total) * 100)} percent used`}
     >
       {Array.from({ length: segments }, (_, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: meter segments are fixed positional cells with no other identity.
         <i key={index} data-filled={index < filled} />
       ))}
     </div>
