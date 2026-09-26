@@ -22,7 +22,6 @@ export default defineConfig(({ command }) => {
       throw new Error('Site and API URLs must be canonical HTTP(S) origins');
   }
   return {
-    resolve: { alias: { '@': resolve(import.meta.dirname, 'src') } },
     define: {
       __CAPTURE_ORIGIN__: JSON.stringify(capture),
       __WEBSITE_ORIGIN__: JSON.stringify(website),
