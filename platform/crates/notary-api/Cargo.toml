@@ -23,37 +23,37 @@ path = "src/bin/notary-api-verification-fixture-worker.rs"
 required-features = ["test-utils"]
 
 [dependencies]
-anyhow = "1.0"
+anyhow = { workspace = true }
 argon2 = "0.5"
 aws-sdk-s3 = { version = "1.140", default-features = false, features = [
     "default-https-client",
     "rt-tokio",
 ] }
-axum = { version = "0.8", features = ["macros"] }
+axum = { workspace = true, features = ["macros"] }
 axum-extra = { version = "0.10", features = ["cookie"] }
 base64 = "0.22"
 dotenvy = "0.15"
-hex = "0.4"
+hex = { workspace = true }
 hmac = "0.12"
 ipnet = "2.12"
 k256 = { version = "0.13", features = ["ecdsa"] }
-notary-core = { path = "../../../runtime/crates/notary-core", features = ["openapi"] }
-metrics = { version = "0.24.6", default-features = false }
+notary-core = { workspace = true, features = ["openapi"] }
+metrics = { workspace = true }
 opentelemetry = "0.32.0"
 opentelemetry-http = "0.32.0"
 rand = "0.9"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0", features = ["raw_value"] }
+reqwest = { workspace = true, features = ["json", "rustls-tls"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["raw_value"] }
 sha2 = "0.10"
 sqlx = { version = "0.8", default-features = false, features = ["macros", "migrate", "runtime-tokio-rustls", "postgres"] }
 time = "0.3"
-tokio = { version = "1.45", features = ["full"] }
-tracing = "0.1"
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
 tracing-opentelemetry = "0.33.0"
 utoipa = { version = "5.5", features = ["axum_extras", "uuid"] }
 utoipa-axum = "0.2"
-url = "2.5"
+url = { workspace = true }
 uuid = { version = "1.16", features = ["v4"] }
 tls-server-fixture = { path = "../../../runtime/vendor/tlsn/crates/tls-server-fixture", optional = true }
 tlsn = { path = "../../../runtime/vendor/tlsn/crates/tlsn", features = ["mozilla-certs"], optional = true }

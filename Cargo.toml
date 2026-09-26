@@ -7,6 +7,19 @@ members = [
 exclude = ["runtime"]
 resolver = "2"
 
+[workspace.dependencies]
+anyhow = "1.0"
+axum = "0.8"
+hex = "0.4"
+metrics = { version = "0.24.6", default-features = false }
+notary-core = { path = "runtime/crates/notary-core" }
+reqwest = { version = "0.12", default-features = false }
+serde = "1.0"
+serde_json = "1.0"
+tokio = "1.45"
+tracing = "0.1"
+url = "2.5"
+
 # The vendored spansy carries a local patch for input-proportional parser
 # stack usage; see runtime/vendor/tlsn-utils/README.md.
 [patch."https://github.com/tlsnotary/tlsn-utils"]
