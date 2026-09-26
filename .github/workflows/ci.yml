@@ -235,6 +235,7 @@ jobs:
       - name: Install browser test runtime
         run: npx --prefix ../../runtime/apps/admin-dashboard playwright install --with-deps chromium
       - run: npm --prefix ../../runtime/apps/admin-dashboard run test
+      - run: npm run test:unit
       - run: npm run test:site
       - run: npm run test:install
 

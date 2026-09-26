@@ -85,6 +85,7 @@ cargo test --manifest-path runtime/Cargo.toml \
 npm --prefix runtime/apps/admin-dashboard run build
 npm --prefix platform/web run build
 npm --prefix runtime/apps/admin-dashboard run test
+npm --prefix platform/web run test:unit
 npm --prefix platform/web run test:site
 npm --prefix runtime/apps/admin-dashboard run check:local-docs
 ```
