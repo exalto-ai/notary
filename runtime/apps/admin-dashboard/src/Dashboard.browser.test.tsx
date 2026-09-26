@@ -275,6 +275,37 @@ describe('Notary admin dashboard', () => {
     expect(window.location.hash).toBe('#/traces/trc-20260727-research-brief');
   });
 
+  test('polls a pending account authorization once per interval until it connects', async () => {
+    const fixture = createFixtureApi();
+    const connectedAccount = await fixture.account();
+    await fixture.disconnectAccount();
+    const pendingAccount = await fixture.account();
+    let pollCalls = 0;
+    const api: LocalApi = {
+      ...fixture,
+      startAccountConnection: async () => ({
+        ...(await fixture.startAccountConnection()),
+        poll_interval_seconds: 1,
+      }),
+      pollAccountConnection: async () => {
+        pollCalls += 1;
+        return pollCalls < 2 ? pendingAccount : connectedAccount;
+      },
+    };
+    renderDashboard('/settings', api);
+
+    await page.getByRole('button', { name: 'Sign in or create account' }).click();
+    await expect.element(page.getByText('7A3C-91F2')).toBeVisible();
+    expect(pollCalls).toBe(0);
+    await expect.poll(() => pollCalls, { timeout: 3_000 }).toBe(1);
+    await new Promise((resolve) => window.setTimeout(resolve, 500));
+    expect(pollCalls).toBe(1);
+    await expect.poll(() => pollCalls, { timeout: 3_000 }).toBe(2);
+    await expect.element(page.getByText('7A3C-91F2')).not.toBeInTheDocument();
+    await new Promise((resolve) => window.setTimeout(resolve, 1_500));
+    expect(pollCalls).toBe(2);
+  });
+
   test('keeps a canceled account authorization canceled after an in-flight approval check', async () => {
     const fixture = createFixtureApi();
     const connectedAccount = await fixture.account();
