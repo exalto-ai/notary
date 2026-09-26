@@ -12,11 +12,13 @@ use std::{
 
 use notary_core::{archive::MAX_ARCHIVE_WIRE_BYTES, registry::Registry, sha256_hex};
 use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     process::{Child, Command},
     sync::{Notify, watch},
 };
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub(crate) const TRUST_SOURCE: &str = "hosted_registry";
@@ -79,23 +81,31 @@ pub(crate) struct VerifiedPackage {
     pub safety_override_applied: Option<bool>,
 }
 
+// Successful `POST /api/verify` body. The handler serializes exactly this type,
+// so the generated OpenAPI schema cannot drift from the wire.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct VerificationResponse<'a> {
+    verified: bool,
+    trace_id: &'a str,
+    authenticated_at_unix_ms: u64,
+    provider: &'a str,
+    host: &'a str,
+    notary_key_id: &'a str,
+    registry_generation: u64,
+    trust_source: &'static str,
+    package_sha256: &'a str,
+    content_sha256: &'a str,
+    // Emitted byte-for-byte as the worker produced it; `content_sha256` covers
+    // these bytes.
+    #[schema(value_type = Value)]
+    trace: &'a RawValue,
+}
+
 impl VerifiedPackage {
     pub(crate) fn anonymous_response_body(&self) -> Result<Vec<u8>, VerificationError> {
-        #[derive(Serialize)]
-        struct ResponseMetadata<'a> {
-            verified: bool,
-            trace_id: &'a str,
-            authenticated_at_unix_ms: u64,
-            provider: &'a str,
-            host: &'a str,
-            notary_key_id: &'a str,
-            registry_generation: u64,
-            trust_source: &'static str,
-            package_sha256: &'a str,
-            content_sha256: &'a str,
-        }
-
-        let mut body = serde_json::to_vec(&ResponseMetadata {
+        let trace = serde_json::from_slice::<&RawValue>(&self.trace)
+            .map_err(|_| VerificationError::Unavailable)?;
+        let body = serde_json::to_vec(&VerificationResponse {
             verified: true,
             trace_id: &self.source_trace_id,
             authenticated_at_unix_ms: self.authenticated_at_unix_ms,
@@ -106,17 +116,10 @@ impl VerifiedPackage {
             trust_source: TRUST_SOURCE,
             package_sha256: &self.package_sha256,
             content_sha256: &self.content_sha256,
+            trace,
         })
         .map_err(|_| VerificationError::Unavailable)?;
-        if body.pop() != Some(b'}') {
-            return Err(VerificationError::Unavailable);
-        }
-        body.extend_from_slice(b",\"trace\":");
-        body.extend_from_slice(&self.trace);
-        body.push(b'}');
-        if body.len() as u64 > MAX_WORKER_OUTPUT_BYTES
-            || serde_json::from_slice::<serde_json::Value>(&body).is_err()
-        {
+        if body.len() as u64 > MAX_WORKER_OUTPUT_BYTES {
             return Err(VerificationError::Unavailable);
         }
         Ok(body)
@@ -496,6 +499,40 @@ mod tests {
             "notaries": []
         }))
         .unwrap()
+    }
+
+    #[test]
+    fn anonymous_response_body_embeds_trace_bytes_verbatim() {
+        let trace = br#"{"b":1.50,"a":[true]}"#.to_vec();
+        let package = VerifiedPackage {
+            source_trace_id: "trace-id".to_owned(),
+            authenticated_at_unix_ms: 1,
+            provider_name: "openai".to_owned(),
+            provider_host: "api.openai.com".to_owned(),
+            request_path: "/v1/responses".to_owned(),
+            notary_key_id: "key".to_owned(),
+            registry_generation: 2,
+            package_sha256: "package".to_owned(),
+            content_sha256: sha256_hex(&trace),
+            trace: trace.clone(),
+            safety_override_applied: None,
+        };
+        let body = package.anonymous_response_body().unwrap();
+        let text = std::str::from_utf8(&body).unwrap();
+        assert!(text.ends_with(r#","trace":{"b":1.50,"a":[true]}}"#));
+        let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(value["verified"], true);
+        assert_eq!(value["trust_source"], TRUST_SOURCE);
+        assert!(value.get("request_path").is_none());
+
+        let malformed = VerifiedPackage {
+            trace: b"{".to_vec(),
+            ..package
+        };
+        assert_eq!(
+            malformed.anonymous_response_body(),
+            Err(VerificationError::Unavailable)
+        );
     }
 
     fn reset_supervisor() {
