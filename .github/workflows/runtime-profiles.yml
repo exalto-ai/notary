@@ -27,9 +27,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.95.0
+      - name: Install Rust toolchain from rust-toolchain.toml
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - name: Parse the full 15 MiB attestable JSON envelope
         run: >-
@@ -44,9 +43,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.95.0
+      - name: Install Rust toolchain from rust-toolchain.toml
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - name: Profile a 64 KiB escape-dense JSON proof
         env:
@@ -64,9 +62,8 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.95.0
+      - name: Install Rust toolchain from rust-toolchain.toml
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - name: Build the generic notary and profile client
         run: >-

@@ -57,10 +57,11 @@ jobs:
           scripts/audit-public-runtime.sh "$validation"
           echo "PUBLIC_RUNTIME_PROJECTION=$projection" >> "$GITHUB_ENV"
           echo "PUBLIC_RUNTIME_VALIDATION=$validation" >> "$GITHUB_ENV"
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.95.0
-          components: rustfmt, clippy
+      - name: Install Rust toolchain from rust-toolchain.toml
+        working-directory: ${{ env.PUBLIC_RUNTIME_VALIDATION }}
+        run: |
+          rustup toolchain install --no-self-update
+          rustup component add rustfmt clippy
       - uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -104,10 +105,11 @@ jobs:
         run: |
           mkdir public-runtime
           tar --extract --file "$RUNNER_TEMP/public-runtime-projection.tar" --directory public-runtime
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.95.0
-          components: clippy
+      - name: Install Rust toolchain from rust-toolchain.toml
+        working-directory: public-runtime
+        run: |
+          rustup toolchain install --no-self-update
+          rustup component add clippy
       - uses: actions/setup-node@v6
         with:
           node-version: 24

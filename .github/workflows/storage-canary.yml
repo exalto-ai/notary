@@ -46,10 +46,9 @@ jobs:
           exit 1
       - uses: actions/checkout@v6
         if: steps.configuration.outputs.configured == 'true'
-      - uses: dtolnay/rust-toolchain@master
+      - name: Install Rust toolchain from rust-toolchain.toml
         if: steps.configuration.outputs.configured == 'true'
-        with:
-          toolchain: 1.95.0
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
         if: steps.configuration.outputs.configured == 'true'
       - name: Exercise presigned upload, promotion, metadata, and cleanup
