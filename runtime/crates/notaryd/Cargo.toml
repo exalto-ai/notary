@@ -26,7 +26,6 @@ async-trait = "0.1"
 aws-sdk-s3 = { version = "1.140", default-features = false, features = [
     "default-https-client",
     "rt-tokio",
-    "rustls",
 ] }
 axum = { version = "0.8", features = ["macros"] }
 base64 = "0.22"
