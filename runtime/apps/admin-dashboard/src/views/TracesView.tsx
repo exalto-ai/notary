@@ -37,7 +37,7 @@ import type {
   ReactNode,
   PointerEvent as ReactPointerEvent,
 } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import type {
   LocalApi,
   Operation,
@@ -873,7 +873,8 @@ function CapturedTraceInspector({
       }
     },
   });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only when the capture or its detail changes; consumeFirstProofAction and notarize.mutate are per-render handlers, and capture.trace_id stands in for firstProofActionKey, which is derived from it.
+  const consumeFirstProofActionFromEffect = useEffectEvent(consumeFirstProofAction);
+  const startFirstProof = useEffectEvent(() => notarize.mutate());
   useEffect(() => {
     if (!firstProofRequested || !detail.data) return;
     const operationState = detail.data.notarization?.state;
@@ -881,14 +882,14 @@ function CapturedTraceInspector({
       setFirstProofStartError(
         'This provider response is not eligible for sealing. Keep it local or delete the disposable test.',
       );
-      consumeFirstProofAction();
+      consumeFirstProofActionFromEffect();
       return;
     }
     if (operationState === 'failed' || operationState === 'interrupted') {
       setFirstProofStartError(
         'A previous sealing attempt needs attention. Review it, then choose Retry sealing explicitly.',
       );
-      consumeFirstProofAction();
+      consumeFirstProofActionFromEffect();
       return;
     }
     if (operationState === 'succeeded') return;
@@ -897,26 +898,26 @@ function CapturedTraceInspector({
       setFirstProofStartError(
         'A previous sealing attempt needs attention. Review it, then choose Retry sealing explicitly.',
       );
-      consumeFirstProofAction();
+      consumeFirstProofActionFromEffect();
       return;
     }
     if (capture.status === 'notarizing') return;
     if (capture.state === 'captured' && capture.status == null && !detail.data.notarization) {
       if (handledInitialAction.current === firstProofActionKey) return;
       handledInitialAction.current = firstProofActionKey;
-      notarize.mutate();
+      startFirstProof();
       return;
     }
     setFirstProofStartError(
       'Automatic sealing did not start because this Trace changed state. Review it before continuing.',
     );
-    consumeFirstProofAction();
+    consumeFirstProofActionFromEffect();
   }, [
     capture.notarization_eligible,
     capture.state,
     capture.status,
-    capture.trace_id,
     detail.data,
+    firstProofActionKey,
     firstProofRequested,
   ]);
   if (detail.isLoading) return <LoadingState />;
@@ -1443,18 +1444,19 @@ function NotarizedTraceInspector({
     },
     onError: (error) => mutationError('Could not stop sharing', error),
   });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run only when the Trace, its detail, or the requested action changes; exportTrace.mutate and verify.mutate are per-render handlers, and handledInitialAction guards repeats.
+  const startExport = useEffectEvent(() => exportTrace.mutate());
+  const startVerification = useEffectEvent(() => verify.mutate());
   useEffect(() => {
     if (!initialAction || !trace.data || !detail.data) return;
     const actionKey = `${captureId}:${initialAction}`;
     if (handledInitialAction.current === actionKey) return;
     handledInitialAction.current = actionKey;
-    if (initialAction === 'export') exportTrace.mutate();
+    if (initialAction === 'export') startExport();
     else if (initialAction === 'share') setShareDialogMode('create');
     else {
       guidedFirstProofRequested.current = true;
       setGuidedFirstProof(true);
-      verify.mutate();
+      startVerification();
     }
   }, [captureId, detail.data, initialAction, trace.data]);
   if (trace.isLoading || detail.isLoading) return <LoadingState />;

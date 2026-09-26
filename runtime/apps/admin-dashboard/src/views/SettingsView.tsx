@@ -17,7 +17,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CodeXml, Copy, Moon, PanelLeft, ShieldCheck, Sun } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { AccountConnection, AccountConnectionStarted, LocalApi, Notary, Status } from '../api';
 import { LocalApiError } from '../api';
 import {
@@ -180,7 +180,7 @@ export function useAccountConnection(api: LocalApi) {
     poll.reset();
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: checkAuthorization is a per-render handler; the effect re-runs on the poll, readiness, and flow state it reads.
+  const checkAuthorizationFromEffect = useEffectEvent(checkAuthorization);
   useEffect(() => {
     // A zero interval is used by deterministic dashboard fixtures to require
     // an explicit check. The daemon clamps real intervals to at least one
@@ -193,7 +193,7 @@ export function useAccountConnection(api: LocalApi) {
       poll.isPending
     )
       return;
-    checkAuthorization();
+    checkAuthorizationFromEffect();
   }, [expired, poll, pollReady, started]);
 
   return {
