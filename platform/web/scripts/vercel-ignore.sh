@@ -8,22 +8,47 @@
 # change always lands here too. Any change under this directory builds;
 # changes elsewhere skip.
 #
-# Build whenever the comparison base is unknown: a branch's first deployment
-# has no VERCEL_GIT_PREVIOUS_SHA, and Vercel's shallow clone may not contain it.
+# Base: the last successful deployment of this branch (VERCEL_GIT_PREVIOUS_SHA).
+# A branch's first deployment has none, so a preview falls back to its
+# merge-base with main, fetched on demand into Vercel's shallow clone.
+# Every failure to establish a base builds.
 set -u
 
+build() { echo "$1; building."; exit 1; }
+
+# Bound each fetch where coreutils timeout exists (Vercel's Linux image).
+fetch() {
+  if command -v timeout >/dev/null 2>&1; then
+    GIT_TERMINAL_PROMPT=0 timeout 60 git fetch --quiet --no-tags "$@"
+  else
+    GIT_TERMINAL_PROMPT=0 git fetch --quiet --no-tags "$@"
+  fi
+}
+
 base="${VERCEL_GIT_PREVIOUS_SHA:-}"
-if [ -z "$base" ]; then
-  echo "No previous deployment for this branch; building."
-  exit 1
+if [ -n "$base" ] && git cat-file -e "$base^{commit}" 2>/dev/null; then
+  :
+elif [ "${VERCEL_ENV:-}" = production ] || [ "${VERCEL_GIT_COMMIT_REF:-}" = main ]; then
+  build "No usable previous production deployment"
+else
+  # Fetch main, then deepen main and HEAD together until they share history
+  # (at most ~1000 commits). The clone's remote may lack credentials for a
+  # private repository; any fetch failure builds.
+  head=$(git rev-parse HEAD) || build "Cannot resolve HEAD"
+  main=refs/vercel-ignore/main
+  fetch --depth=50 origin "+refs/heads/main:$main" || build "Cannot fetch main"
+  tip=$(git rev-parse "$main") || build "Cannot resolve fetched main"
+  for _ in 1 2 3 4; do
+    git merge-base HEAD "$main" >/dev/null 2>&1 && break
+    # Want both commits by SHA: git skips an up-to-date ref, so a refspec
+    # would deepen HEAD alone.
+    fetch --deepen=250 origin "$tip" "$head" || build "Cannot deepen history"
+  done
+  base=$(git merge-base HEAD "$main" 2>/dev/null) || build "No merge-base with main"
 fi
-if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
-  echo "Previous deployment $base is not in the clone; building."
-  exit 1
-fi
+
 if git diff --quiet "$base" HEAD -- .; then
   echo "No Capture site changes since $base; skipping."
   exit 0
 fi
-echo "Capture site changed since $base; building."
-exit 1
+build "Capture site changed since $base"

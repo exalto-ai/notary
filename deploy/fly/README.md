@@ -71,6 +71,18 @@ starting with the notary before the API. Requested rollback uses a recorded
 v2 image set and skips old release commands. Never run a down-migration as
 part of rollback. Frontend deployments and rollbacks are managed in Vercel.
 
+### Vercel preview builds
+
+The Capture project's `ignoreCommand` (`platform/web/scripts/vercel-ignore.sh`)
+skips a deployment when nothing under `platform/web` changed, because the site
+build reads nothing outside that directory. It compares against the branch's
+last successful deployment. A preview branch with no usable previous
+deployment is compared with its merge-base on `main`, fetched into Vercel's
+shallow clone. Any case where the base cannot be determined builds, including a
+failed fetch, a missing merge-base, and a production deployment with no
+previous deployment. To force a build, redeploy in Vercel with **Use project's
+Ignore Build Step** unchecked.
+
 Before deployment, run the relevant checks in `AGENTS.md`, validate both Fly
 configs, and validate Compose with placeholder required variables. Database
 backup/recovery remains documented in
