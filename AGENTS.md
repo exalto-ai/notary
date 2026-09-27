@@ -35,6 +35,8 @@ npm --prefix runtime/apps/admin-dashboard run check:local-docs
 node scripts/check-terminology.mjs
 ```
 
+Do not run `cargo fmt --all`: it also formats path dependencies, including the pinned TLSNotary sources under `runtime/vendor/`, whose own `rustfmt.toml` needs nightly options. Use the commands above.
+
 For Compose or deployment changes, also validate `docker compose config --quiet` with placeholder required variables. Do not put real keys, tunnel tokens, signing keys, captures, or `.env` files in Git.
 
 ## Stacked pull requests
@@ -60,7 +62,8 @@ gh stack view --json
 
 - All agent commands must be non-interactive: give `init`, `add`, and `checkout` a branch or PR argument; use `submit --auto`, `view --json`, and `merge --yes`.
 - Put fixes on the layer where they belong. After changing a lower layer, run `gh stack rebase --upstack`, then `gh stack push`; use `gh stack sync` after trunk or remote stack changes.
-- After approval and green checks, merge with `gh stack merge --yes --squash`, not `gh pr merge`. Then run `gh stack sync --prune`.
+- After approval and green checks, merge with `gh stack merge --yes --squash` rather than merging layers one by one with `gh pr merge`. Then run `gh stack sync --prune`.
+- GitHub auto-merge is also allowed instead of waiting to run `gh stack merge`: enable it (`gh pr merge <number> --auto --squash`) on the bottom open PR only. After it merges, run `gh stack sync --prune` so the next layer is rebased onto trunk, then enable auto-merge on the new bottom PR. Never enable it on a layer whose lower PRs are still open. If GitHub refuses auto-merge for a stacked PR, use `gh stack merge`.
 - On a rebase conflict, resolve and stage the files, then run `gh stack rebase --continue`; use `gh stack rebase --abort` if the stack cannot be resolved safely.
 
 ## Working conventions
