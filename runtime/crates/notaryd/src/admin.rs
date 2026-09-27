@@ -81,8 +81,9 @@ const NOTARY_TRUST_RESOLUTION_TIMEOUT: Duration = Duration::from_secs(3);
 const NOTARY_TRANSPORT_PROBE_TIMEOUT: Duration = Duration::from_secs(2);
 const NOTARY_READINESS_CACHE_TTL: Duration = Duration::from_secs(15);
 const DASHBOARD_HEADER: &str = "x-notary-request";
-const DESKTOP_API_ORIGINS: [&str; 4] = [
+const DESKTOP_API_ORIGINS: [&str; 5] = [
     "http://127.0.0.1:1420",
+    "http://localhost:1420",
     "http://tauri.localhost",
     "https://tauri.localhost",
     "tauri://localhost",
@@ -91,7 +92,7 @@ const DASHBOARD_CSP: &str = "default-src 'self'; script-src 'self'; style-src 's
 #[cfg(not(debug_assertions))]
 const DESKTOP_DASHBOARD_CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'self' tauri://localhost http://tauri.localhost https://tauri.localhost";
 #[cfg(debug_assertions)]
-const DESKTOP_DASHBOARD_CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'self' tauri://localhost http://tauri.localhost https://tauri.localhost http://127.0.0.1:1420";
+const DESKTOP_DASHBOARD_CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'self' tauri://localhost http://tauri.localhost https://tauri.localhost http://127.0.0.1:1420 http://localhost:1420";
 
 #[derive(RustEmbed)]
 #[folder = "dashboard/"]
@@ -5632,21 +5633,29 @@ mod tests {
                 .unwrap(),
             DESKTOP_DASHBOARD_CSP
         );
-        assert!(
-            DESKTOP_DASHBOARD_CSP
-                .split_ascii_whitespace()
-                .any(|origin| origin == "http://127.0.0.1:1420")
-        );
+        for dev_origin in ["http://127.0.0.1:1420", "http://localhost:1420"] {
+            assert!(
+                DESKTOP_DASHBOARD_CSP
+                    .split_ascii_whitespace()
+                    .any(|origin| origin == dev_origin)
+            );
+        }
     }
 
     #[tokio::test]
     async fn desktop_api_cors_allows_the_tauri_origins_and_required_headers() {
+        for origin in DESKTOP_API_ORIGINS {
+            assert_desktop_api_cors_allows(origin).await;
+        }
+    }
+
+    async fn assert_desktop_api_cors_allows(origin: &'static str) {
         let directory = tempfile::tempdir().unwrap();
         let response = router(state(directory.path()).await)
             .unwrap()
             .oneshot(
                 Request::options("/v1/status")
-                    .header(header::ORIGIN, "tauri://localhost")
+                    .header(header::ORIGIN, origin)
                     .header(header::ACCESS_CONTROL_REQUEST_METHOD, "GET")
                     .header(
                         header::ACCESS_CONTROL_REQUEST_HEADERS,
@@ -5661,7 +5670,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(
             response.headers().get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
-            Some(&HeaderValue::from_static("tauri://localhost"))
+            Some(&HeaderValue::from_static(origin)),
+            "{origin}"
         );
         assert!(
             response
