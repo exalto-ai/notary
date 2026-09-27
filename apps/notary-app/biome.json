@@ -7,12 +7,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "**/*.{js,jsx,ts,tsx,mjs,cjs,json}",
-      "!!src-tauri",
-      "!!dist",
-      "!!.vitest-attachments"
-    ]
+    "includes": ["**/*.{js,jsx,ts,tsx,mjs,cjs,json}", "!!src-tauri", "!!dist"]
   },
   "formatter": {
     "enabled": true,

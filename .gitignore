@@ -18,6 +18,7 @@ platform/web/dist/
 platform/web/.vitest-attachments/
 apps/notary-app/node_modules/
 apps/notary-app/dist/
+apps/notary-app/.vitest-attachments/
 apps/notary-app/src-tauri/binaries/notaryd-*
 apps/notary-app/src-tauri/gen/
 apps/notary-app/src-tauri/icons/android/
