@@ -506,6 +506,13 @@ copies the matching daemon binary to Tauri's target-specific external-binary
 name. The checked-in source therefore does not assume Apple Silicon even
 though macOS is the first supported package.
 
+Plain `cargo check`, `clippy`, and `test` runs of `notary-app`, including
+workspace-wide runs, do not need the sidecar: when it is missing, the build
+script prints a Cargo warning and skips Tauri's sidecar copy. `tauri dev` and
+`tauri build` keep the strict check and fail if the sidecar is missing, so
+always start them through the `npm run tauri:*` scripts, which prepare it
+first.
+
 ## Validate
 
 ```bash
