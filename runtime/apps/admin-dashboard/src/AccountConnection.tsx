@@ -296,10 +296,10 @@ export function AccountConnectionCard({ api }: { api: LocalApi }) {
         classNames={localModalClassNames}
       >
         <Text className="axis-local-dialog-description">
-          Sealing stops using your plan until you reconnect. Local traces stay on this device.
+          Sealing uses public access until you reconnect. Local traces stay on this device.
         </Text>
         <Group className="axis-local-dialog-footer" justify="flex-end">
-          <Button variant="default" onClick={() => setConfirming(false)}>
+          <Button variant="outline" onClick={() => setConfirming(false)}>
             Cancel
           </Button>
           <Button
