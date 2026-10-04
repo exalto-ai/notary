@@ -1061,31 +1061,29 @@
   .exalto-onboarding *::after { transition: none !important; }
 }
 
-@media (prefers-color-scheme: dark) {
-  .exalto-onboarding {
-    --window: #101820;
-    --surface: #17222c;
-    --surface-secondary: #202d38;
-    --surface-hover: rgba(109, 158, 201, .1);
-    --text: #f1efe8;
-    --secondary: #bac1c9;
-    --tertiary: #929ca7;
-    --separator: rgba(232, 237, 241, .18);
-    --separator-soft: rgba(232, 237, 241, .1);
-    --blue: #74a7d2;
-    --blue-hover: #8bb9df;
-    --blue-soft: rgba(116, 167, 210, .13);
-    --blue-rule: rgba(116, 167, 210, .5);
-    --green: #35e39b;
-    --green-soft: rgba(53, 227, 155, .1);
-    --orange: #e2a461;
-    --orange-soft: rgba(226, 164, 97, .12);
-    --orange-rule: rgba(226, 164, 97, .4);
-    --red: #e87561;
-    --red-soft: rgba(232, 117, 97, .12);
-    --night: #07111b;
-    --on-blue: #07111b;
-    --on-green: #07111b;
-    color-scheme: dark;
-  }
+:where(:root[data-mantine-color-scheme='dark']) .exalto-onboarding {
+  --window: #101820;
+  --surface: #17222c;
+  --surface-secondary: #202d38;
+  --surface-hover: rgba(109, 158, 201, .1);
+  --text: #f1efe8;
+  --secondary: #bac1c9;
+  --tertiary: #929ca7;
+  --separator: rgba(232, 237, 241, .18);
+  --separator-soft: rgba(232, 237, 241, .1);
+  --blue: #74a7d2;
+  --blue-hover: #8bb9df;
+  --blue-soft: rgba(116, 167, 210, .13);
+  --blue-rule: rgba(116, 167, 210, .5);
+  --green: #35e39b;
+  --green-soft: rgba(53, 227, 155, .1);
+  --orange: #e2a461;
+  --orange-soft: rgba(226, 164, 97, .12);
+  --orange-rule: rgba(226, 164, 97, .4);
+  --red: #e87561;
+  --red-soft: rgba(232, 117, 97, .12);
+  --night: #07111b;
+  --on-blue: #07111b;
+  --on-green: #07111b;
+  color-scheme: dark;
 }

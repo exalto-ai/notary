@@ -69,29 +69,3 @@ export function Sidebar({
     </aside>
   );
 }
-
-export type DesktopSettingsPayload = {
-  launch_at_login: boolean;
-  launch_ready: boolean;
-  vault_label: string;
-  vault_detail: string;
-  app_version: string;
-  app_build_id: string;
-  update: {
-    enabled: boolean;
-    phase: string;
-    current_build_id: string;
-    latest_build_id: string | null;
-    downloaded_bytes: number;
-    total_bytes: number | null;
-    message: string | null;
-  } | null;
-  update_busy: boolean;
-  restart_block_reason: string | null;
-  notice: string | null;
-};
-
-export type DesktopSettingsAction =
-  | { action: 'set_launch_at_login'; enabled: boolean }
-  | { action: 'check_for_updates' }
-  | { action: 'restart_to_update' };
