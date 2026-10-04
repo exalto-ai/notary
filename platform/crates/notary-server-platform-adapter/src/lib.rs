@@ -55,14 +55,15 @@ struct RedeemRequest<'a> {
     usage_settlement: bool,
 }
 
+/// Unknown fields are ignored. Platform APIs from before the protocol-wide
+/// private chunk size still send per-tier chunk limits; the notary enforces
+/// `notary_core::MAX_PRIVATE_CHUNK_BYTES` instead.
 #[derive(Deserialize)]
 struct RedeemedOperation {
     operation_id: String,
     activation_deadline: i64,
     max_attestable_http_bytes: i64,
     max_frame_bytes: i64,
-    max_private_chunk_bytes: i64,
-    max_private_chunk_commitments: i64,
     record_digest: Option<String>,
     notarization_allowance_bytes: Option<i64>,
 }
@@ -614,8 +615,6 @@ fn operation_constraints(
             .try_into()
             .with_context(|| format!("platform {name} does not fit in usize"))
     };
-    let max_private_chunk_bytes =
-        positive("max_private_chunk_bytes", operation.max_private_chunk_bytes)?;
     let policy_attestable = positive(
         "max_attestable_http_bytes",
         operation.max_attestable_http_bytes,
@@ -643,18 +642,12 @@ fn operation_constraints(
     if authenticated_allowance > policy_attestable {
         bail!("platform allowance exceeds its per-session ceiling");
     }
-    let max_total_private_chunk_bytes = authenticated_allowance.min(policy_attestable);
     Ok(AdmissionConstraints {
         expected_record_digest,
         expected_transcript_bytes: (mode == NotarySessionMode::Notarization)
             .then_some(authenticated_allowance),
         session_timeout: None,
-        max_private_chunk_bytes: Some(max_private_chunk_bytes.min(max_total_private_chunk_bytes)),
-        max_total_private_chunk_bytes: Some(max_total_private_chunk_bytes),
-        max_private_chunk_commitments: Some(positive(
-            "max_private_chunk_commitments",
-            operation.max_private_chunk_commitments,
-        )?),
+        max_total_private_chunk_bytes: Some(authenticated_allowance),
         max_frame_bytes: Some(positive("max_frame_bytes", operation.max_frame_bytes)?),
     })
 }
@@ -780,8 +773,6 @@ mod tests {
             "activation_deadline": 1234,
             "max_attestable_http_bytes": 1024,
             "max_frame_bytes": 2048,
-            "max_private_chunk_bytes": 512,
-            "max_private_chunk_commitments": 4,
             "record_digest": null,
             "notarization_allowance_bytes": null,
             "future_additive_field": "accepted"
@@ -797,16 +788,12 @@ mod tests {
             activation_deadline: 1234,
             max_attestable_http_bytes: 8 << 20,
             max_frame_bytes: 64 << 20,
-            max_private_chunk_bytes: 256 << 10,
-            max_private_chunk_commitments: 256,
             record_digest: Some("ab".repeat(32)),
             notarization_allowance_bytes: Some(8 << 20),
         };
         let limits = operation_constraints(NotarySessionMode::Notarization, &operation)
             .expect("valid limits");
-        assert_eq!(limits.max_private_chunk_bytes, Some(256 << 10));
         assert_eq!(limits.max_total_private_chunk_bytes, Some(8 << 20));
-        assert_eq!(limits.max_private_chunk_commitments, Some(256));
         assert_eq!(limits.max_frame_bytes, Some(64 << 20));
         assert_eq!(limits.expected_record_digest, Some([0xab; 32]));
         assert_eq!(limits.expected_transcript_bytes, Some(8 << 20));
@@ -814,14 +801,12 @@ mod tests {
     }
 
     #[test]
-    fn small_notarization_allowance_caps_the_private_chunk_limit() {
+    fn small_notarization_allowance_caps_the_private_total() {
         let operation = RedeemedOperation {
             operation_id: "operation-small-notarization".to_owned(),
             activation_deadline: 1234,
             max_attestable_http_bytes: 8 << 20,
             max_frame_bytes: 64 << 20,
-            max_private_chunk_bytes: 256 << 10,
-            max_private_chunk_commitments: 256,
             record_digest: Some("ab".repeat(32)),
             notarization_allowance_bytes: Some(64 << 10),
         };
@@ -829,9 +814,73 @@ mod tests {
         let limits = operation_constraints(NotarySessionMode::Notarization, &operation)
             .expect("a small authenticated transcript must produce coherent limits");
 
-        assert_eq!(limits.max_private_chunk_bytes, Some(64 << 10));
         assert_eq!(limits.max_total_private_chunk_bytes, Some(64 << 10));
         assert_eq!(limits.expected_transcript_bytes, Some(64 << 10));
+    }
+
+    /// Hosted per-session ceilings (`max_attestable_http_bytes`,
+    /// `max_frame_bytes`) for the public, free, 1 GB, and 10 GB tiers, with
+    /// the per-tier chunk limits a pre-change platform API still sends.
+    const TIERS: [(i64, i64, i64, i64); 4] = [
+        (1 << 20, 16 << 20, 64 << 10, 32),
+        (8 << 20, 64 << 20, 128 << 10, 64),
+        (32 << 20, 128 << 20, 256 << 10, 128),
+        (64 << 20, 256 << 20, 256 << 10, 128),
+    ];
+
+    fn redeemed_notarization(
+        (attestable, frame, legacy_chunk, legacy_commitments): (i64, i64, i64, i64),
+        allowance: usize,
+        legacy_api: bool,
+    ) -> RedeemedOperation {
+        let mut operation = serde_json::json!({
+            "operation_id": "operation-released-client",
+            "activation_deadline": 1234,
+            "max_attestable_http_bytes": attestable,
+            "max_frame_bytes": frame,
+            "record_digest": "ab".repeat(32),
+            "notarization_allowance_bytes": allowance,
+        });
+        if legacy_api {
+            operation["max_private_chunk_bytes"] = legacy_chunk.into();
+            operation["max_private_chunk_commitments"] = legacy_commitments.into();
+        }
+        serde_json::from_value(operation).unwrap()
+    }
+
+    /// A released v0.1.10 client always chunks its private proof at
+    /// `MAX_PRIVATE_CHUNK_BYTES`. Its anonymous onboarding trace was rejected
+    /// on the public tier's former 64 KiB chunk cap; it must now be admitted on
+    /// every tier, whether or not the platform API still sends the legacy
+    /// per-tier chunk fields.
+    #[test]
+    fn released_client_proof_layouts_are_admitted_on_every_tier() {
+        let onboarding = notary_core::test_http_exchange(35_558, 68_351);
+        for tier in TIERS {
+            for legacy_api in [false, true] {
+                let ceiling = usize::try_from(tier.0)
+                    .unwrap()
+                    .min(notary_core::DEFAULT_MAX_ATTESTABLE_HTTP_BYTES);
+                let largest = notary_core::test_http_exchange(1024, ceiling - 1024);
+                for (sent, received) in [onboarding.clone(), largest] {
+                    let transcript_bytes = sent.len() + received.len();
+                    let limits = operation_constraints(
+                        NotarySessionMode::Notarization,
+                        &redeemed_notarization(tier, transcript_bytes, legacy_api),
+                    )
+                    .unwrap();
+                    assert_eq!(limits.max_total_private_chunk_bytes, Some(transcript_bytes));
+                    notary_core::validate_client_proof_layout(
+                        sent,
+                        received,
+                        limits.max_total_private_chunk_bytes.unwrap(),
+                    )
+                    .unwrap_or_else(|error| {
+                        panic!("tier {tier:?} rejected a released client layout: {error:#}")
+                    });
+                }
+            }
+        }
     }
 
     #[test]
@@ -841,8 +890,6 @@ mod tests {
             activation_deadline: 1234,
             max_attestable_http_bytes: 1024,
             max_frame_bytes: 1024,
-            max_private_chunk_bytes: 1024,
-            max_private_chunk_commitments: 1,
             record_digest: Some("ab".repeat(32)),
             notarization_allowance_bytes: Some(1024),
         };
@@ -889,8 +936,6 @@ mod tests {
                         "activation_deadline": 1234,
                         "max_attestable_http_bytes": 1024,
                         "max_frame_bytes": 2048,
-                        "max_private_chunk_bytes": 512,
-                        "max_private_chunk_commitments": 4,
                         "record_digest": null,
                         "notarization_allowance_bytes": null
                     }))
@@ -949,8 +994,6 @@ mod tests {
                             "activation_deadline": 1234,
                             "max_attestable_http_bytes": 1024,
                             "max_frame_bytes": 2048,
-                            "max_private_chunk_bytes": 512,
-                            "max_private_chunk_commitments": 4,
                             "record_digest": notarization.then(|| "11".repeat(32)),
                             "notarization_allowance_bytes": notarization.then_some(256)
                         }))
@@ -975,9 +1018,7 @@ mod tests {
             signing_key_file,
             notarization_only: false,
             allow_hosts: vec!["api.openai.com".to_owned()],
-            max_private_chunk_bytes: 1024,
             max_total_private_chunk_bytes: 1024,
-            max_private_chunk_commitments: 4,
             max_frame_bytes: 2048,
             max_concurrent_captures: 1,
             max_concurrent_notarizations: 1,
@@ -1042,8 +1083,6 @@ mod tests {
                     "activation_deadline": 1234,
                     "max_attestable_http_bytes": 0,
                     "max_frame_bytes": 2048,
-                    "max_private_chunk_bytes": 512,
-                    "max_private_chunk_commitments": 4,
                     "record_digest": null,
                     "notarization_allowance_bytes": null
                 }))
@@ -1093,8 +1132,6 @@ mod tests {
                         "activation_deadline": 1234,
                         "max_attestable_http_bytes": 1024,
                         "max_frame_bytes": 2048,
-                        "max_private_chunk_bytes": 512,
-                        "max_private_chunk_commitments": 4,
                         "record_digest": null,
                         "notarization_allowance_bytes": null
                     }))
