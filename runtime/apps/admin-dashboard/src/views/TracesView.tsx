@@ -146,6 +146,56 @@ function notarizationPhaseLabel(phase: string) {
   }
 }
 
+const sealingFailureCopy: Record<string, { title: string; detail: string }> = {
+  notary_connection_closed: {
+    title: 'Exalto Seal closed the connection',
+    detail:
+      'Sealing stopped before a seal was issued. The service may have refused this request, or the connection dropped.',
+  },
+  notary_timeout: {
+    title: 'Exalto Seal stopped responding',
+    detail: 'Sealing did not finish within its time limit, so this attempt was stopped.',
+  },
+  notary_capacity: {
+    title: 'Exalto Seal is at capacity',
+    detail: 'The service could not accept another sealing session.',
+  },
+  service_restarted: {
+    title: 'The local service restarted during sealing',
+    detail: 'The attempt in progress was stopped when the service restarted.',
+  },
+};
+
+function sealingFailure(operation: Operation) {
+  const copy = operation.failure_code ? sealingFailureCopy[operation.failure_code] : undefined;
+  if (copy) return copy;
+  return operation.state === 'interrupted'
+    ? { title: 'Sealing was interrupted', detail: 'The attempt stopped before a seal was issued.' }
+    : { title: 'Sealing failed', detail: 'The attempt stopped before a seal was issued.' };
+}
+
+// The Trace header owns the single Retry sealing action; this note explains
+// the stopped attempt in place of its progress and points to that action.
+function SealingFailure({ operation }: { operation: Operation }) {
+  if (operation.state !== 'failed' && operation.state !== 'interrupted') return null;
+  const { title, detail } = sealingFailure(operation);
+  return (
+    <div className="notarization-ineligible-note sealing-failure-note" role="alert">
+      <XCircle size={18} aria-hidden="true" />
+      <div>
+        <b>{title}</b>
+        <Text>
+          {detail} Nothing was sealed and the private capture is unchanged.{' '}
+          {operation.retryable
+            ? 'Choose Retry sealing to start a new attempt.'
+            : 'This attempt cannot be retried.'}
+        </Text>
+        {operation.failure_code && <code>{operation.failure_code}</code>}
+      </div>
+    </div>
+  );
+}
+
 function proofPercent(operation: Operation | OperationSummary) {
   const proof = operation.progress.proof;
   if (!proof?.bytes_total) return null;
@@ -1149,7 +1199,10 @@ function ProofProgress({ operation }: { operation: Operation }) {
         <span>
           {proof.commitments_completed} / {proof.commitments_total} commitments sealed
         </span>
-        <span>{notarizationPhaseLabel(operation.progress.phase)}</span>
+        <span>
+          {['failed', 'interrupted'].includes(operation.state) && 'Stopped · '}
+          {notarizationPhaseLabel(operation.progress.phase)}
+        </span>
       </footer>
     </section>
   );
@@ -1189,6 +1242,7 @@ function OperationInspector({
           </Text>
         </div>
       )}
+      <SealingFailure operation={operation} />
       <ProofProgress operation={operation} />
       <dl className="receipt-list">
         <Fact label="Trace ID" value={operation.trace_id ?? '—'} />
