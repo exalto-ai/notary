@@ -4860,7 +4860,7 @@ dependencies = [
 
 [[package]]
 name = "notary-app"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -4888,7 +4888,7 @@ dependencies = [
 
 [[package]]
 name = "notary-core"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "anyhow",
  "argon2",
@@ -4934,7 +4934,7 @@ dependencies = [
 
 [[package]]
 name = "notary-server"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4971,7 +4971,7 @@ dependencies = [
 
 [[package]]
 name = "notary-updater"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -4990,7 +4990,7 @@ dependencies = [
 
 [[package]]
 name = "notaryctl"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "anyhow",
  "clap",
