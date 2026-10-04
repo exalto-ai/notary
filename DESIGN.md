@@ -521,16 +521,16 @@ identity. The split is explicit so the two never argue:
   a complete menu bar with standard shortcuts; Settings laid out as grouped
   forms with the control on the right.
 - **Ours, from this document:** registrar blue, phosphor green, and recording
-  red as signals on neutral grounds; the three type
-  roles with mono reserved for evidence values; square outlined status
-  markers with words; flat rule-separated grids with no lift or shadow; one
-  primary per screen; the setup rail and first-run sheet as a branded
-  exception; the copy doctrine.
+  red as signals on neutral grounds; the three type roles with mono reserved
+  for evidence values; square outlined status markers with words; flat
+  rule-separated grids with no lift or shadow; one primary per screen; the
+  copy doctrine.
 
 The desktop app's grounds are monochrome, the way native Mac apps are: no warm
 paper and no navy cast. One token set per appearance, defined once on
 `:root[data-shell='desktop']` in `apps/notary-app/src/styles.css`, serves the
-shell, the embedded dashboard views, and their portalled menus and sheets:
+whole desktop app: the shell, first-run setup, the embedded dashboard views,
+and their portalled menus and sheets. Setup defines no palette of its own:
 
 | Token | Light | Dark | Job |
 | --- | --- | --- | --- |
@@ -543,10 +543,11 @@ shell, the embedded dashboard views, and their portalled menus and sheets:
 | `separator` / `-soft` | 12% / 7% black | 14% / 8% white | Hairlines |
 | `inverse` | `#1a1a1a` | `#161616` | Receipt and JSON blocks |
 
-The sidebar stays transparent over the system Sidebar material. Brand hues
-carry meaning only: `blue` for the record, links, and selection, `blue-fill`
-(`#1e4a73` / `#2d678f`) under white text, `green` for capture and live state.
-Public web surfaces, the browser dashboard, and the setup window keep paper.
+The sidebar and the setup rail stay transparent over the system Sidebar
+material. Brand hues carry meaning only: `blue` for the record, links, and
+selection, `blue-fill` (`#1e4a73` / `#2d678f`) under white text, `green` for
+capture, live state, and finished setup steps. Public web surfaces and the
+browser dashboard keep paper.
 
 Section headers in the shell are 11px semibold secondary text in sentence
 case with no tracking, the way System Settings and Xcode label groups.
