@@ -124,6 +124,10 @@
 /* Menus open in place, so they take the window palette; the chat scope
    outranks the dashboard's global Menu rules. */
 .builtin-chat .chat-menu {
+  --menu-row: 26px;
+  /* Model rows reserve a fixed slot for the check mark; inset rows match it. */
+  --menu-check: 12px;
+  --menu-check-gap: 6px;
   min-width: 220px;
   padding: 4px;
   border: 1px solid var(--separator-soft);
@@ -132,13 +136,19 @@
   color: var(--text);
   box-shadow: 0 10px 30px rgba(0, 0, 0, .18), 0 0 0 .5px rgba(0, 0, 0, .1);
 }
+/* Whole-pixel rows and headers keep every section on the same rhythm. */
 .builtin-chat .chat-menu-item {
-  min-height: 26px;
-  padding: 4px 8px;
+  height: var(--menu-row);
+  padding: 0 8px;
   border-radius: 5px;
   color: var(--text);
-  font-size: var(--text-body);
+  font: 400 var(--text-body)/var(--menu-row) var(--font-text);
 }
+.builtin-chat .chat-menu-indicator {
+  width: var(--menu-check);
+  margin: 0 var(--menu-check-gap) 0 0;
+}
+.builtin-chat .chat-menu-item.is-inset { padding-inline-start: calc(8px + var(--menu-check) + var(--menu-check-gap)); }
 .builtin-chat .chat-menu-item[data-hovered] { background: var(--blue); color: var(--surface); }
 .builtin-chat .chat-menu-item[data-disabled] { color: var(--tertiary); }
 .builtin-chat .chat-menu-item[data-disabled][data-hovered] { background: transparent; }
@@ -148,14 +158,15 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 8px 3px;
+  height: 24px;
+  padding: 6px 8px 2px;
   color: var(--secondary);
-  font: 600 var(--text-caption)/1.2 var(--font-text);
+  font: 600 var(--text-caption)/16px var(--font-text);
 }
-.builtin-chat [role='group'] + [role='group'] { margin-top: 2px; border-top: 1px solid var(--separator-soft); }
+.builtin-chat [role='group'] + [role='group'] { margin-top: 3px; padding-top: 2px; border-top: 1px solid var(--separator-soft); }
 .builtin-chat .chat-menu-note {
   max-width: 260px;
-  padding: 3px 8px;
+  padding: 3px 8px 3px calc(8px + var(--menu-check) + var(--menu-check-gap));
   color: var(--red);
   font-size: var(--text-caption);
   line-height: 1.4;

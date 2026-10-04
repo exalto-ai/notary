@@ -65,6 +65,7 @@ export function ModelPicker({
       classNames={{
         dropdown: 'chat-menu',
         item: 'chat-menu-item',
+        itemIndicator: 'chat-menu-indicator',
         label: 'chat-menu-label',
         divider: 'chat-menu-divider',
       }}
@@ -107,15 +108,23 @@ export function ModelPicker({
                   {name}
                 </Menu.Label>
                 {blocked ? (
-                  <Menu.Item onClick={onManage}>{blocked}</Menu.Item>
+                  <Menu.Item className="is-inset" onClick={onManage}>
+                    {blocked}
+                  </Menu.Item>
                 ) : catalog?.loading || !catalog ? (
-                  <Menu.Item disabled>Loading models…</Menu.Item>
+                  <Menu.Item className="is-inset" disabled>
+                    Loading models…
+                  </Menu.Item>
                 ) : catalog.error ? (
                   <>
                     <p className="chat-menu-note" role="alert">
                       {catalog.error}
                     </p>
-                    <Menu.Item closeMenuOnClick={false} onClick={() => onRetry(connection)}>
+                    <Menu.Item
+                      className="is-inset"
+                      closeMenuOnClick={false}
+                      onClick={() => onRetry(connection)}
+                    >
                       Retry models
                     </Menu.Item>
                   </>
