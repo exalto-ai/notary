@@ -1599,6 +1599,7 @@ type SessionRunResult<T> = std::result::Result<T, NotarySessionFailure>;
 
 /// Persists authoritative authenticated bytes before an admitted operation
 /// can finish. Lifecycle adapters use this for durable local reporting.
+/// Notarization calls it only after the request passes validation.
 pub type AuthenticatedBytesRecorder = Box<dyn FnOnce(usize) -> Result<()> + Send>;
 
 /// Runs an admitted session with effective limits already intersected with the
@@ -1839,11 +1840,6 @@ async fn run_notarization_session(
         .receipt
         .validate_records(&request.records)
         .map_err(NotarySessionFailure::client)?;
-    if let Some(record_usage) = usage_recorder {
-        record_usage(transcript_bytes)
-            .context("persisting authenticated notarization bytes")
-            .map_err(NotarySessionFailure::service)?;
-    }
     validate_notarization_request_limits(
         &request.prove_request,
         max_private_chunk_bytes,
@@ -1851,6 +1847,19 @@ async fn run_notarization_session(
         max_private_chunk_commitments,
     )
     .map_err(NotarySessionFailure::client)?;
+    let server_name = request
+        .receipt
+        .server_name
+        .as_str()
+        .try_into()
+        .map_err(|error| NotarySessionFailure::client(anyhow::Error::new(error)))?;
+    // Bill only a request that passed every cheap check, but before the
+    // expensive proof starts so a crash or disconnect mid-proof stays billed.
+    if let Some(record_usage) = usage_recorder {
+        record_usage(transcript_bytes)
+            .context("persisting authenticated notarization bytes")
+            .map_err(NotarySessionFailure::service)?;
+    }
 
     let session = Session::new(socket.compat());
     let mut verifier_context = session
@@ -1860,12 +1869,6 @@ async fn run_notarization_session(
     let driver_task = tokio::spawn(driver);
     let verifier =
         tlsn::deferred::DeferredVerifierState::new(request.receipt.root_binding, request.records);
-    let server_name = request
-        .receipt
-        .server_name
-        .as_str()
-        .try_into()
-        .map_err(|error| NotarySessionFailure::client(anyhow::Error::new(error)))?;
     let output = verifier
         .verify(
             &mut verifier_context,
@@ -2502,6 +2505,59 @@ mod tests {
     use tls_server_fixture::{CA_CERT_DER, SERVER_CERT_DER, SERVER_DOMAIN, SERVER_KEY_DER};
     use tlsn::rangeset::ops::Set;
     use tokio::net::{TcpListener, TcpStream};
+
+    type RecordedUsage = Arc<std::sync::Mutex<Vec<usize>>>;
+
+    async fn spawn_recording_notary(
+        signing_key: SigningKey,
+        max_total_private_chunk_bytes: usize,
+    ) -> (
+        NotaryEndpoint,
+        tokio::task::JoinHandle<SessionRunResult<NotarySessionResult>>,
+        RecordedUsage,
+    ) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let recorded = RecordedUsage::default();
+        let recorder = {
+            let recorded = recorded.clone();
+            Box::new(move |bytes| {
+                recorded.lock().unwrap().push(bytes);
+                Ok(())
+            }) as AuthenticatedBytesRecorder
+        };
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let prelude = read_notary_session_prelude(&mut socket).await.unwrap();
+            write_notary_admission(&mut socket, &prelude, Ok(()))
+                .await
+                .unwrap();
+            run_notary_session_with_limits_after_prelude(
+                socket,
+                prelude.mode(),
+                Arc::new(signing_key),
+                Arc::new(Vec::new()),
+                NotarySessionLimits {
+                    expected_record_digest: None,
+                    expected_transcript_bytes: None,
+                    session_timeout: Duration::from_secs(60),
+                    max_private_chunk_bytes: CHUNKED_PROOF_BYTES,
+                    max_total_private_chunk_bytes,
+                    max_private_chunk_commitments: 4096,
+                    max_frame_bytes: DEFAULT_NOTARY_MAX_FRAME_BYTES,
+                },
+                Some(recorder),
+            )
+            .await
+        });
+        let endpoint = NotaryEndpoint::new(
+            address.ip().to_string(),
+            address.port(),
+            NotaryTransport::Tcp,
+        )
+        .unwrap();
+        (endpoint, server, recorded)
+    }
 
     #[tokio::test]
     async fn admission_rejection_is_typed_and_retryable() {
@@ -3413,30 +3469,77 @@ mod tests {
         );
         assert!(tampered_notarizer.await.unwrap().is_err());
 
+        let expected_usage =
+            checked_transcript_allowance(&checkpoint.receipt.connection_info.transcript_length)
+                .unwrap();
+
+        // Send a valid proof request and drop the connection without proving.
+        // This isolates the notary's billing boundary from client-side proving.
+        let send_request_and_disconnect = |endpoint: NotaryEndpoint| {
+            let state = checkpoint.checkpoint().unwrap();
+            let mut prove_config = ProveConfig::builder(state.transcript());
+            prove_config.transcript_commit(
+                capture_transcript_commit(state.transcript(), DEFAULT_MAX_ATTESTABLE_HTTP_BYTES)
+                    .unwrap(),
+            );
+            prove_config
+                .chunked_private_commitments(CHUNKED_PROOF_BYTES)
+                .unwrap();
+            let request = NotarizationSessionRequest {
+                receipt: checkpoint.receipt.clone(),
+                records: state.records().clone(),
+                prove_request: prove_config.build().unwrap().to_request(),
+            };
+            async move {
+                let mut socket = connect_notary(&endpoint, NOTARY_MODE_NOTARIZATION, None)
+                    .await
+                    .unwrap();
+                write_frame(
+                    &mut socket,
+                    &bincode::serialize(&request).unwrap(),
+                    DEFAULT_NOTARY_MAX_FRAME_BYTES,
+                )
+                .await
+                .unwrap();
+            }
+        };
+        let session_deadline = std::time::Duration::from_secs(60);
+
+        // A request the notary rejects for its resource limits is never billed.
+        let (endpoint, notarizer, recorded) = spawn_recording_notary(signing_key.clone(), 1).await;
+        send_request_and_disconnect(endpoint).await;
+        let failure = tokio::time::timeout(session_deadline, notarizer)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap_err();
+        assert_eq!(failure.kind(), NotarySessionFailureKind::Client);
+        assert!(
+            failure
+                .to_string()
+                .contains("exceeds notary resource limits")
+        );
+        assert!(recorded.lock().unwrap().is_empty());
+
+        // A validated request is billed before proving, so a client that
+        // disconnects instead of proving is still charged once. The server's
+        // session timeout, not this test, ends the abandoned proof.
+        let (endpoint, notarizer, recorded) =
+            spawn_recording_notary(signing_key.clone(), 8 << 20).await;
+        send_request_and_disconnect(endpoint).await;
+        tokio::time::timeout(session_deadline, async {
+            while recorded.lock().unwrap().is_empty() {
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .unwrap();
+        notarizer.abort();
+        assert_eq!(*recorded.lock().unwrap(), [expected_usage]);
+
         // A fresh process with the same signing key can notarize the client
         // checkpoint. It has no stored state from the original TLS session.
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let notary_addr = listener.local_addr().unwrap();
-        let notarizer = tokio::spawn(async move {
-            let (socket, _) = listener.accept().await.unwrap();
-            run_notary_session(
-                socket,
-                Arc::new(signing_key),
-                Arc::new(Vec::new()),
-                CHUNKED_PROOF_BYTES,
-                8 << 20,
-                4096,
-                DEFAULT_NOTARY_MAX_FRAME_BYTES,
-            )
-            .await
-            .unwrap();
-        });
-        let endpoint = NotaryEndpoint::new(
-            notary_addr.ip().to_string(),
-            notary_addr.port(),
-            NotaryTransport::Tcp,
-        )
-        .unwrap();
+        let (endpoint, notarizer, recorded) = spawn_recording_notary(signing_key, 8 << 20).await;
         let progress_updates = Arc::new(std::sync::Mutex::new(Vec::new()));
         let record_progress = {
             let progress_updates = progress_updates.clone();
@@ -3452,7 +3555,9 @@ mod tests {
         )
         .await
         .unwrap();
-        notarizer.await.unwrap();
+        let result = notarizer.await.unwrap().unwrap();
+        assert_eq!(result.authenticated_transcript_bytes, expected_usage);
+        assert_eq!(*recorded.lock().unwrap(), [expected_usage]);
 
         let progress_updates = progress_updates.lock().unwrap();
         assert_eq!(

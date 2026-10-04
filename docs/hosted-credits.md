@@ -32,9 +32,12 @@ concurrency, and timeout limits even if the API becomes unavailable. Usage
 accounting is independent of the active session lifetime. Capture settlement
 uses the authenticated TLS application-data ciphertext bytes in both
 directions. Notarization settlement uses the exact authenticated byte allowance
-bound to the admission ticket and record digest. If those bytes become known
+bound to the admission ticket and record digest; it is established only after
+the proof request passes the notary's binding, receipt, record, and resource
+limit checks, immediately before proving starts. If those bytes become known
 before a later client or protocol failure, they are still charged; a failure
-before authenticated usage is established settles zero bytes.
+before authenticated usage is established, including a rejected proof request,
+settles zero bytes.
 
 Each report is keyed by the redeemed operation ID. An identical retry is a
 no-op, while a conflicting mode, byte count, outcome, or notary instance is
