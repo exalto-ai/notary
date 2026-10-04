@@ -87,7 +87,7 @@
   --green-soft: rgba(53, 227, 155, .1);
   --orange: #e2a461;
   --red: #e87561;
-  --red-soft: rgba(232, 117, 97, .12);
+  --red-soft: rgba(232, 117, 97, .08);
   --shadow: 0 1px 2px rgba(0, 0, 0, .24), 0 14px 36px rgba(0, 0, 0, .14);
 }
 
@@ -251,7 +251,7 @@ h1, h2, p { margin: 0; }
 .unlock-card .onboarding-error { width: 100%; margin-top: 9px; }
 .unlock-card > .mac-button { align-self: flex-start; margin-top: 19px; }
 
-/* Exalto Capture working surface. Onboarding has its own scoped visual system. */
+/* Exalto Capture working surface. Setup (onboarding.css) shares its buttons. */
 .native-window {
   --display-font: var(--font-display);
   --body-font: var(--font-text);
@@ -323,18 +323,18 @@ h1, h2, p { margin: 0; }
 
 .native-window .native-content { background: var(--window); }
 .native-window .native-page { width: min(1100px, calc(100% - 40px)); padding: 18px 0 28px; }
-.native-window .mac-button {
+:is(.native-window, .exalto-onboarding) .mac-button {
   min-height: var(--control-height);
   padding-inline: 12px;
   border-radius: var(--control-radius);
   box-shadow: none;
-  font: 500 var(--text-body)/1.2 var(--body-font);
+  font: 500 var(--text-body)/1.2 var(--font-text);
 }
-.native-window .mac-button:hover:not(:disabled) { border-color: color-mix(in srgb, var(--blue) 38%, transparent); }
-.native-window .mac-button.is-primary { border-color: var(--blue-fill); background: var(--blue-fill); color: #fff; font-weight: 600; }
-.native-window .mac-button.is-primary:hover:not(:disabled) { border-color: var(--blue-fill-hover); background: var(--blue-fill-hover); }
-.native-window .mac-button.is-small { min-height: var(--control-height-compact); padding-inline: 9px; font-size: var(--text-label); }
-.native-window .mac-button.is-large { min-height: 32px; padding-inline: 16px; font-size: var(--text-body); }
+:is(.native-window, .exalto-onboarding) .mac-button:hover:not(:disabled) { border-color: color-mix(in srgb, var(--blue) 38%, transparent); }
+:is(.native-window, .exalto-onboarding) .mac-button.is-primary { border-color: var(--blue-fill); background: var(--blue-fill); color: #fff; font-weight: 600; }
+:is(.native-window, .exalto-onboarding) .mac-button.is-primary:hover:not(:disabled) { border-color: var(--blue-fill-hover); background: var(--blue-fill-hover); }
+:is(.native-window, .exalto-onboarding) .mac-button.is-small { min-height: var(--control-height-compact); padding-inline: 9px; font-size: var(--text-label); }
+:is(.native-window, .exalto-onboarding) .mac-button.is-large { min-height: 32px; padding-inline: 16px; font-size: var(--text-body); }
 .native-window .section-label {
   color: var(--tertiary);
   font: 600 var(--text-caption)/1.25 var(--body-font);
@@ -621,8 +621,8 @@ h1, h2, p { margin: 0; }
 :where(:root[data-mantine-color-scheme='dark']) .native-window .capture-button.is-primary,
 :where(:root[data-mantine-color-scheme='dark']) .native-window .capture-button.is-primary:hover:not(:disabled) { color: #07111b; }
 
-/* Setup and unlock windows. The setup window carries its own scoped visual
-   system in onboarding.css; what stays here is shared with the unlock sheet. */
+/* Setup and unlock windows. Setup layout lives in onboarding.css; what stays
+   here is shared with the unlock sheet. */
 .onboarding-window { display: grid; width: 100%; height: 100%; grid-template-rows: 50px minmax(0, 1fr); background: var(--window); }
 .onboarding-toolbar { position: relative; display: flex; align-items: center; padding-right: 16px; border-bottom: 1px solid var(--separator); background: color-mix(in srgb, var(--surface) 90%, transparent); user-select: none; }
 .traffic-light-space { width: 78px; height: 100%; flex: 0 0 78px; }
