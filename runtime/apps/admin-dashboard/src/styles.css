@@ -772,6 +772,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline-color:
   border-left: 3px solid var(--danger);
   background: var(--danger-soft);
 }
+.sealing-failure-note { margin: 12px 0; }
 .update-block-reason { background: var(--danger-soft); }
 
 .receipt, .json-view {

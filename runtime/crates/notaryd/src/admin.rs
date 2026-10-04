@@ -2329,6 +2329,7 @@ fn notarization_failure_code(error: &anyhow::Error) -> &'static str {
     auth::hosted_admission_failure(error)
         .map(|failure| failure.code())
         .or_else(|| crate::notary_admission_error(error).map(|_| "notary_capacity"))
+        .or_else(|| crate::notary_connection_error(error).map(crate::NotaryConnectionError::code))
         .or_else(|| artifact_failure_code(error))
         .unwrap_or("notarization_error")
 }
@@ -3706,6 +3707,22 @@ mod tests {
     }
 
     #[test]
+    fn notarization_failures_name_a_closed_or_silent_notary() {
+        for (failure, expected) in [
+            (
+                crate::NotaryConnectionFailure::Closed,
+                "notary_connection_closed",
+            ),
+            (crate::NotaryConnectionFailure::TimedOut, "notary_timeout"),
+            (crate::NotaryConnectionFailure::Stalled, "notary_timeout"),
+        ] {
+            let error = anyhow::Error::new(crate::NotaryConnectionError::test_only(failure))
+                .context("notarizing capture checkpoint");
+            assert_eq!(notarization_failure_code(&error), expected);
+        }
+    }
+
+    #[test]
     fn trace_product_state_covers_every_persisted_lifecycle_condition() {
         let trace = |capture_status: &str, notarization_status: &str| StoredTraceSummary {
             trace_id: "trc-state".into(),
@@ -4751,6 +4768,78 @@ mod tests {
         assert_eq!(
             response.into_body().collect().await.unwrap().to_bytes(),
             expected.as_slice()
+        );
+    }
+
+    #[tokio::test]
+    async fn closed_notary_connection_leaves_a_retryable_sealing_attempt() {
+        let directory = tempfile::tempdir().unwrap();
+        let state = state(directory.path()).await;
+        let trace_id = "trc-notary-closed";
+        insert_completed_test_trace(&state, trace_id).await;
+        state
+            .persistence
+            .metadata
+            .enqueue_notarization(trace_id, 3)
+            .await
+            .unwrap()
+            .unwrap();
+        let running = state
+            .persistence
+            .metadata
+            .claim_next_notarization(4)
+            .await
+            .unwrap()
+            .unwrap();
+        let error = anyhow::Error::new(crate::NotaryConnectionError::test_only(
+            crate::NotaryConnectionFailure::Closed,
+        ));
+        state
+            .persistence
+            .metadata
+            .fail_operation(&running.operation_id, 5, notarization_failure_code(&error))
+            .await
+            .unwrap();
+
+        let app = router(state).unwrap();
+        let response = app
+            .clone()
+            .oneshot(
+                Request::get(format!("/v1/traces/{trace_id}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value =
+            serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes())
+                .unwrap();
+        assert_eq!(body["status"], "notarization_failed");
+        assert_eq!(body["notarization"]["state"], "failed");
+        assert_eq!(
+            body["notarization"]["failure_code"],
+            "notary_connection_closed"
+        );
+        assert_eq!(body["notarization"]["retryable"], true);
+
+        let response = app
+            .oneshot(
+                Request::post(format!("/v1/traces/{trace_id}/notarizations"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::ACCEPTED);
+        let body: serde_json::Value =
+            serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes())
+                .unwrap();
+        assert_eq!(body["operation"]["operation_id"], running.operation_id);
+        assert_eq!(body["operation"]["state"], "queued");
+        assert_eq!(
+            body["operation"]["attempt_history"][0]["failure_code"],
+            "notary_connection_closed"
         );
     }
 

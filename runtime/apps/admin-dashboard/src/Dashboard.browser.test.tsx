@@ -543,6 +543,52 @@ describe('Notary admin dashboard', () => {
     expect(startNotarization).toHaveBeenCalledTimes(1);
   });
 
+  test('explains a closed sealing connection where progress stopped and keeps retry explicit', async () => {
+    const fixture = createFixtureApi();
+    const traceId = fixtureCaptures[0].trace_id;
+    const baseDetail = await fixture.trace(traceId);
+    const operationTemplate = structuredClone(fixtureOperations[0]);
+    const startNotarization = vi.fn(fixture.startNotarization);
+    const trace = vi.fn(async () => ({
+      ...baseDetail,
+      status: 'notarization_failed' as const,
+      notarization: {
+        ...operationTemplate,
+        operation_id: 'op-closed-connection',
+        trace_id: traceId,
+        state: 'failed' as const,
+        retryable: true,
+        failure_code: 'notary_connection_closed',
+        progress: {
+          ...operationTemplate.progress,
+          phase: 'proving',
+          proof: {
+            bytes_completed: 0,
+            bytes_total: 105241,
+            commitments_completed: 0,
+            commitments_total: 2,
+          },
+        },
+      },
+    }));
+
+    renderDashboard(`/traces/${traceId}`, { ...fixture, trace, startNotarization });
+    await page.getByRole('tab', { name: 'Sealing' }).click();
+    const failure = page.getByRole('alert');
+    await expect
+      .element(failure.getByText('Exalto Seal closed the connection', { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(failure.getByText('notary_connection_closed', { exact: true }))
+      .toBeVisible();
+    await expect.element(page.getByText('Stopped · Generating private proof')).toBeVisible();
+    await expect
+      .element(failure.getByText('Choose Retry sealing to start a new attempt.', { exact: false }))
+      .toBeVisible();
+    await page.getByRole('button', { name: 'Retry sealing', exact: true }).click();
+    await expect.poll(() => startNotarization).toHaveBeenCalledWith(traceId);
+  });
+
   test('disarms a guided first proof when an active sealing attempt later fails', async () => {
     const fixture = createFixtureApi();
     const traceId = fixtureCaptures[0].trace_id;

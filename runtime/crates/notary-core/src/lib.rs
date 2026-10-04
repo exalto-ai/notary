@@ -74,6 +74,7 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 pub mod archive;
 pub mod normalize;
 pub mod notarization;
+mod notary_link;
 pub mod pagination;
 pub mod public;
 pub mod public_safety;
@@ -82,7 +83,14 @@ pub mod telemetry;
 #[cfg(feature = "cli")]
 pub mod vault;
 
-use crate::registry::{NotaryEndpoint, NotaryTransport};
+pub use crate::notary_link::{
+    DEFAULT_NOTARIZATION_SESSION_TIMEOUT, DEFAULT_NOTARIZATION_STALL_TIMEOUT,
+    NotarizationDeadlines, NotaryConnectionError, NotaryConnectionFailure, notary_connection_error,
+};
+use crate::{
+    notary_link::{SessionDriverTask, SessionLiveness, prove_while_session_open},
+    registry::{NotaryEndpoint, NotaryTransport},
+};
 
 #[cfg(feature = "daemon-e2e")]
 const DAEMON_E2E_ROOT_CA_DER_ENV: &str = "NOTARYD_E2E_ROOT_CA_DER";
@@ -1355,6 +1363,33 @@ async fn notarize_capture_checkpoint_to_with_admission(
     admission_value: Option<&str>,
     progress: NotarizationProgressObserver<'_>,
 ) -> Result<LocalProof> {
+    notarize_capture_checkpoint_within(
+        notary,
+        checkpoint,
+        trusted_notary_key,
+        max_attestable_http_bytes,
+        max_frame_bytes,
+        admission_value,
+        progress,
+        NotarizationDeadlines::default(),
+    )
+    .await
+}
+
+/// Runs one sealing session that always ends: a notary close or reset during
+/// any phase, a stalled notary, or an overlong session becomes a typed
+/// [`NotaryConnectionError`] instead of a pending future.
+#[allow(clippy::too_many_arguments)]
+async fn notarize_capture_checkpoint_within(
+    notary: &NotaryEndpoint,
+    checkpoint: &CaptureCheckpoint,
+    trusted_notary_key: &[u8],
+    max_attestable_http_bytes: usize,
+    max_frame_bytes: usize,
+    admission_value: Option<&str>,
+    progress: NotarizationProgressObserver<'_>,
+    deadlines: NotarizationDeadlines,
+) -> Result<LocalProof> {
     validate_notary_frame_limit(max_frame_bytes)?;
     AttestableHttpBudget::new(max_attestable_http_bytes)?;
     checkpoint.receipt.verify(trusted_notary_key)?;
@@ -1369,66 +1404,79 @@ async fn notarize_capture_checkpoint_to_with_admission(
     prove_config_builder.chunked_private_commitments(CHUNKED_PROOF_BYTES)?;
     let prove_config = prove_config_builder.build()?;
 
-    let mut socket = connect_notary(notary, NOTARY_MODE_NOTARIZATION, admission_value).await?;
-    let request = NotarizationSessionRequest {
-        receipt: checkpoint.receipt.clone(),
-        records: state.records().clone(),
-        prove_request: prove_config.to_request(),
-    };
-    write_frame(&mut socket, &bincode::serialize(&request)?, max_frame_bytes).await?;
+    let liveness = SessionLiveness::new();
+    liveness
+        .guard(deadlines, async {
+            let socket = connect_notary(notary, NOTARY_MODE_NOTARIZATION, admission_value).await?;
+            let mut socket = liveness.observe(socket);
+            let request = NotarizationSessionRequest {
+                receipt: checkpoint.receipt.clone(),
+                records: state.records().clone(),
+                prove_request: prove_config.to_request(),
+            };
+            write_frame(&mut socket, &bincode::serialize(&request)?, max_frame_bytes).await?;
 
-    let session = Session::new(socket);
-    let mut prover_context = session.new_context()?;
-    let (driver, handle) = session.split();
-    let driver_task = tokio::spawn(driver);
-    progress(NotarizationProgress::Phase(NotarizationPhase::Proving));
-    let ProverOutput {
-        transcript_commitments,
-        transcript_secrets,
-        ..
-    } = state
-        .prove_with_progress(
-            &mut prover_context,
-            &prove_config,
-            CHUNKED_PROOF_BYTES,
-            &|value| {
-                progress(NotarizationProgress::Proof(NotarizationProofProgress {
-                    bytes_completed: value.bytes_completed as u64,
-                    bytes_total: value.bytes_total as u64,
-                    commitments_completed: value.commitments_completed as u64,
-                    commitments_total: value.commitments_total as u64,
-                }));
-            },
-        )
-        .await?;
+            let session = Session::new(socket);
+            let mut prover_context = session.new_context()?;
+            let (driver, handle) = session.split();
+            let driver_task = tokio::spawn(driver);
+            progress(NotarizationProgress::Phase(NotarizationPhase::Proving));
+            let (
+                ProverOutput {
+                    transcript_commitments,
+                    transcript_secrets,
+                    ..
+                },
+                driver,
+            ) = prove_while_session_open(
+                state.prove_with_progress(
+                    &mut prover_context,
+                    &prove_config,
+                    CHUNKED_PROOF_BYTES,
+                    &|value| {
+                        liveness.touch();
+                        progress(NotarizationProgress::Proof(NotarizationProofProgress {
+                            bytes_completed: value.bytes_completed as u64,
+                            bytes_total: value.bytes_total as u64,
+                            commitments_completed: value.commitments_completed as u64,
+                            commitments_total: value.commitments_total as u64,
+                        }));
+                    },
+                ),
+                SessionDriverTask::new(driver_task),
+                &liveness,
+            )
+            .await?;
 
-    progress(NotarizationProgress::Phase(NotarizationPhase::Signing));
-    let mut attestation_builder = AttestationRequest::builder(&request_config);
-    attestation_builder
-        .server_name(ServerName::Dns(
-            checkpoint.receipt.server_name.as_str().try_into()?,
-        ))
-        .handshake_data(checkpoint.handshake_data.clone())
-        .transcript(state.transcript().clone())
-        .transcript_commitments(transcript_secrets, transcript_commitments);
-    let crypto_provider = configured_crypto_provider()?;
-    let (attestation_request, secrets) = attestation_builder.build(&crypto_provider)?;
-    handle.close();
-    let mut socket = driver_task.await??;
-    write_frame(
-        &mut socket,
-        &bincode::serialize(&attestation_request)?,
-        max_frame_bytes,
-    )
-    .await?;
-    let attestation: Attestation =
-        bincode::deserialize(&read_frame(&mut socket, max_frame_bytes).await?)?;
-    attestation_request.validate(&attestation, &crypto_provider)?;
-    Ok(LocalProof {
-        server_name: checkpoint.receipt.server_name.clone(),
-        attestation: bincode::serialize(&attestation)?,
-        secrets: bincode::serialize(&secrets)?,
-    })
+            progress(NotarizationProgress::Phase(NotarizationPhase::Signing));
+            let mut attestation_builder = AttestationRequest::builder(&request_config);
+            attestation_builder
+                .server_name(ServerName::Dns(
+                    checkpoint.receipt.server_name.as_str().try_into()?,
+                ))
+                .handshake_data(checkpoint.handshake_data.clone())
+                .transcript(state.transcript().clone())
+                .transcript_commitments(transcript_secrets, transcript_commitments);
+            let crypto_provider = configured_crypto_provider()?;
+            let (attestation_request, secrets) = attestation_builder.build(&crypto_provider)?;
+            handle.close();
+            let mut socket = driver.into_io().await?;
+            write_frame(
+                &mut socket,
+                &bincode::serialize(&attestation_request)?,
+                max_frame_bytes,
+            )
+            .await?;
+            let attestation: Attestation =
+                bincode::deserialize(&read_frame(&mut socket, max_frame_bytes).await?)?;
+            attestation_request.validate(&attestation, &crypto_provider)?;
+            Ok(LocalProof {
+                server_name: checkpoint.receipt.server_name.clone(),
+                attestation: bincode::serialize(&attestation)?,
+                secrets: bincode::serialize(&secrets)?,
+            })
+        })
+        .await
 }
 
 /// Dispatches one versioned notary control connection.
@@ -3536,6 +3584,79 @@ mod tests {
         .unwrap();
         notarizer.abort();
         assert_eq!(*recorded.lock().unwrap(), [expected_usage]);
+
+        // A notary that admits the session, reads the request, and then
+        // closes the connection (as when it refuses an oversize proof) must
+        // end sealing promptly with a typed closed-connection error. A notary
+        // that keeps the connection open but goes silent must hit the stall
+        // deadline instead of hanging.
+        for close_after_request in [true, false] {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let address = listener.local_addr().unwrap();
+            let (held_sender, held_receiver) = oneshot::channel();
+            let fake_notary = tokio::spawn(async move {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let prelude = read_notary_session_prelude(&mut socket).await.unwrap();
+                write_notary_admission(&mut socket, &prelude, Ok(()))
+                    .await
+                    .unwrap();
+                read_tokio_frame(&mut socket, DEFAULT_NOTARY_MAX_FRAME_BYTES)
+                    .await
+                    .unwrap();
+                if close_after_request {
+                    drop(socket);
+                } else {
+                    let _ = held_sender.send(socket);
+                }
+            });
+            let endpoint = NotaryEndpoint::new(
+                address.ip().to_string(),
+                address.port(),
+                NotaryTransport::Tcp,
+            )
+            .unwrap();
+            let progress_updates = Arc::new(std::sync::Mutex::new(Vec::new()));
+            let record_progress = {
+                let progress_updates = progress_updates.clone();
+                move |progress| progress_updates.lock().unwrap().push(progress)
+            };
+            let deadlines = NotarizationDeadlines {
+                session: Duration::from_secs(60),
+                stall: Duration::from_secs(2),
+            };
+            let error = tokio::time::timeout(
+                Duration::from_secs(20),
+                notarize_capture_checkpoint_within(
+                    &endpoint,
+                    &checkpoint,
+                    &trusted_public_key,
+                    DEFAULT_MAX_ATTESTABLE_HTTP_BYTES,
+                    DEFAULT_NOTARY_MAX_FRAME_BYTES,
+                    None,
+                    &record_progress,
+                    deadlines,
+                ),
+            )
+            .await
+            .expect("sealing must end instead of hanging")
+            .expect_err("sealing cannot succeed without a notary");
+            let expected = if close_after_request {
+                NotaryConnectionFailure::Closed
+            } else {
+                NotaryConnectionFailure::Stalled
+            };
+            assert_eq!(
+                notary_connection_error(&error).map(NotaryConnectionError::failure),
+                Some(expected),
+                "{error:#}"
+            );
+            assert_eq!(
+                progress_updates.lock().unwrap().first(),
+                Some(&NotarizationProgress::Phase(NotarizationPhase::Proving))
+            );
+            fake_notary.await.unwrap();
+            drop(held_receiver);
+        }
 
         // A fresh process with the same signing key can notarize the client
         // checkpoint. It has no stored state from the original TLS session.
