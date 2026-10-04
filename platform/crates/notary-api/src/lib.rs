@@ -1054,7 +1054,7 @@ mod tests {
             .fetch_one(&database.pool)
             .await
             .unwrap();
-        assert_eq!(migration_count, 2);
+        assert_eq!(migration_count, 3);
     }
 
     #[tokio::test]

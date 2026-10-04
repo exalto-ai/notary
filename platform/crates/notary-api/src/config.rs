@@ -60,12 +60,13 @@ pub struct NotaryAdmissionConfig {
     pub ten_gb: AdmissionTierLimits,
 }
 
+/// Per-session ceilings and monthly quotas for one admission tier. The private
+/// proof chunk size is the protocol constant `notary_core::MAX_PRIVATE_CHUNK_BYTES`,
+/// the same for every tier, so tiers bound cost only by total bytes.
 #[derive(Clone, Debug)]
 pub struct AdmissionTierLimits {
     pub max_attestable_http_bytes: i64,
     pub max_frame_bytes: i64,
-    pub max_private_chunk_bytes: i64,
-    pub max_private_chunk_commitments: i64,
     pub monthly_notarization_bytes: i64,
     pub monthly_capture_bytes: i64,
 }
@@ -303,8 +304,6 @@ impl AdmissionTierLimits {
         Self {
             max_attestable_http_bytes: 1 << 20,
             max_frame_bytes: 16 << 20,
-            max_private_chunk_bytes: 64 << 10,
-            max_private_chunk_commitments: 32,
             monthly_notarization_bytes: 50_000_000,
             monthly_capture_bytes: 50_000_000,
         }
@@ -314,8 +313,6 @@ impl AdmissionTierLimits {
         Self {
             max_attestable_http_bytes: 8 << 20,
             max_frame_bytes: 64 << 20,
-            max_private_chunk_bytes: 128 << 10,
-            max_private_chunk_commitments: 64,
             monthly_notarization_bytes: 50_000_000,
             monthly_capture_bytes: 50_000_000,
         }
@@ -325,8 +322,6 @@ impl AdmissionTierLimits {
         Self {
             max_attestable_http_bytes: 32 << 20,
             max_frame_bytes: 128 << 20,
-            max_private_chunk_bytes: 256 << 10,
-            max_private_chunk_commitments: 128,
             monthly_notarization_bytes: 1_000_000_000,
             monthly_capture_bytes: 1_000_000_000,
         }
@@ -336,8 +331,6 @@ impl AdmissionTierLimits {
         Self {
             max_attestable_http_bytes: 64 << 20,
             max_frame_bytes: 256 << 20,
-            max_private_chunk_bytes: 256 << 10,
-            max_private_chunk_commitments: 128,
             monthly_notarization_bytes: 10_000_000_000,
             monthly_capture_bytes: 10_000_000_000,
         }
@@ -353,14 +346,6 @@ impl AdmissionTierLimits {
                 defaults.max_attestable_http_bytes,
             )?,
             max_frame_bytes: value("MAX_FRAME_BYTES", defaults.max_frame_bytes)?,
-            max_private_chunk_bytes: value(
-                "MAX_PRIVATE_CHUNK_BYTES",
-                defaults.max_private_chunk_bytes,
-            )?,
-            max_private_chunk_commitments: value(
-                "MAX_PRIVATE_CHUNK_COMMITMENTS",
-                defaults.max_private_chunk_commitments,
-            )?,
             monthly_notarization_bytes: value(
                 "MONTHLY_NOTARIZATION_BYTES",
                 defaults.monthly_notarization_bytes,
