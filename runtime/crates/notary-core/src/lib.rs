@@ -88,7 +88,7 @@ pub use crate::notary_link::{
     NotarizationDeadlines, NotaryConnectionError, NotaryConnectionFailure, notary_connection_error,
 };
 use crate::{
-    notary_link::{SessionDriverTask, SessionLiveness, prove_while_session_open},
+    notary_link::{SessionDriverTask, SessionLiveness, run_while_session_open},
     registry::{NotaryEndpoint, NotaryTransport},
 };
 
@@ -1446,7 +1446,7 @@ async fn notarize_capture_checkpoint_within(
                     ..
                 },
                 driver,
-            ) = prove_while_session_open(
+            ) = run_while_session_open(
                 state.prove_with_progress(
                     &mut prover_context,
                     &prove_config,
@@ -1649,6 +1649,21 @@ fn classify_tlsn_session_failure(error: tlsn::Error) -> NotarySessionFailure {
         NotarySessionFailure::service(error.into())
     } else {
         NotarySessionFailure::client(error.into())
+    }
+}
+
+/// Classifies a failure while the notary verifies a deferred proof. A client
+/// that closes the connection mid-proof is a client failure.
+fn classify_verification_failure(error: anyhow::Error) -> NotarySessionFailure {
+    if notary_connection_error(&error).is_some() {
+        return NotarySessionFailure::client(
+            error.context("the client closed the connection before the proof finished"),
+        );
+    }
+    match error.downcast::<tlsn::Error>() {
+        Ok(error) => classify_tlsn_session_failure(error),
+        Err(error) if error.is::<tokio::task::JoinError>() => NotarySessionFailure::service(error),
+        Err(error) => NotarySessionFailure::client(error),
     }
 }
 
@@ -1905,7 +1920,11 @@ async fn run_notarization_session(
             .map_err(NotarySessionFailure::service)?;
     }
 
-    let session = Session::new(socket.compat());
+    // A client that disconnects mid-proof ends the session driver without
+    // waking the verifier's multiplexed streams, so the verifier is raced
+    // against the driver instead of awaited alone.
+    let liveness = SessionLiveness::new();
+    let session = Session::new(liveness.observe(socket.compat()));
     let mut verifier_context = session
         .new_context()
         .map_err(classify_tlsn_session_failure)?;
@@ -1913,20 +1932,23 @@ async fn run_notarization_session(
     let driver_task = tokio::spawn(driver);
     let verifier =
         tlsn::deferred::DeferredVerifierState::new(request.receipt.root_binding, request.records);
-    let output = verifier
-        .verify(
+    let (output, driver) = run_while_session_open(
+        verifier.verify(
             &mut verifier_context,
             &request.prove_request,
             Some(ServerName::Dns(server_name)),
             MAX_PRIVATE_CHUNK_BYTES,
-        )
-        .await
-        .map_err(classify_tlsn_session_failure)?;
+        ),
+        SessionDriverTask::new(driver_task),
+        &liveness,
+    )
+    .await
+    .map_err(classify_verification_failure)?;
     handle.close();
-    let driver_result = driver_task
+    let mut socket = driver
+        .into_io()
         .await
-        .map_err(|error| NotarySessionFailure::service(error.into()))?;
-    let mut socket = driver_result.map_err(classify_tlsn_session_failure)?;
+        .map_err(classify_verification_failure)?;
     let attestation_request = read_frame(&mut socket, max_frame_bytes)
         .await
         .map_err(NotarySessionFailure::client)?;
@@ -2609,6 +2631,17 @@ mod tests {
     use tokio::net::{TcpListener, TcpStream};
 
     type RecordedUsage = Arc<std::sync::Mutex<Vec<usize>>>;
+
+    /// Generous for a debug build on a loaded CI runner; every step finishes
+    /// in a few seconds locally.
+    const TEST_STEP_TIMEOUT: Duration = Duration::from_secs(120);
+
+    /// Awaits one test step, failing with its name instead of hanging.
+    async fn within<T>(step: &str, future: impl std::future::Future<Output = T>) -> T {
+        tokio::time::timeout(TEST_STEP_TIMEOUT, future)
+            .await
+            .unwrap_or_else(|_| panic!("{step} did not finish within {TEST_STEP_TIMEOUT:?}"))
+    }
 
     async fn spawn_recording_notary(
         signing_key: SigningKey,
@@ -3514,10 +3547,16 @@ mod tests {
             .unwrap();
             (receipt, handshake)
         };
-        let (state, (receipt, handshake)) = tokio::join!(prover_task, verifier_task);
+        let (state, (receipt, handshake)) = within("the original capture", async {
+            tokio::join!(prover_task, verifier_task)
+        })
+        .await;
         prover_handle.close();
         verifier_handle.close();
-        fixture_task.await.unwrap().unwrap();
+        within("the fixture server", fixture_task)
+            .await
+            .unwrap()
+            .unwrap();
 
         receipt.verify(&trusted_public_key).unwrap();
         let wrong_key = SigningKey::from_slice(&[8; 32]).unwrap();
@@ -3626,18 +3665,28 @@ mod tests {
             .await
         });
         assert!(
-            notarize_capture_checkpoint(
-                tampered_notary_addr,
-                &key_tampered,
-                &trusted_public_key,
-                DEFAULT_MAX_ATTESTABLE_HTTP_BYTES,
-                DEFAULT_NOTARY_MAX_FRAME_BYTES,
+            within(
+                "the tampered-key client",
+                notarize_capture_checkpoint(
+                    tampered_notary_addr,
+                    &key_tampered,
+                    &trusted_public_key,
+                    DEFAULT_MAX_ATTESTABLE_HTTP_BYTES,
+                    DEFAULT_NOTARY_MAX_FRAME_BYTES,
+                ),
             )
             .await
             .is_err(),
             "mutated client traffic keys must fail the fresh private proof"
         );
-        assert!(tampered_notarizer.await.unwrap().is_err());
+        // The client may detect the mismatch and disconnect before the notary
+        // receives its last proof messages; the notary must still end.
+        assert!(
+            within("the tampered-key notary", tampered_notarizer)
+                .await
+                .unwrap()
+                .is_err()
+        );
 
         let expected_usage =
             checked_transcript_allowance(&checkpoint.receipt.connection_info.transcript_length)
@@ -3673,14 +3722,16 @@ mod tests {
                 .unwrap();
             }
         };
-        let session_deadline = std::time::Duration::from_secs(60);
 
         // A request the notary rejects for its resource limits is never billed.
         let (endpoint, notarizer, recorded) = spawn_recording_notary(signing_key.clone(), 1).await;
-        send_request_and_disconnect(endpoint).await;
-        let failure = tokio::time::timeout(session_deadline, notarizer)
+        within(
+            "the request-only client",
+            send_request_and_disconnect(endpoint),
+        )
+        .await;
+        let failure = within("the rejecting notary", notarizer)
             .await
-            .unwrap()
             .unwrap()
             .unwrap_err();
         assert_eq!(failure.kind(), NotarySessionFailureKind::Client);
@@ -3692,19 +3743,24 @@ mod tests {
         assert!(recorded.lock().unwrap().is_empty());
 
         // A validated request is billed before proving, so a client that
-        // disconnects instead of proving is still charged once. The server's
-        // session timeout, not this test, ends the abandoned proof.
+        // disconnects instead of proving is still charged once, and the
+        // notary ends the abandoned proof as a client failure.
         let (endpoint, notarizer, recorded) =
             spawn_recording_notary(signing_key.clone(), 8 << 20).await;
-        send_request_and_disconnect(endpoint).await;
-        tokio::time::timeout(session_deadline, async {
-            while recorded.lock().unwrap().is_empty() {
-                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-            }
-        })
-        .await
-        .unwrap();
-        notarizer.abort();
+        within(
+            "the request-only client",
+            send_request_and_disconnect(endpoint),
+        )
+        .await;
+        let failure = within("the abandoned notary", notarizer)
+            .await
+            .unwrap()
+            .unwrap_err();
+        assert_eq!(failure.kind(), NotarySessionFailureKind::Client);
+        assert!(
+            notary_connection_error(&failure.error).is_some(),
+            "{failure:#}"
+        );
         assert_eq!(*recorded.lock().unwrap(), [expected_usage]);
 
         // A notary that admits the session, reads the request, and then
@@ -3776,7 +3832,7 @@ mod tests {
                 progress_updates.lock().unwrap().first(),
                 Some(&NotarizationProgress::Phase(NotarizationPhase::Proving))
             );
-            fake_notary.await.unwrap();
+            within("the fake notary", fake_notary).await.unwrap();
             drop(held_receiver);
         }
 
@@ -3788,17 +3844,23 @@ mod tests {
             let progress_updates = progress_updates.clone();
             move |progress| progress_updates.lock().unwrap().push(progress)
         };
-        let proof = notarize_capture_checkpoint_to_with_progress(
-            &endpoint,
-            &checkpoint,
-            &trusted_public_key,
-            DEFAULT_MAX_ATTESTABLE_HTTP_BYTES,
-            DEFAULT_NOTARY_MAX_FRAME_BYTES,
-            &record_progress,
+        let proof = within(
+            "the fresh-notary client",
+            notarize_capture_checkpoint_to_with_progress(
+                &endpoint,
+                &checkpoint,
+                &trusted_public_key,
+                DEFAULT_MAX_ATTESTABLE_HTTP_BYTES,
+                DEFAULT_NOTARY_MAX_FRAME_BYTES,
+                &record_progress,
+            ),
         )
         .await
         .unwrap();
-        let result = notarizer.await.unwrap().unwrap();
+        let result = within("the fresh notary", notarizer)
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(result.authenticated_transcript_bytes, expected_usage);
         assert_eq!(*recorded.lock().unwrap(), [expected_usage]);
 
