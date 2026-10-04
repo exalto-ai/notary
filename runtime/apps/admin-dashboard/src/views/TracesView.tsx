@@ -38,6 +38,7 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from 'react';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { AccountConnectionCard, accountQuery, isAccountConnected } from '../AccountConnection';
 import type {
   LocalApi,
   Operation,
@@ -68,7 +69,6 @@ import {
   stateTone,
   timeRangeStart,
 } from '../shared';
-import { AccountConnectionCard, useAccountConnection } from './SettingsView';
 
 type Route = DashboardRoute;
 
@@ -1315,7 +1315,7 @@ function NotarizedTraceInspector({
     queryKey: ['capture', captureId],
     queryFn: () => api.trace(captureId),
   });
-  const accountConnection = useAccountConnection(api);
+  const account = useQuery(accountQuery(api)).data;
   const [verification, setVerification] = useState<Verification | null>(null);
   const [verificationFailure, setVerificationFailure] = useState<string | null>(null);
   const [guidedFirstProof, setGuidedFirstProof] = useState(initialAction === 'first-proof');
@@ -1532,8 +1532,7 @@ function NotarizedTraceInspector({
   const sharingBlocksDeletion = Boolean(
     activeShare && (activeShare.progress === 'verifying' || activeShare.access_enabled),
   );
-  const account = accountConnection.account.data;
-  const accountConnected = Boolean(account?.signed_in || account?.connection_state === 'connected');
+  const accountConnected = isAccountConnected(account);
   const openShareDialog = (mode: ShareDialogMode) => {
     setShareDialogMode(mode);
     setShareVisibility(activeShare?.visibility ?? 'unlisted');
@@ -1943,7 +1942,7 @@ function NotarizedTraceInspector({
             </Text>
           )}
         {!accountConnected ? (
-          <AccountConnectionCard controller={accountConnection} compact />
+          <AccountConnectionCard api={api} />
         ) : (
           <div className="trace-share-review">
             <section className="trace-share-disclosure" aria-label="Disclosure review">

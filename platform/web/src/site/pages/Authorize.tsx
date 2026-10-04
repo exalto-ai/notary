@@ -124,7 +124,7 @@ export function Authorize({
         action={
           <Button
             component="a"
-            href={href(`/signin?return_to=${encodeURIComponent(`/${route}`)}`)}
+            href={href(`/signin?return_to=${encodeURIComponent(href(route))}`)}
             h={38}
           >
             Sign in
