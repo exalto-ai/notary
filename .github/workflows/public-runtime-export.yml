@@ -44,6 +44,11 @@ jobs:
         with:
           ref: ${{ env.SOURCE_SHA }}
           persist-credentials: false
+      # The projection step prunes the desktop Cargo.lock with this toolchain.
+      - name: Install Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup toolchain install --no-self-update
+          rustup component add rustfmt clippy
       - name: Create deterministic projection
         run: |
           set -euo pipefail
@@ -57,11 +62,6 @@ jobs:
           scripts/audit-public-runtime.sh "$validation"
           echo "PUBLIC_RUNTIME_PROJECTION=$projection" >> "$GITHUB_ENV"
           echo "PUBLIC_RUNTIME_VALIDATION=$validation" >> "$GITHUB_ENV"
-      - name: Install Rust toolchain from rust-toolchain.toml
-        working-directory: ${{ env.PUBLIC_RUNTIME_VALIDATION }}
-        run: |
-          rustup toolchain install --no-self-update
-          rustup component add rustfmt clippy
       - uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -120,8 +120,8 @@ jobs:
         run: |
           npm --prefix apps/notary-app ci
           npm --prefix apps/notary-app run prepare:sidecar:debug
-          cargo clippy --manifest-path apps/notary-app/src-tauri/Cargo.toml --all-targets -- -D warnings
-          npm --prefix apps/notary-app exec -- tauri build --debug --bundles app
+          cargo clippy --locked --manifest-path apps/notary-app/src-tauri/Cargo.toml --all-targets -- -D warnings
+          npm --prefix apps/notary-app exec -- tauri build --debug --bundles app -- --locked
 
   publish:
     needs: [project, desktop]

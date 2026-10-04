@@ -127,7 +127,9 @@ The workflow performs these steps:
 2. Synchronizes version metadata, commits it to `main`, and waits for Main
    validation of that exact commit.
 3. Waits for that commit's public Runtime export and verifies its source
-   mapping.
+   mapping. The export builds the desktop app as a standalone package with
+   the root `Cargo.lock` pruned to its dependencies and `--locked` builds, so
+   the public source pins the same crate versions as this repository.
 4. Creates private tag `runtime/vX.Y.Z` in `exalto-ai/notary` and public tag
    `vX.Y.Z` in `exalto-ai/notary-runtime` at the exact corresponding commits.
 5. Builds `notaryctl` and `notaryd` for Linux x86-64, Linux ARM64, macOS ARM64,

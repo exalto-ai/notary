@@ -54,6 +54,41 @@ fi
   git ls-files -z -- "${paths[@]}" | tar --null --files-from=- --create --file=-
 ) | tar --extract --directory "$destination"
 
+# Here the desktop crate resolves inside the root workspace; in the projection
+# it is a standalone package. Give it the root workspace's spansy patch and the
+# root Cargo.lock pruned to its own dependency graph, so the public build uses
+# exactly the crate versions this repository ships. Pruning keeps locked
+# versions; the check below rejects any package the root lock does not pin.
+desktop_crate="$destination/apps/notary-app/src-tauri"
+if grep -q '^\[patch' "$desktop_crate/Cargo.toml"; then
+  echo "desktop manifest already declares a patch section" >&2
+  exit 1
+fi
+cat >> "$desktop_crate/Cargo.toml" <<'TOML'
+
+# Added by the public Runtime export to match the canonical workspace root.
+[patch."https://github.com/tlsnotary/tlsn-utils"]
+spansy = { path = "../../../runtime/vendor/tlsn-utils/spansy" }
+TOML
+install -m 0644 "$source_root/Cargo.lock" "$desktop_crate/Cargo.lock"
+(cd "$destination" && cargo update --quiet --workspace \
+  --manifest-path apps/notary-app/src-tauri/Cargo.toml)
+python3 - "$source_root/Cargo.lock" "$desktop_crate/Cargo.lock" <<'PY'
+import sys
+import tomllib
+
+def pins(path):
+    with open(path, "rb") as lock:
+        return {
+            (p["name"], p["version"], p.get("source"), p.get("checksum"))
+            for p in tomllib.load(lock)["package"]
+        }
+
+unpinned = pins(sys.argv[2]) - pins(sys.argv[1])
+if unpinned:
+    raise SystemExit(f"desktop Cargo.lock diverges from the root lock: {sorted(unpinned, key=str)}")
+PY
+
 install -m 0644 "$source_root/runtime/LICENSE-MIT" "$destination/LICENSE-MIT"
 mkdir -p "$destination/.github/workflows"
 install -m 0644 "$source_root/scripts/public-runtime/README.md" "$destination/README.md"
