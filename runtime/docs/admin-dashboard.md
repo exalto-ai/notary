@@ -155,6 +155,7 @@ second implementation of a destination.
 | Provider unavailable | Open Providers and check the explicit readiness and upstream host. Do not substitute an unlisted hostname. |
 | Notary Registry unavailable | Check network and Registry configuration. An explicit endpoint is appropriate only for local or self-hosted development. |
 | Operation interrupted | Inspect the Trace's safe attempt history and retry only when the service marks it retryable. |
+| Sealing failed with `notary_connection_closed` or `notary_timeout` | The notary refused the request, dropped the connection, or stopped responding. The Sealing tab shows where the attempt stopped; nothing was sealed. Choose **Retry sealing** to start a new attempt. |
 | Missing artifact | Keep metadata and its filesystem directory or private object prefix together. The API intentionally does not accept a replacement path or object key. |
 | Safe failure code | Use the code for diagnosis, then inspect local process logs. Logs omit credentials, headers, and evidence plaintext but may contain configured paths, so do not share them verbatim. |
 
