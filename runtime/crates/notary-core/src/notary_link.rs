@@ -132,6 +132,9 @@ impl std::error::Error for NotaryConnectionError {}
 
 /// Finds a typed sealing-session failure under ordinary `anyhow` context.
 pub fn notary_connection_error(error: &anyhow::Error) -> Option<NotaryConnectionError> {
+    // Both lookups are needed: `downcast_ref` finds the type when it was attached
+    // with `.context(...)`, which `chain()` only exposes as a wrapper, while
+    // `chain()` finds it when it is a source under other context.
     error
         .downcast_ref::<NotaryConnectionError>()
         .copied()
