@@ -1,16 +1,17 @@
-//! Liveness and deadlines for the client side of a notarization session.
+//! Liveness and deadlines for a notarization session.
 //!
 //! A sealing session must end in success or a typed error. Two hazards make
 //! that non-trivial:
 //!
 //! - The TLSN session multiplexer is configured for synchronized close with
-//!   the socket kept open afterwards. When the notary closes the TCP
+//!   the socket kept open afterwards. When the peer closes the TCP
 //!   connection, the session driver treats the end of stream as a graceful
 //!   remote close and returns the socket, but it never wakes the multiplexed
-//!   streams the local prover is waiting on. Awaiting the proof alone therefore
-//!   hangs forever, and the socket returned by the driver stays half-closed.
-//!   [`prove_while_session_open`] races the proof against the driver and
-//!   records whether the notary actually closed the transport.
+//!   streams the local prover or verifier is waiting on. Awaiting the proof
+//!   alone therefore hangs forever, and the socket returned by the driver
+//!   stays half-closed. [`run_while_session_open`] races the proof against
+//!   the driver and records whether the peer actually closed the transport.
+//!   Both the client's prover and the notary's verifier use it.
 //! - A notary that stops responding without closing the connection would also
 //!   leave the proof pending. [`NotarizationDeadlines`] bounds the whole session
 //!   and the time without transport or proof activity.
@@ -42,8 +43,8 @@ pub const DEFAULT_NOTARIZATION_SESSION_TIMEOUT: Duration = Duration::from_secs(3
 /// data continuously, so this only ends sessions whose notary has gone silent.
 pub const DEFAULT_NOTARIZATION_STALL_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 
-/// After the notary ends the multiplexed session without closing the transport
-/// (its verifier finished first), the local prover gets this long to return.
+/// After the peer ends the multiplexed session without closing the transport
+/// (its side finished first), the local side gets this long to return.
 const SESSION_END_GRACE: Duration = Duration::from_secs(10);
 
 /// Client-side bounds for one sealing session.
@@ -353,13 +354,13 @@ impl<Io> SessionDriverState<Io> {
     }
 }
 
-/// Awaits a proof while watching the session driver.
+/// Awaits one side of a proof while watching the session driver.
 ///
-/// The driver completes before the proof in two cases. If the notary closed or
+/// The driver completes before the proof in two cases. If the peer closed or
 /// reset the transport, the proof can never finish and this fails at once. If
-/// the notary ended the multiplexed session after its verifier finished, the
-/// local prover may still be returning, so it gets a short grace period.
-pub(crate) async fn prove_while_session_open<T, Io>(
+/// the peer ended the multiplexed session after its side finished, the local
+/// side may still be returning, so it gets a short grace period.
+pub(crate) async fn run_while_session_open<T, Io>(
     prove: impl Future<Output = tlsn::Result<T>>,
     mut driver: SessionDriverTask<Io>,
     liveness: &SessionLiveness,
