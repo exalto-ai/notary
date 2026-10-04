@@ -1,48 +1,6 @@
-import { Menu } from '@mantine/core';
-import { ArrowUp, Check, ChevronDown, Square } from 'lucide-react';
+import { ArrowUp, Square } from 'lucide-react';
 import type { ReactNode, Ref } from 'react';
 import { SfSymbol } from './SfSymbol';
-
-/**
- * A compact pop-up button inside the composer: an optional leading mark, the
- * current value, and a chevron. Its menu renders in place so it keeps the
- * window's palette.
- */
-export function ComposerChip({
-  label,
-  ariaLabel,
-  leading,
-  disabled,
-  children,
-}: {
-  label: string;
-  ariaLabel: string;
-  leading?: ReactNode;
-  disabled?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <Menu
-      position="top-start"
-      offset={6}
-      withinPortal={false}
-      checkIcon={<SfSymbol name="checkmark" fallback={Check} size={11} weight="semibold" />}
-      disabled={disabled}
-      classNames={{ dropdown: 'chat-menu', item: 'chat-menu-item', divider: 'chat-menu-divider' }}
-    >
-      <Menu.Target>
-        <button type="button" className="chat-chip" aria-label={ariaLabel} disabled={disabled}>
-          {leading}
-          <span className="chat-chip-label">{label}</span>
-          {!disabled && (
-            <SfSymbol name="chevron.down" fallback={ChevronDown} size={10} weight="semibold" />
-          )}
-        </button>
-      </Menu.Target>
-      <Menu.Dropdown>{children}</Menu.Dropdown>
-    </Menu>
-  );
-}
 
 /** The composer card: the message field on top, its controls and Send below. */
 export function ChatComposer({

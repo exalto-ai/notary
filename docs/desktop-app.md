@@ -194,13 +194,18 @@ normal captured Traces remain in the local store until explicitly deleted.
 
 A new chat shows the Capture mark above the composer. Without a saved
 connection, its only action is **Add a connection**, which opens the
-Connections dialog. The composer's footer holds the connection and model
-pop-up buttons and Send; the connection menu also opens **Manage
+Connections dialog. The composer's footer holds one model pop-up button and
+Send. Its menu lists each connection as a section of models headed by the
+connection's state; choosing a model also chooses its connection. A locked or
+expired connection shows **Unlock in Connections** or **Reconnect in
+Connections** instead of models, and the menu ends with **Manage
 connections…**. Return sends and Shift-Return starts a new line. Under the
 composer, Capture shows whether capture is on and offers to turn it on;
 sending stays disabled until it is. Once a conversation starts, the transcript
-grows above the composer, and its connection and model stay fixed until
-**New chat**. Only one conversation exists at a time and none is stored.
+grows above the composer. Every exchange is a separate request that carries
+the whole conversation, so the model can change between turns; each response
+names the model that wrote it. Only one conversation exists at a time and none
+is stored.
 
 API requests stream through fixed `/openai/v1/responses` and
 `/anthropic/v1/messages` loopback routes. ChatGPT requests use the supported
@@ -583,14 +588,16 @@ Exercise the native lifecycle with clean config, data, and vault directories:
 
 ### Chat model selection and diagnostics
 
-Chat loads the connection’s model catalog and selects its default automatically.
+Chat loads every usable connection’s model catalog in parallel and selects the
+first connection’s default automatically.
 ChatGPT uses the managed Codex `model/list` API, including pagination. API-key
 connections read metadata from the fixed OpenAI or Anthropic `/v1/models` endpoint
 using the native credential owner. These metadata requests contain no conversation
 and do not create Traces; all chat exchanges still require the capture proxy.
 The model menu filters non-chat OpenAI model families, with the newest returned chat
 model selected initially. Provider access is finally checked when sending.
-A failed catalog request offers a retry and leaves sending disabled.
+A failed catalog request offers a retry in its menu section; sending stays
+disabled until a model is available.
 
 Chat distinguishes local proxy failures, authentication rejection, usage limits,
 and unavailable models without displaying raw provider errors or credentials.

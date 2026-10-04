@@ -1,15 +1,41 @@
-import { Menu } from '@mantine/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import { Cpu, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { type DesktopState, errorMessage, isTauri, setCaptureEnabled, startDaemon } from './bridge';
 import * as bridge from './builtinBridge';
-import { ChatComposer, ComposerChip } from './ChatComposer';
+import { ChatComposer } from './ChatComposer';
 import { ChatTranscript, type Exchange } from './ChatTranscript';
+import { blockedAction, type Catalog, type Choice, ModelPicker } from './ModelPicker';
 import notaryMark from './notary-mark.svg';
 import { connectionNames, ProviderConnections, readConnections } from './ProviderConnections';
 import { SfSymbol } from './SfSymbol';
 import './chat.css';
+
+const connectionOrder = Object.keys(connectionNames) as bridge.ConnectionId[];
+const usable = (connection: bridge.Connection) => !blockedAction[connection.status];
+
+/**
+ * The model a send would use: the person's pick while it is still offered,
+ * otherwise the default of the first usable connection, waiting for that
+ * connection's catalog rather than flickering through later ones.
+ */
+function resolveChoice(
+  connections: bridge.Connection[],
+  catalogs: Partial<Record<bridge.ConnectionId, Catalog>>,
+  choice: Choice | null,
+): Choice | null {
+  const offered = (c: Choice) =>
+    connections.some((item) => item.id === c.connection && usable(item)) &&
+    !!catalogs[c.connection]?.models.some((m) => m.id === c.model);
+  if (choice && offered(choice)) return choice;
+  for (const connection of connections.filter(usable)) {
+    const catalog = catalogs[connection.id];
+    if (!catalog || catalog.loading) return null;
+    const model = catalog.models.find((m) => m.is_default) ?? catalog.models[0];
+    if (model) return { connection: connection.id, model: model.id };
+  }
+  return null;
+}
 
 // A stable callback ref runs once, so re-renders never pull focus out of the dialog's fields.
 const focusOnMount = (node: HTMLElement | null) => node?.focus();
@@ -24,12 +50,8 @@ export function BuiltinChat({
   onOpenTrace: (id: string) => void;
 }) {
   const [connections, setConnections] = useState<bridge.Connection[] | null>(null);
-  const [preferred, setPreferred] = useState<bridge.ConnectionId>('chatgpt');
-  const [model, setModel] = useState('');
-  const [models, setModels] = useState<bridge.ChatModel[]>([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
-  const [modelsError, setModelsError] = useState('');
-  const [modelsRevision, setModelsRevision] = useState(0);
+  const [catalogs, setCatalogs] = useState<Partial<Record<bridge.ConnectionId, Catalog>>>({});
+  const [choice, setChoice] = useState<Choice | null>(null);
   const [prompt, setPrompt] = useState('');
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [showConnections, setShowConnections] = useState(false);
@@ -38,12 +60,12 @@ export function BuiltinChat({
   const request = useRef<string | null>(null);
   const alive = useRef(true);
   const composer = useRef<HTMLTextAreaElement>(null);
-  const connection = connections?.find((c) => c.id === preferred) ?? connections?.[0];
-  const selected = connection?.id;
-  const connectionStatus = connection?.status;
+  const ordered = [...(connections ?? [])].sort(
+    (a, b) => connectionOrder.indexOf(a.id) - connectionOrder.indexOf(b.id),
+  );
+  const selection = resolveChoice(ordered, catalogs, choice);
   const hasExchanges = exchanges.length > 0;
   const unfinished = exchanges.some((e) => e.result?.status !== 'complete');
-  const modelName = models.find((m) => m.id === model)?.name ?? model;
 
   function newChat() {
     setExchanges([]);
@@ -89,47 +111,53 @@ export function BuiltinChat({
       unlisten?.();
     };
   }, []);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: modelsRevision is a reload trigger bumped to refetch models; the body does not read it.
-  useEffect(() => {
-    if (!selected || !connectionStatus || showConnections || hasExchanges) return;
-    if (connectionStatus === 'locked') {
-      setModels([]);
-      setModel('');
-      setModelsLoading(false);
-      setModelsError('Unlock the vault in Connections to load models.');
-      return;
-    }
-    let disposed = false;
-    setModelsLoading(true);
-    setModelsError('');
-    setModel('');
-    setModels([]);
+  function loadModels({ id, status }: bridge.Connection) {
+    // Only a result for the status it was requested under may land.
+    const settle = (catalog: Catalog) =>
+      setCatalogs((all) => (all[id]?.status === status ? { ...all, [id]: catalog } : all));
+    setCatalogs((all) => ({ ...all, [id]: { status, models: [], loading: true, error: '' } }));
     void bridge
-      .listModels(selected)
-      .then((items) => {
-        if (disposed) return;
-        setModels(items);
-        setModel((items.find((item) => item.is_default) || items[0])?.id || '');
-        if (!items.length)
-          setModelsError(
-            'No chat models are available for this connection. Reconnect or try another connection.',
-          );
+      .listModels(id)
+      .then((models) => {
+        if (alive.current)
+          settle({
+            status,
+            models,
+            loading: false,
+            error: models.length ? '' : 'No chat models are available for this connection.',
+          });
       })
-      .catch((error) => {
-        if (!disposed) setModelsError(errorMessage(error));
-      })
-      .finally(() => {
-        if (!disposed) setModelsLoading(false);
+      .catch((e) => {
+        if (alive.current) settle({ status, models: [], loading: false, error: errorMessage(e) });
       });
-    return () => {
-      disposed = true;
-    };
-  }, [selected, connectionStatus, showConnections, modelsRevision, hasExchanges]);
+  }
+  // Every usable connection lists its models in parallel. A catalog is kept
+  // until its connection's status changes or the Connections dialog closes.
+  const syncCatalogs = useEffectEvent(() => {
+    for (const connection of connections ?? [])
+      if (usable(connection) && catalogs[connection.id]?.status !== connection.status)
+        loadModels(connection);
+  });
+  const connectionsKey = connections?.map((c) => `${c.id}:${c.status}`).join() ?? '';
+  // biome-ignore lint/correctness/useExhaustiveDependencies: connectionsKey is the trigger; syncCatalogs reads the current connections.
+  useEffect(() => {
+    if (!showConnections) syncCatalogs();
+  }, [connectionsKey, showConnections]);
+  function closeConnections() {
+    setShowConnections(false);
+    // Credentials may have changed, so every catalog is read again.
+    setCatalogs({});
+  }
 
   const captureOn = state.capture_enabled && state.running;
-  const canSend = !!connection && captureOn && !!model && !!prompt.trim() && !unfinished;
+  const canSend = !!selection && captureOn && !!prompt.trim() && !unfinished;
   async function send() {
-    if (busy || !selected || !canSend) return;
+    if (busy || !selection || !canSend) return;
+    // Pin the default so a catalog arriving later cannot move this conversation.
+    setChoice(selection);
+    const modelName =
+      catalogs[selection.connection]?.models.find((m) => m.id === selection.model)?.name ??
+      selection.model;
     const id = crypto.randomUUID();
     request.current = id;
     const message = prompt.trim();
@@ -148,12 +176,18 @@ export function BuiltinChat({
     const settle = (result: bridge.ChatResult) =>
       setExchanges((all) => all.map((e, i) => (i === all.length - 1 ? { ...e, result } : e)));
     try {
-      const result = await bridge.sendChat(id, selected, model, history, (text) => {
-        if (alive.current && request.current === id)
-          setExchanges((all) =>
-            all.map((e, i) => (i === all.length - 1 ? { ...e, response: e.response + text } : e)),
-          );
-      });
+      const result = await bridge.sendChat(
+        id,
+        selection.connection,
+        selection.model,
+        history,
+        (text) => {
+          if (alive.current && request.current === id)
+            setExchanges((all) =>
+              all.map((e, i) => (i === all.length - 1 ? { ...e, response: e.response + text } : e)),
+            );
+        },
+      );
       if (alive.current) settle(result);
     } catch (e) {
       if (alive.current) settle({ status: errorMessage(e), traces: [] });
@@ -182,48 +216,15 @@ export function BuiltinChat({
       placeholder={unfinished ? 'Start a new chat to continue' : 'Ask anything'}
       inputRef={composer}
       controls={
-        <>
-          <ComposerChip
-            label={connection ? connectionNames[connection.id] : 'Connection'}
-            ariaLabel={`Connection: ${connection ? connectionNames[connection.id] : 'none'}`}
-            leading={
-              <span className="chat-chip-mark" data-state={connectionStatus} aria-hidden="true" />
-            }
-            disabled={busy}
-          >
-            <Menu.RadioGroup
-              value={selected ?? null}
-              onChange={(value) => setPreferred(value as bridge.ConnectionId)}
-            >
-              {connections.map((item) => (
-                <Menu.RadioItem
-                  key={item.id}
-                  value={item.id}
-                  disabled={hasExchanges}
-                  closeMenuOnClick
-                >
-                  {connectionNames[item.id]}
-                </Menu.RadioItem>
-              ))}
-            </Menu.RadioGroup>
-            <Menu.Divider />
-            <Menu.Item onClick={() => setShowConnections(true)}>Manage connections…</Menu.Item>
-          </ComposerChip>
-          <ComposerChip
-            label={modelsLoading ? 'Loading models…' : modelName || 'No model'}
-            ariaLabel={`Model: ${modelName || 'none'}`}
-            leading={<SfSymbol name="cpu" fallback={Cpu} size={12} />}
-            disabled={busy || hasExchanges || modelsLoading || models.length === 0}
-          >
-            <Menu.RadioGroup value={model} onChange={setModel}>
-              {models.map((item) => (
-                <Menu.RadioItem key={item.id} value={item.id} closeMenuOnClick>
-                  {item.name}
-                </Menu.RadioItem>
-              ))}
-            </Menu.RadioGroup>
-          </ComposerChip>
-        </>
+        <ModelPicker
+          connections={ordered}
+          catalogs={catalogs}
+          choice={selection}
+          disabled={busy}
+          onChoose={setChoice}
+          onRetry={loadModels}
+          onManage={() => setShowConnections(true)}
+        />
       }
     />
   );
@@ -254,21 +255,6 @@ export function BuiltinChat({
           >
             Turn on capture
           </button>
-        </span>
-      )}
-      {modelsError && (
-        <span className="chat-context-error" role="alert">
-          {modelsError}
-          {connectionStatus !== 'locked' && (
-            <button
-              type="button"
-              className="chat-context-action"
-              disabled={busy || modelsLoading}
-              onClick={() => setModelsRevision((n) => n + 1)}
-            >
-              Retry models
-            </button>
-          )}
         </span>
       )}
       {error && (
@@ -320,7 +306,7 @@ export function BuiltinChat({
       {showConnections && (
         // biome-ignore lint/a11y/noStaticElementInteractions: the backdrop click is a pointer-only shortcut; keyboard users dismiss the focused dialog with Escape or Done.
         // biome-ignore lint/a11y/useKeyWithClickEvents: Escape on the focused dialog and the Done button are the keyboard equivalents of this backdrop click.
-        <div className="chat-sheet-overlay" onClick={() => setShowConnections(false)}>
+        <div className="chat-sheet-overlay" onClick={closeConnections}>
           <section
             className="chat-sheet"
             role="dialog"
@@ -330,25 +316,14 @@ export function BuiltinChat({
             ref={focusOnMount}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') setShowConnections(false);
+              if (e.key === 'Escape') closeConnections();
             }}
           >
             <div className="chat-sheet-body">
-              <ProviderConnections
-                disabled={busy}
-                onChange={(items) => {
-                  setConnections(items);
-                  // A conversation stays with the connection it started on.
-                  if (selected && !items.some((c) => c.id === selected)) setExchanges([]);
-                }}
-              />
+              <ProviderConnections disabled={busy} onChange={setConnections} />
             </div>
             <footer className="chat-sheet-footer">
-              <button
-                className="mac-button is-primary"
-                type="button"
-                onClick={() => setShowConnections(false)}
-              >
+              <button className="mac-button is-primary" type="button" onClick={closeConnections}>
                 Done
               </button>
             </footer>

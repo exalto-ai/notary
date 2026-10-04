@@ -94,10 +94,11 @@
   font: 500 var(--text-label)/1 var(--font-text);
 }
 .chat-chip:hover:not(:disabled), .chat-chip[aria-expanded='true'] { background: var(--surface-hover); color: var(--text); }
-.chat-chip:disabled { color: var(--tertiary); }
+/* While a response streams the chip is inert but stays legible. */
+.chat-chip:disabled { color: var(--secondary); opacity: 1; }
 .chat-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* The connection's state as a square marker, matching the Connections list. */
+/* A connection's state as a square marker, matching the Connections list. */
 .chat-chip-mark { width: 7px; height: 7px; flex: none; border: 1px solid var(--tertiary); }
 .chat-chip-mark[data-state='connected'] { border-color: var(--green); background: var(--green); }
 .chat-chip-mark[data-state='saved'] { border-color: var(--blue); }
@@ -123,7 +124,7 @@
 /* Menus open in place, so they take the window palette; the chat scope
    outranks the dashboard's global Menu rules. */
 .builtin-chat .chat-menu {
-  min-width: 200px;
+  min-width: 220px;
   padding: 4px;
   border: 1px solid var(--separator-soft);
   border-radius: 8px;
@@ -142,6 +143,23 @@
 .builtin-chat .chat-menu-item[data-disabled] { color: var(--tertiary); }
 .builtin-chat .chat-menu-item[data-disabled][data-hovered] { background: transparent; }
 .builtin-chat .chat-menu-divider { margin: 4px 6px; border-color: var(--separator-soft); }
+/* Each connection is a section headed by its name and square state marker. */
+.builtin-chat .chat-menu-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 8px 3px;
+  color: var(--secondary);
+  font: 600 var(--text-caption)/1.2 var(--font-text);
+}
+.builtin-chat [role='group'] + [role='group'] { margin-top: 2px; border-top: 1px solid var(--separator-soft); }
+.builtin-chat .chat-menu-note {
+  max-width: 260px;
+  padding: 3px 8px;
+  color: var(--red);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+}
 
 /* Context under the composer: only facts that change what happens next. */
 .chat-context {
