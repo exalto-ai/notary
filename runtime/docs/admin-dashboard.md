@@ -105,7 +105,8 @@ construct them from private listener addresses.
 Settings keeps these groups in a stable order:
 
 1. **General** — capture behavior and System, Light, or Dark theme.
-2. **Account** — optional hosted account connection, credits, and links.
+2. **Account** — optional hosted account connection, plan, and remaining
+   sealing allowance.
 3. **Notarization** — active notary, operator, endpoint, key identity,
    Registry generation and source, and lifecycle history.
 4. **Security & storage** — vault, preview policy, metadata, and artifact
@@ -130,6 +131,12 @@ The hosted Account connection is optional for local capture, notarization,
 download, and verification. Browser authorization never gives the dashboard a
 hosted password or provider token. An API-key connection is identified but its
 key value is neither returned nor managed here.
+
+**Connect account…** starts device approval and opens the approval page in a
+new tab. While approval is pending, the card shows the code, **Open browser
+again**, and **Cancel**; it checks approval at the service's polling interval
+and again when the window regains focus. An expired request offers **Try
+again**.
 
 ## Responsive and embedded modes
 

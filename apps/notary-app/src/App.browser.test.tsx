@@ -7,6 +7,8 @@ import { createDisposableTestMarker } from './Onboarding';
 import { pendingFirstProofTarget, persistPendingFirstProof } from './product';
 import './styles.css';
 
+const approvalUrl = 'https://capture.exalto.ai/authorize?request_id=req-browser&approval_secret=s';
+
 const browserTraceSummary = (traceId = 'trc-browser-detail') => ({
   trace_id: traceId,
   created_at_unix_ms: Date.now() - 1_000,
@@ -66,7 +68,7 @@ afterEach(() => {
 beforeEach(() => {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const requestUrl =
         typeof input === 'string'
           ? new URL(input, window.location.origin)
@@ -164,8 +166,31 @@ beforeEach(() => {
           notaries: [],
         });
       }
+      if (path === '/v1/account' && init?.method === 'POST') {
+        return response(
+          {
+            request_id: 'req-browser',
+            user_code: '0F81-8CC9',
+            verification_uri_complete: approvalUrl,
+            expires_in_seconds: 600,
+            poll_interval_seconds: 5,
+            state: 'pending',
+          },
+          202,
+        );
+      }
       if (path === '/v1/account')
         return response({ signed_in: false, connection_state: 'disconnected' });
+      if (path === '/v1/account/req-browser') {
+        return response({
+          signed_in: true,
+          connection_state: 'connected',
+          display_name: 'Browser Tester',
+          auth_provider: 'github',
+          credential_kind: 'device_session',
+          billing: { plan: 'one_gb', billing_status: 'active', purchase_mode: null },
+        });
+      }
       if (path === '/v1/settings/capture') return response({ enabled: false });
       return response({});
     }),
@@ -418,6 +443,24 @@ describe('Exalto Capture desktop shell', () => {
     await expect
       .element(page.getByText('Test trace captured', { exact: true }))
       .not.toBeInTheDocument();
+  });
+
+  test('links an account from setup through the shared account card', async () => {
+    const windowOpen = vi.spyOn(window, 'open').mockReturnValue(null);
+    renderApp('?screen=onboarding');
+    await userEvent.click(page.getByRole('button', { name: /Begin setup/ }));
+    await userEvent.click(page.getByRole('button', { name: /Protect traces/ }));
+    await userEvent.click(page.getByRole('button', { name: /Continue with Exalto Seal/ }));
+    await userEvent.click(page.getByRole('button', { name: 'Continue without a test' }));
+    await userEvent.click(page.getByRole('button', { name: 'Connect account…' }));
+    await expect.element(page.getByText('Approve in your browser')).toBeVisible();
+    await expect.element(page.getByText('0F81-8CC9')).toBeVisible();
+    expect(windowOpen).toHaveBeenCalledWith(approvalUrl, '_blank', 'noopener,noreferrer');
+    await expect.element(page.getByText(/Next check/)).not.toBeInTheDocument();
+    window.dispatchEvent(new Event('focus'));
+    await expect.element(page.getByText('Browser Tester', { exact: true })).toBeVisible();
+    await expect.element(page.getByText('1 GB plan', { exact: true })).toBeVisible();
+    windowOpen.mockRestore();
   });
 
   test('blocks manual disposable capture until the trusted transport is ready', async () => {

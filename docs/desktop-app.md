@@ -284,13 +284,21 @@ Skipping account connection does not prevent local capture or verification.
 Connecting an account does not upload or share local traces. It authorizes only
 the hosted features the user later chooses to invoke.
 
-Settings shows the same account connection card after onboarding. It identifies
-the connected account and sign-in provider, device or hosted API-key mode,
-plan and billing state, and available capture and sealing credits. Account,
-usage, pricing, and settings actions open only validated links returned by the
-local service in the default browser. A browser-approved device session can be
-disconnected from Settings. A hosted API key must instead be managed in the
-hosted account settings and is never revoked by the local app.
+Onboarding, Preferences, and Share use one account card with three states:
+
+- **Disconnected** offers **Connect account…**, which starts device approval and
+  opens the approval page in the default browser.
+- **Waiting** shows the approval code with **Open browser again** and
+  **Cancel**. The app checks approval quietly at the service's polling interval
+  and again as soon as the window regains focus, so returning from the browser
+  completes the connection. An expired request offers **Try again**.
+- **Connected** shows the account, sign-in provider, plan, and remaining sealing
+  allowance, with **Manage account** and **Disconnect…**.
+
+External links open only through the app's validated account-link command,
+never as web-view anchors. A browser-approved device session can be
+disconnected here. A hosted API key must instead be managed in the hosted
+account settings and is never revoked by the local app.
 
 ## Share a sealed trace
 

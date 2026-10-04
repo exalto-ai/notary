@@ -13,7 +13,7 @@ import {
   SquareTerminal,
 } from 'lucide-react';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { DesktopAccountCard } from './AccountCard';
+import { AccountConnectionCard } from '../../../runtime/apps/admin-dashboard/src/AccountConnection';
 import { AgentSetup, agentSetupPrompt, CLAUDE_COMMAND, CODEX_CONFIG } from './AgentSetup';
 import { ProviderConnections } from './BuiltinChat';
 import {
@@ -27,6 +27,7 @@ import {
   getDesktopState,
   getRecentTraceProbes,
   isTauri,
+  localApi,
   startDaemon,
 } from './bridge';
 import notaryMark from './notary-mark.svg';
@@ -1351,7 +1352,7 @@ function AccountReadyStep({
             )}
           </div>
         )}
-        <DesktopAccountCard compact />
+        <AccountConnectionCard api={localApi} />
       </div>
       <div className="wizard-actions split-actions final-actions">
         {disposableTraceId && sealingReady ? (

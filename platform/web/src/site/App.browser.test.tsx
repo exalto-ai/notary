@@ -266,6 +266,25 @@ test('keeps a signed-out visitor at the account route they asked for', async () 
   );
 });
 
+test('returns a signed-out visitor to the device approval they opened', async () => {
+  const approval = '/authorize?request_id=req_1&approval_secret=s%2Fx';
+  const returnTo = `return_to=${encodeURIComponent(approval)}`;
+  window.history.replaceState({}, '', approval);
+  stubApi({
+    '/api/account': () => json({ message: 'unauthorized' }, 401),
+    '/api/auth/providers': () => json({ google: true, github: true }),
+  });
+  mount(<App />);
+  const signIn = page.getByRole('link', { name: 'Sign in', exact: true }).last();
+  await expect.element(signIn).toHaveAttribute('href', `/signin?${returnTo}`);
+  await signIn.click();
+  for (const name of [/Continue with GitHub/, /Continue with Google/]) {
+    const provider = page.getByRole('link', { name });
+    await expect.element(provider).toBeVisible();
+    expect(await provider.element().getAttribute('href')).toContain(returnTo);
+  }
+});
+
 test('a failed account read is not treated as a signed-out reader', async () => {
   window.history.replaceState({}, '', '/app/overview');
   stubApi({
@@ -368,7 +387,7 @@ test('device approval is a two-step decision that names what is granted', async 
   const approve = vi.fn(async () => undefined);
   mount(
     <Authorize
-      route={'authorize?request_id=req_1&approval_secret=secret'}
+      route={'/authorize?request_id=req_1&approval_secret=secret'}
       account={accountPayload().account as never}
       loadApproval={async () => ({
         device_name: 'build-runner-3',
@@ -387,14 +406,14 @@ test('device approval is a two-step decision that names what is granted', async 
 });
 
 test('an incomplete approval link asks for the connection to be restarted', async () => {
-  mount(<Authorize route="authorize" account={accountPayload().account as never} />);
+  mount(<Authorize route="/authorize" account={accountPayload().account as never} />);
   await expect.element(page.getByText('This connection link is incomplete.')).toBeVisible();
 });
 
 test('device approval refuses to guess when the request cannot be read', async () => {
   mount(
     <Authorize
-      route={'authorize?request_id=req_1&approval_secret=secret'}
+      route={'/authorize?request_id=req_1&approval_secret=secret'}
       account={accountPayload().account as never}
       loadApproval={async () => {
         throw new Error('this request expired');

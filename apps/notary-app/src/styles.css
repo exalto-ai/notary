@@ -50,7 +50,7 @@ body {
 @supports (color: AccentColor) { :root { --accent: AccentColor; } }
 /* Keep editable fields, commands, values, and errors copyable. */
 input, textarea, pre, code, dd, [contenteditable="true"], .selectable-text, [role="alert"],
-.native-account-identity, .native-account-authorization strong, .test-prompt-receipt > strong {
+.test-prompt-receipt > strong {
   -webkit-user-select: text;
   user-select: text;
 }
@@ -180,19 +180,6 @@ h1, h2, p { margin: 0; }
 .readiness { position: absolute; top: 12px; right: 0; display: inline-flex; align-items: center; gap: 7px; color: var(--secondary); font-size: var(--text-caption); }
 
 .preferences-page { width: min(760px, calc(100% - 48px)); }
-.native-account-card { display: grid; gap: 15px; margin-bottom: 25px; padding: 18px; border: 1px solid var(--separator); border-radius: 11px; background: var(--surface); box-shadow: var(--shadow); }
-.native-account-card.is-compact { margin: 0; padding: 0; border: 0; box-shadow: none; }
-.native-account-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.native-account-heading h2 { margin-top: 4px; font-size: var(--text-lead); font-weight: 650; }
-.account-state { color: var(--tertiary); font-size: var(--text-caption); font-weight: 600; }
-.account-state--connected { color: var(--green); }.account-state--reauthorization_required { color: var(--orange); }.account-state--unavailable { color: var(--red); }
-.native-account-card p { color: var(--secondary); font-size: var(--text-caption); line-height: 1.5; }
-.native-account-identity { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-.native-account-identity strong, .native-account-identity span { display: block; }.native-account-identity strong { font-size: var(--text-body); }.native-account-identity span { margin-top: 4px; color: var(--secondary); font-size: var(--text-caption); }.native-account-identity small { color: var(--blue); font-size: var(--text-caption); font-weight: 600; }
-.native-account-facts { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--separator-soft); border-bottom: 1px solid var(--separator-soft); }
-.native-account-facts div { display: grid; gap: 4px; min-height: 50px; padding: 10px 11px 10px 0; }.native-account-facts div + div { border-left: 1px solid var(--separator-soft); padding-left: 11px; }.native-account-facts span { color: var(--tertiary); font-size: var(--text-caption); }.native-account-facts strong { font-size: var(--text-caption); font-weight: 600; }
-.native-account-links { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }.native-account-links button { padding: 5px 7px; border: 0; border-radius: 5px; background: transparent; color: var(--blue); font-size: var(--text-caption); }.native-account-links button:hover { background: var(--blue-soft); }
-.native-account-authorization { display: grid; gap: 7px; padding-top: 14px; border-top: 1px solid var(--separator-soft); }.native-account-authorization strong { font: 600 var(--text-section) var(--font-code); letter-spacing: .08em; }.native-account-authorization > span:not(.section-label) { color: var(--secondary); font-size: var(--text-caption); line-height: 1.4; }.native-account-authorization > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .preference-section + .preference-section { margin-top: 25px; }
 .preference-section > h2 { margin: 0 0 7px 10px; font-size: var(--text-label); font-weight: 600; }
 .preference-group { overflow: hidden; border: 1px solid var(--separator); border-radius: 11px; background: var(--surface); }
@@ -614,23 +601,9 @@ h1, h2, p { margin: 0; }
   font: 600 var(--text-body)/1.2 var(--body-font);
   letter-spacing: 0;
 }
-.native-window .native-account-card,
 .native-window .preference-group { border-radius: 5px; box-shadow: none; }
 
 .native-window .readiness { top: 15px; font: 600 var(--text-caption)/1.25 var(--body-font); }
-
-.native-window .native-account-card { gap: 18px; padding: 21px; }
-.native-window .native-account-heading h2 { font-family: var(--display-font); font-size: var(--text-section); font-weight: 650; letter-spacing: -.015em; }
-.native-window .account-state { font: 600 var(--text-caption)/1.25 var(--body-font); }
-.native-window .native-account-card p { font: 400 13.5px/1.5 var(--body-font); }
-.native-window .native-account-identity strong { font-size: var(--text-lead); }
-.native-window .native-account-identity span { font-size: var(--text-caption); }
-.native-window .native-account-identity small { font: 600 var(--text-caption)/1.25 var(--body-font); }
-.native-window .native-account-facts div { min-height: 60px; gap: 5px; padding-block: 12px; }
-.native-window .native-account-facts span { font-size: var(--text-caption); }
-.native-window .native-account-facts strong { font-size: var(--text-label); }
-.native-window .native-account-links button { min-height: 32px; padding: 6px 9px; font-size: var(--text-caption); }
-.native-window .native-account-authorization > span:not(.section-label) { font-size: var(--text-caption); }
 
 .native-window .preference-section + .preference-section { margin-top: 29px; }
 .native-window .preference-section > h2 { margin: 0 0 10px 10px; font-size: var(--text-lead); font-weight: 650; }
@@ -703,7 +676,6 @@ h1, h2, p { margin: 0; }
 @media (max-width: 1080px) {
   .native-window { grid-template-columns: 205px minmax(0, 1fr); }
   .native-page { width: calc(100% - 32px); }
-  .native-account-facts { grid-template-columns: 1fr 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

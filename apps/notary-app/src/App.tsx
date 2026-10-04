@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { OpenExternalProvider } from '../../../runtime/apps/admin-dashboard/src/AccountConnection';
 import type { DashboardRoute } from '../../../runtime/apps/admin-dashboard/src/routes';
 import { exaltoTheme } from '../../../runtime/apps/admin-dashboard/src/theme';
 import { BuiltinChat } from './BuiltinChat';
@@ -17,6 +18,7 @@ import {
   getUpdateState,
   installUpdateAndRestart,
   isTauri,
+  openAccountLink,
   setCaptureEnabled,
   startDaemon,
 } from './bridge';
@@ -524,7 +526,9 @@ function App() {
     <MantineProvider theme={exaltoTheme} defaultColorScheme="auto">
       <Notifications position="bottom-right" />
       <QueryClientProvider client={queryClient}>
-        <AppContent />
+        <OpenExternalProvider value={openAccountLink}>
+          <AppContent />
+        </OpenExternalProvider>
       </QueryClientProvider>
     </MantineProvider>
   );
