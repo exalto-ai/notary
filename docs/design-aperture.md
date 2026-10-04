@@ -65,6 +65,8 @@ than by reading the code.
 - Whether the local admin dashboard follows Aperture or stays on the developer
   workspace rules in Part III.
 - Whether the appearance preference should be shared. Today each surface keeps
-  its own: the site reads and writes `notary-theme`, the local admin dashboard
-  uses `notary-admin-dashboard-color-scheme`, and the desktop app uses
-  Mantine's default color scheme manager and key.
+  its own because each runs on its own origin: the site reads and writes
+  `notary-theme`, the local admin dashboard uses
+  `notary-admin-dashboard-color-scheme`, and Exalto Capture stores its
+  Preferences > Appearance choice under `exalto-capture-color-scheme` through
+  Mantine's color scheme manager, which also sets the native window theme.

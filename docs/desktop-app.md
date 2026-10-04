@@ -323,15 +323,24 @@ deleting the local trace or changing its sealed state.
 
 Settings contains three sections in a compact subnavigation:
 
-1. **Preferences** contains Connections, Privacy & storage, App, and Advanced.
-   It shows account and notary state, vault protection, launch at sign-in,
-   signed updates, listener and build facts, and the generated OpenAPI link.
+1. **Preferences** is a grouped form: **Account** (the account card),
+   **Sealing** (the sealing service and its state, with signer, operator,
+   endpoint, key, and cutoffs under **Details**), **Privacy** (vault
+   protection, and prompt previews, which stay on this Mac outside the vault),
+   **Appearance** (System, Light, or Dark), **General** (open at sign-in and
+   signed updates), and **Advanced** (provider proxy, OpenAPI URL, and builds).
+   The same sections appear while the local service is off, with **Start local
+   service** in place of the account card.
 2. **AI connections** puts Codex CLI and Claude Code first, then lists fixed API
    and SDK routes with their allowed hosts, local base URLs, readiness, capture
    state, and setup details. Model selection remains in the originating tool.
 3. **Activity log** keeps severity, date, and trace ID visible. More filters
    expose operation ID and the bounded raw event name. A trace-linked event
    opens that trace; service-only events remain inspectable in Activity.
+
+Appearance defaults to System and follows macOS changes live. A Light or Dark
+choice is stored under `exalto-capture-color-scheme` and applies to every view,
+sheet, and menu, and to the native window and sidebar.
 
 The local dashboard supplies service-backed facts. A bounded parent and frame
 bridge supplies only launch and signed-updater state and accepts only those

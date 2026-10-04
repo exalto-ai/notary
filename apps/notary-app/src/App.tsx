@@ -1,4 +1,8 @@
-import { MantineProvider } from '@mantine/core';
+import {
+  localStorageColorSchemeManager,
+  MantineProvider,
+  useMantineColorScheme,
+} from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -20,6 +24,7 @@ import {
   isTauri,
   openAccountLink,
   setCaptureEnabled,
+  setWindowTheme,
   startDaemon,
 } from './bridge';
 import { HomeView } from './HomeView';
@@ -515,6 +520,24 @@ function AppContent() {
   );
 }
 
+/**
+ * The Appearance preference. Mantine resolves it onto the root element, which
+ * themes every view, sheet, and menu; the native window follows the same
+ * choice so its chrome and translucent sidebar match.
+ */
+const colorSchemeManager = localStorageColorSchemeManager({ key: 'exalto-capture-color-scheme' });
+
+// Portalled sheets and menus render outside the shell; desktop rules for them key off this.
+document.documentElement.dataset.shell = 'desktop';
+
+function NativeWindowTheme() {
+  const { colorScheme } = useMantineColorScheme();
+  useEffect(() => {
+    void setWindowTheme(colorScheme === 'auto' ? null : colorScheme);
+  }, [colorScheme]);
+  return null;
+}
+
 function App() {
   const [queryClient] = useState(
     () =>
@@ -523,7 +546,12 @@ function App() {
       }),
   );
   return (
-    <MantineProvider theme={exaltoTheme} defaultColorScheme="auto">
+    <MantineProvider
+      theme={exaltoTheme}
+      defaultColorScheme="auto"
+      colorSchemeManager={colorSchemeManager}
+    >
+      <NativeWindowTheme />
       <Notifications position="bottom-right" />
       <QueryClientProvider client={queryClient}>
         <OpenExternalProvider value={openAccountLink}>

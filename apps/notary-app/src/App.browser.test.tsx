@@ -647,19 +647,18 @@ describe('Exalto Capture desktop shell', () => {
       .element(page.getByRole('heading', { name: 'Preferences', exact: true }))
       .toBeVisible();
     await expect
-      .element(page.getByRole('heading', { name: 'Sealing & account', exact: true }))
-      .toBeVisible();
-    await expect
-      .element(page.getByRole('heading', { name: 'AI connections', exact: true }))
-      .not.toBeInTheDocument();
+      .poll(() =>
+        Array.from(document.querySelectorAll('.preference-section > h2')).map(
+          (heading) => heading.textContent,
+        ),
+      )
+      .toEqual(['Account', 'Sealing', 'Privacy', 'Appearance', 'General', 'Advanced']);
     expect(document.querySelector('.workspace-frame')).toBeNull();
     expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
     await expect
-      .element(page.getByText('http://127.0.0.1:8788/v1/status', { exact: true }))
+      .element(page.getByText('http://127.0.0.1:8788/openapi.json', { exact: true }))
       .toBeVisible();
-    await expect
-      .element(page.getByRole('link', { name: 'Open generated OpenAPI' }))
-      .toHaveAttribute('href', 'http://127.0.0.1:8788/openapi.json');
+    expect(document.querySelectorAll('.preferences a[target="_blank"]')).toHaveLength(0);
     (
       page
         .getByRole('switch', { name: 'Open Exalto Capture at sign-in' })
@@ -668,7 +667,7 @@ describe('Exalto Capture desktop shell', () => {
     await expect.poll(() => localStorage.getItem('notary-launch-at-login')).toBe('true');
   });
 
-  test('keeps simplified Settings groups available without the capture control', async () => {
+  test('keeps the same Preferences sections while the local service is off', async () => {
     renderApp('?screen=offline&view=settings');
     await expect
       .poll(() =>
@@ -676,7 +675,7 @@ describe('Exalto Capture desktop shell', () => {
           (heading) => heading.textContent,
         ),
       )
-      .toEqual(['Sealing & account', 'Privacy & storage', 'App', 'Advanced']);
+      .toEqual(['Account', 'Privacy', 'Appearance', 'General', 'Advanced']);
     await expect
       .element(page.getByRole('switch', { name: 'Capture new requests' }))
       .not.toBeInTheDocument();
@@ -684,5 +683,35 @@ describe('Exalto Capture desktop shell', () => {
       .element(page.getByRole('button', { name: 'Start capturing' }))
       .not.toBeInTheDocument();
     await expect.element(page.getByRole('button', { name: 'Start local service' })).toBeVisible();
+  });
+
+  test('persists the Appearance choice and applies it to the whole window', async () => {
+    expect(document.documentElement.dataset.shell).toBe('desktop');
+    const scheme = () => document.documentElement.getAttribute('data-mantine-color-scheme');
+    const windowColor = () =>
+      getComputedStyle(present(document.querySelector('.native-window'), 'window'))
+        .getPropertyValue('--window')
+        .trim();
+    renderApp('?screen=capture-on&view=settings');
+    const theme = page.getByRole('radiogroup', { name: 'Theme' });
+    await expect.element(theme.getByRole('radio', { name: 'System' })).toBeChecked();
+
+    await theme.getByText('Dark', { exact: true }).click();
+    await expect.poll(scheme).toBe('dark');
+    expect(localStorage.getItem('exalto-capture-color-scheme')).toBe('dark');
+    expect(windowColor()).toBe('#101820');
+
+    await theme.getByText('Light', { exact: true }).click();
+    await expect.poll(scheme).toBe('light');
+    expect(windowColor()).toBe('#f5f3ec');
+
+    cleanup();
+    renderApp('?screen=offline&view=settings');
+    await expect
+      .element(
+        page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'Light' }),
+      )
+      .toBeChecked();
+    await expect.poll(scheme).toBe('light');
   });
 });

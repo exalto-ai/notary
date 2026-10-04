@@ -17,7 +17,6 @@ const desktopSettings: DesktopSettingsState = {
   launch_at_login: true,
   launch_ready: true,
   vault_label: 'Protected by Keychain',
-  vault_detail: 'The vault key is protected by this Mac.',
   app_version: '0.1.0',
   app_build_id: 'desktop-build-a',
   update: {
@@ -1298,70 +1297,78 @@ describe('Notary admin dashboard', () => {
     await expect.element(page.getByRole('navigation', { name: 'Admin dashboard' })).toBeVisible();
   });
 
-  test('uses exactly four Settings groups in the desktop surface', async () => {
+  test('groups desktop Preferences into short sections with controls on the right', async () => {
     const actions: DesktopSettingsAction[] = [];
     renderDashboard('/settings', createFixtureApi(), desktopSettings, (action) =>
       actions.push(action),
     );
     await expect
       .poll(() =>
-        Array.from(document.querySelectorAll('.settings-group-title')).map(
+        Array.from(document.querySelectorAll('.preference-section > h2')).map(
           (heading) => heading.textContent,
         ),
       )
-      .toEqual(['Sealing & account', 'Privacy & storage', 'App', 'Advanced']);
+      .toEqual(['Account', 'Sealing', 'Privacy', 'Appearance', 'General', 'Advanced']);
     await expect
       .element(page.getByRole('switch', { name: 'Open Exalto Capture at sign-in' }))
       .toBeChecked();
-    await expect
-      .element(page.getByText(/Closing the window leaves Exalto Capture available/))
-      .toBeVisible();
-    await expect
-      .element(page.getByText('Menu-bar controller', { exact: true }))
-      .not.toBeInTheDocument();
     (
       page
         .getByRole('switch', { name: 'Open Exalto Capture at sign-in' })
         .element() as HTMLInputElement
     ).click();
-    await page.getByRole('button', { name: 'Check now' }).click();
     await page.getByRole('button', { name: 'Restart to update' }).click();
     expect(actions).toEqual([
       { action: 'set_launch_at_login', enabled: false },
-      { action: 'check_for_updates' },
       { action: 'restart_to_update' },
     ]);
   });
 
-  test('shows desktop account, local data, sealing service, updates, and advanced consequences', async () => {
+  test('keeps only actionable facts in desktop Preferences', async () => {
     renderDashboard('/settings', createFixtureApi(), desktopSettings);
     await expect.element(page.getByText('Sample User', { exact: true })).toBeVisible();
-    await expect.element(page.getByRole('button', { name: 'Manage account' })).toBeVisible();
+    await expect.element(page.getByText('Protected by Keychain', { exact: true })).toBeVisible();
     await expect
-      .element(page.getByRole('heading', { name: 'Protected by Keychain', exact: true }))
+      .element(page.getByText('Kept on this Mac outside the vault', { exact: true }))
       .toBeVisible();
+    await expect.element(page.getByText('Exalto Seal', { exact: true })).toBeVisible();
+    await expect.element(page.getByText('Version 0.1.0', { exact: true })).toBeVisible();
+    for (const removed of [
+      'Active verification key',
+      'Registry generation',
+      'Retained preview limit',
+      'Runtime profile',
+      'Status endpoint',
+      'API version',
+      'Vault mode',
+    ]) {
+      await expect.element(page.getByText(removed, { exact: true })).not.toBeInTheDocument();
+    }
     await expect
-      .element(page.getByText(/not protected by the private-capture vault/))
-      .toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'Exalto Seal' })).toBeVisible();
-    await expect.element(page.getByText('Signer', { exact: true }).first()).toBeVisible();
-    await expect.element(page.getByText('Seal', { exact: true }).first()).toBeVisible();
-    await expect
-      .element(page.getByText('Operated by Exalto', { exact: true }).first())
+      .element(page.getByRole('link', { name: 'Open generated OpenAPI' }))
       .not.toBeInTheDocument();
-    await expect.element(page.getByText('Alice', { exact: true })).not.toBeInTheDocument();
-    await expect.element(page.getByText('Active verification key', { exact: true })).toBeVisible();
-    await page.getByText('View details', { exact: true }).click();
-    await expect.element(page.getByRole('heading', { name: 'seal1' })).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'seal3' })).toBeVisible();
-    await expect.element(page.getByText('Verification key', { exact: true }).first()).toBeVisible();
-    await expect.element(page.getByText(/installed macOS identity/)).toBeVisible();
+    expect(document.querySelectorAll('.preferences a[target="_blank"]')).toHaveLength(0);
+    await expect.element(page.getByRole('button', { name: 'Copy OpenAPI URL' })).toBeVisible();
+
+    await expect.element(page.getByText('Operator', { exact: true }).first()).not.toBeVisible();
+    await page.getByText('Details', { exact: true }).click();
+    await expect.element(page.getByText('Operator', { exact: true }).first()).toBeVisible();
+    await expect.element(page.getByText('seal3', { exact: true })).toBeVisible();
+  });
+
+  test('switches the desktop theme between System, Light, and Dark', async () => {
+    renderDashboard('/settings', createFixtureApi(), desktopSettings);
+    const theme = page.getByRole('radiogroup', { name: 'Theme' });
+    await expect.element(theme.getByRole('radio', { name: 'System' })).toBeChecked();
+    await theme.getByText('Dark', { exact: true }).click();
     await expect
-      .element(page.getByText('ai.exalto.capture', { exact: false }))
-      .not.toBeInTheDocument();
-    await expect.element(page.getByText('Service', { exact: true })).toBeVisible();
-    await expect.element(page.getByText('Developer', { exact: true })).toBeVisible();
-    await expect.element(page.getByText('Provider routes')).not.toBeInTheDocument();
+      .poll(() => document.documentElement.getAttribute('data-mantine-color-scheme'))
+      .toBe('dark');
+    expect(localStorage.getItem('mantine-color-scheme-value')).toBe('dark');
+    await theme.getByText('Light', { exact: true }).click();
+    await expect
+      .poll(() => document.documentElement.getAttribute('data-mantine-color-scheme'))
+      .toBe('light');
   });
 
   test('does not brand third-party or explicit sealing trust as Exalto Seal', async () => {
@@ -1377,7 +1384,7 @@ describe('Notary admin dashboard', () => {
       }),
     };
     renderDashboard('/settings', thirdParty, desktopSettings);
-    await expect.element(page.getByRole('heading', { name: 'Northstar Seal' })).toBeVisible();
+    await expect.element(page.getByText('Northstar Seal', { exact: true }).first()).toBeVisible();
     await expect.element(page.getByText('Exalto Seal', { exact: true })).not.toBeInTheDocument();
 
     cleanup();
@@ -1399,7 +1406,7 @@ describe('Notary admin dashboard', () => {
     };
     renderDashboard('/settings', explicit, desktopSettings);
     await expect
-      .element(page.getByRole('heading', { name: 'Configured sealing service' }))
+      .element(page.getByText('Configured sealing service', { exact: true }))
       .toBeVisible();
     await expect.element(page.getByText('Exalto Seal', { exact: true })).not.toBeInTheDocument();
   });

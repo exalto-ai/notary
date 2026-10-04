@@ -18,11 +18,9 @@
   --model-rule: rgba(30, 74, 115, .38);
 }
 
-@media (prefers-color-scheme: dark) {
-  .builtin-chat {
-    --human-wash: rgba(53, 227, 155, .07);
-    --model-rule: rgba(116, 167, 210, .5);
-  }
+:where(:root[data-mantine-color-scheme='dark']) .builtin-chat {
+  --human-wash: rgba(53, 227, 155, .07);
+  --model-rule: rgba(116, 167, 210, .5);
 }
 
 .chat-bar {

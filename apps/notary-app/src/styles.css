@@ -135,6 +135,9 @@ h1, h2, p { margin: 0; }
 .native-content { min-height: 0; overflow: auto; background: var(--window); }
 .native-content.has-workspace { overflow: hidden; }
 .native-page { width: min(1040px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 50px; }
+.workspace-offline-page section { display: grid; justify-items: start; gap: 12px; }
+.workspace-offline-page p { color: var(--secondary); }
+.workspace-offline-page .native-notice { margin: 0; }
 
 .mac-button {
   display: inline-flex;
@@ -160,7 +163,6 @@ h1, h2, p { margin: 0; }
 .mac-button.is-large { min-height: 34px; padding-inline: 16px; border-radius: 8px; font-size: var(--text-label); }
 
 .native-notice { margin-top: 12px; padding: 9px 12px; border: 1px solid rgba(23, 105, 224, .22); border-radius: 8px; background: var(--blue-soft); color: #0f54b7; font-size: var(--text-caption); }
-.preference-note.service-start-notice { margin: 0; }
 
 .section-label { color: var(--tertiary); font-size: var(--text-caption); font-weight: 600; }
 .capture-counts { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--separator-soft); border-bottom: 1px solid var(--separator-soft); }
@@ -179,23 +181,6 @@ h1, h2, p { margin: 0; }
 .native-route-stop small { margin-top: 2px; color: var(--tertiary); font-size: var(--text-caption); }
 .readiness { position: absolute; top: 12px; right: 0; display: inline-flex; align-items: center; gap: 7px; color: var(--secondary); font-size: var(--text-caption); }
 
-.preferences-page { width: min(760px, calc(100% - 48px)); }
-.preference-section + .preference-section { margin-top: 25px; }
-.preference-section > h2 { margin: 0 0 7px 10px; font-size: var(--text-label); font-weight: 600; }
-.preference-group { overflow: hidden; border: 1px solid var(--separator); border-radius: 11px; background: var(--surface); }
-.preference-row { display: flex; min-height: 57px; align-items: center; justify-content: space-between; gap: 24px; padding: 10px 14px; }
-.preference-row + .preference-row { border-top: 1px solid var(--separator-soft); }
-.preference-row div strong, .preference-row div span { display: block; }
-.preference-row strong { font-size: var(--text-caption); font-weight: 600; }
-.preference-row div span { margin-top: 3px; color: var(--secondary); font-size: var(--text-caption); }
-.preference-row input[role="switch"] { appearance: none; width: 34px; height: 20px; border-radius: 10px; background: #b9b9be; transition: background 120ms ease; }
-.preference-row input[role="switch"]::after { display: block; width: 16px; height: 16px; margin: 2px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .24); content: ""; transition: transform 120ms ease; }
-.preference-row input[role="switch"]:checked { background: var(--green); }
-.preference-row input[role="switch"]:checked::after { transform: translateX(14px); }
-.preference-note { padding: 10px 14px; border-top: 1px solid var(--separator-soft); background: var(--surface-secondary); color: var(--secondary); font-size: var(--text-caption); line-height: 1.5; }
-.update-block-note { color: var(--orange); }
-.compact-rows .preference-row { min-height: 42px; }
-.compact-rows code { color: var(--secondary); font-size: var(--text-caption); }
 .loading-window { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; gap: 10px; color: var(--secondary); font-size: var(--text-label); }
 .loading-window img { width: 28px; height: 28px; }
 
@@ -601,18 +586,9 @@ h1, h2, p { margin: 0; }
   font: 600 var(--text-body)/1.2 var(--body-font);
   letter-spacing: 0;
 }
-.native-window .preference-group { border-radius: 5px; box-shadow: none; }
 
 .native-window .readiness { top: 15px; font: 600 var(--text-caption)/1.25 var(--body-font); }
 
-.native-window .preference-section + .preference-section { margin-top: 29px; }
-.native-window .preference-section > h2 { margin: 0 0 10px 10px; font-size: var(--text-lead); font-weight: 650; }
-.native-window .preference-row { min-height: 68px; gap: 28px; padding: 13px 16px; }
-.native-window .preference-row strong { font-size: var(--text-body); }
-.native-window .preference-row div span { margin-top: 4px; font-size: var(--text-label); line-height: 1.4; }
-.native-window .preference-note { padding: 12px 16px; font-size: var(--text-caption); line-height: 1.5; }
-.native-window .compact-rows .preference-row { min-height: 50px; }
-.native-window .compact-rows code { font-size: var(--text-caption); }
 
 @media (max-width: 1120px) {
   .native-window .capture-layout { grid-template-columns: 1fr; }
@@ -627,36 +603,37 @@ h1, h2, p { margin: 0; }
   .native-window .capture-warning-actions { justify-content: flex-start; }
 }
 
-@media (prefers-color-scheme: dark) {
-  .native-window {
-    --window: #101820;
-    --sidebar: transparent;
-    --sidebar-text: #f1efe8;
-    --sidebar-muted: #a5afbb;
-    --surface: #17222c;
-    --surface-secondary: #202d38;
-    --surface-hover: rgba(109, 158, 201, .1);
-    --text: #f1efe8;
-    --secondary: #bac1c9;
-    --tertiary: #929ca7;
-    --separator: rgba(232, 237, 241, .18);
-    --separator-soft: rgba(232, 237, 241, .1);
-    --blue: #74a7d2;
-    --blue-hover: #8bb9df;
-    --blue-soft: rgba(116, 167, 210, .13);
-    --green: #35e39b;
-    --green-soft: rgba(53, 227, 155, .1);
-    --orange: #e2a461;
-    --red: #e87561;
-    --red-soft: rgba(232, 117, 97, .12);
-    --shadow: 0 1px 2px rgba(0, 0, 0, .24), 0 14px 36px rgba(0, 0, 0, .14);
-  }
-  .native-window .mac-button { border-color: var(--separator); background: var(--surface); color: var(--text); }
-  .native-window .mac-button:hover:not(:disabled) { background: var(--surface-secondary); }
-  .native-window .capture-button.is-primary,
-  .native-window .capture-button.is-primary:hover:not(:disabled) { color: #07111b; }
-  .native-window .capture-warning { color: var(--secondary); }
+/* Dark follows the scheme Mantine resolves on the root element, so the
+   Appearance preference and macOS both drive it. :where keeps the cascade
+   the old media query had. */
+:where(:root[data-mantine-color-scheme='dark']) .native-window {
+  --window: #101820;
+  --sidebar: transparent;
+  --sidebar-text: #f1efe8;
+  --sidebar-muted: #a5afbb;
+  --surface: #17222c;
+  --surface-secondary: #202d38;
+  --surface-hover: rgba(109, 158, 201, .1);
+  --text: #f1efe8;
+  --secondary: #bac1c9;
+  --tertiary: #929ca7;
+  --separator: rgba(232, 237, 241, .18);
+  --separator-soft: rgba(232, 237, 241, .1);
+  --blue: #74a7d2;
+  --blue-hover: #8bb9df;
+  --blue-soft: rgba(116, 167, 210, .13);
+  --green: #35e39b;
+  --green-soft: rgba(53, 227, 155, .1);
+  --orange: #e2a461;
+  --red: #e87561;
+  --red-soft: rgba(232, 117, 97, .12);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .24), 0 14px 36px rgba(0, 0, 0, .14);
 }
+:where(:root[data-mantine-color-scheme='dark']) .native-window .mac-button { border-color: var(--separator); background: var(--surface); color: var(--text); }
+:where(:root[data-mantine-color-scheme='dark']) .native-window .mac-button:hover:not(:disabled) { background: var(--surface-secondary); }
+:where(:root[data-mantine-color-scheme='dark']) .native-window .capture-button.is-primary,
+:where(:root[data-mantine-color-scheme='dark']) .native-window .capture-button.is-primary:hover:not(:disabled) { color: #07111b; }
+:where(:root[data-mantine-color-scheme='dark']) .native-window .capture-warning { color: var(--secondary); }
 
 /* Setup and unlock windows. The setup window carries its own scoped visual
    system in onboarding.css; what stays here is shared with the unlock sheet. */
@@ -683,34 +660,32 @@ h1, h2, p { margin: 0; }
   .native-window .capture-toast { animation: none !important; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f5f5f7;
-    background: #171719;
-    --window: #171719;
-    --sidebar: rgba(37, 37, 40, .9);
-    --surface: #252527;
-    --surface-secondary: #303033;
-    --surface-hover: rgba(255, 255, 255, .055);
-    --text: #f5f5f7;
-    --secondary: #b1b1b6;
-    --tertiary: #85858b;
-    --separator: rgba(235, 235, 245, .16);
-    --separator-soft: rgba(235, 235, 245, .09);
-    --blue: #3f8cff;
-    --blue-hover: #5599ff;
-    --blue-soft: rgba(63, 140, 255, .15);
-    --green: #31c451;
-    --orange: #f1a33c;
-    --red: #ff6961;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .25), 0 12px 36px rgba(0, 0, 0, .14);
-  }
-  .onboarding-toolbar { background: rgba(31, 31, 33, .88); }
-  .mac-button { border-color: var(--separator); background: linear-gradient(#39393c, #303033); }
-  .mac-button:hover:not(:disabled) { background: linear-gradient(#414145, #343438); }
-  .mac-button.is-primary { border-color: var(--blue); background: var(--blue); color: #fff; }
-  .native-notice { color: #8dbbff; }
+:root:where([data-mantine-color-scheme='dark']) {
+  color: #f5f5f7;
+  background: #171719;
+  --window: #171719;
+  --sidebar: rgba(37, 37, 40, .9);
+  --surface: #252527;
+  --surface-secondary: #303033;
+  --surface-hover: rgba(255, 255, 255, .055);
+  --text: #f5f5f7;
+  --secondary: #b1b1b6;
+  --tertiary: #85858b;
+  --separator: rgba(235, 235, 245, .16);
+  --separator-soft: rgba(235, 235, 245, .09);
+  --blue: #3f8cff;
+  --blue-hover: #5599ff;
+  --blue-soft: rgba(63, 140, 255, .15);
+  --green: #31c451;
+  --orange: #f1a33c;
+  --red: #ff6961;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .25), 0 12px 36px rgba(0, 0, 0, .14);
 }
+:where(:root[data-mantine-color-scheme='dark']) .onboarding-toolbar { background: rgba(31, 31, 33, .88); }
+:where(:root[data-mantine-color-scheme='dark']) .mac-button { border-color: var(--separator); background: linear-gradient(#39393c, #303033); }
+:where(:root[data-mantine-color-scheme='dark']) .mac-button:hover:not(:disabled) { background: linear-gradient(#414145, #343438); }
+:where(:root[data-mantine-color-scheme='dark']) .mac-button.is-primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+:where(:root[data-mantine-color-scheme='dark']) .native-notice { color: #8dbbff; }
 
 .workspace-view-container { width: 100%; height: 100%; min-height: 0; }
 .workspace-view-container[hidden] { display: none; }
@@ -766,7 +741,6 @@ h1, h2, p { margin: 0; }
   min-height: 0;
   flex: 1 1 auto;
 }
-.native-window .dashboard-shell--inline .settings-page--desktop,
 .native-window .dashboard-shell--inline .providers-page { max-width: 1120px; }
 .native-window .dashboard-shell--inline .provider-client-list:has(> .provider-route:only-child) .provider-route {
   grid-column: 1 / -1;

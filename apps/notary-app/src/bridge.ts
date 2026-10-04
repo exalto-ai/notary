@@ -550,6 +550,12 @@ export async function setLaunchAtLogin(enabled: boolean): Promise<void> {
   else await plugin.disable();
 }
 
+export async function setWindowTheme(theme: 'light' | 'dark' | null): Promise<void> {
+  if (!isTauri()) return;
+  const { getCurrentWindow } = await import('@tauri-apps/api/window');
+  await getCurrentWindow().setTheme(theme);
+}
+
 export async function openAccountLink(url: string): Promise<void> {
   if (!isTauri()) {
     window.open(url, '_blank', 'noopener,noreferrer');
