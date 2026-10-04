@@ -69,8 +69,9 @@ layout:
 
 Exalto uses two deliberately different interface modes under one brand, and this
 document governs both. The front-matter tokens above belong to the local
-developer workspace used by Exalto Capture and its embedded administration
-surfaces. Do not edit them for marketing work.
+developer workspace in the browser; inside the Exalto Capture desktop app the
+same views take neutral surfaces instead (Part III, The macOS shell). Do not
+edit them for marketing work.
 
 | Surface | System | Section |
 | --- | --- | --- |
@@ -436,7 +437,8 @@ concise fact (`Request — Private on this device`), not as ambient reassurance.
 ## Color
 
 The developer workspace is restrained by default: paper and ink in light mode,
-deep navy and pale ink in dark mode. Blue is a signal, never an atmosphere.
+deep navy and pale ink in dark mode in the browser, and neutral grays in the
+desktop app (see The macOS shell). Blue is a signal, never an atmosphere.
 `action` marks selection, focus, and small highlights and is never a large
 text-bearing background; `action-fill` carries solid primary controls with
 white text in both themes; `inverse-accent` is the pale blue for small technical
@@ -518,11 +520,33 @@ identity. The split is explicit so the two never argue:
   tasks, alerts for confirmations, menus for secondary and destructive actions;
   a complete menu bar with standard shortcuts; Settings laid out as grouped
   forms with the control on the right.
-- **Ours, from this document:** the paper and navy palette; the three type
+- **Ours, from this document:** registrar blue, phosphor green, and recording
+  red as signals on neutral grounds; the three type
   roles with mono reserved for evidence values; square outlined status
   markers with words; flat rule-separated grids with no lift or shadow; one
   primary per screen; the setup rail and first-run sheet as a branded
   exception; the copy doctrine.
+
+The desktop app's grounds are monochrome, the way native Mac apps are: no warm
+paper and no navy cast. One token set per appearance, defined once on
+`:root[data-shell='desktop']` in `apps/notary-app/src/styles.css`, serves the
+shell, the embedded dashboard views, and their portalled menus and sheets:
+
+| Token | Light | Dark | Job |
+| --- | --- | --- | --- |
+| `window` | `#f5f5f5` | `#1e1e1e` | Canvas behind grouped content |
+| `surface` | `#ffffff` | `#252525` | Toolbars, lists, inspectors, groups, menus |
+| `surface-secondary` | `#f0f0f0` | `#2c2c2c` | Recessed tracks, message headers, code |
+| `surface-active` | `#e6e6e6` | `#333333` | Pressed controls |
+| `text` | `#1f1f1f` | `#ececec` | Text |
+| `secondary` / `tertiary` | `#4f4f4f` / `#6b6b6b` | `#b8b8b8` / `#a1a1a1` | Secondary text, labels |
+| `separator` / `-soft` | 12% / 7% black | 14% / 8% white | Hairlines |
+| `inverse` | `#1a1a1a` | `#161616` | Receipt and JSON blocks |
+
+The sidebar stays transparent over the system Sidebar material. Brand hues
+carry meaning only: `blue` for the record, links, and selection, `blue-fill`
+(`#1e4a73` / `#2d678f`) under white text, `green` for capture and live state.
+Public web surfaces, the browser dashboard, and the setup window keep paper.
 
 Section headers in the shell are 11px semibold secondary text in sentence
 case with no tracking, the way System Settings and Xcode label groups.

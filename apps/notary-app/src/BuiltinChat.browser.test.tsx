@@ -9,6 +9,9 @@ import { getDesktopState } from './bridge';
 import * as bridge from './builtinBridge';
 import './styles.css';
 
+// The desktop palette keys off this, which App sets at load.
+document.documentElement.dataset.shell = 'desktop';
+
 vi.mock('./builtinBridge', () => ({
   listConnections: vi.fn(),
   listModels: vi.fn(),
