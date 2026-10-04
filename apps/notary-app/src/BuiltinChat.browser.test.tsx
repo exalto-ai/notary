@@ -4,9 +4,10 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { exaltoTheme } from '../../../runtime/apps/admin-dashboard/src/theme';
-import { BuiltinChat, ProviderConnections } from './BuiltinChat';
+import { BuiltinChat } from './BuiltinChat';
 import { getDesktopState } from './bridge';
 import * as bridge from './builtinBridge';
+import { ProviderConnections } from './ProviderConnections';
 import './styles.css';
 
 vi.mock('./builtinBridge', () => ({
@@ -49,28 +50,108 @@ function renderWithTheme(view: ReactNode) {
   return render(<MantineProvider theme={exaltoTheme}>{view}</MantineProvider>);
 }
 
+async function renderChat(open: (id: string) => void = () => undefined) {
+  const state = await getDesktopState();
+  return renderWithTheme(
+    <BuiltinChat state={state} refresh={async () => undefined} onOpenTrace={open} />,
+  );
+}
+
 async function chat() {
   const open = vi.fn();
-  renderWithTheme(
-    <BuiltinChat
-      state={await getDesktopState()}
-      refresh={async () => undefined}
-      onOpenTrace={open}
-    />,
-  );
-  await expect
-    .element(page.getByRole('combobox', { name: 'Chat connection' }))
-    .toHaveValue('OpenAI API');
-  await expect
-    .element(page.getByRole('combobox', { name: 'Model' }))
-    .toHaveValue('Test model (default)');
+  await renderChat(open);
+  await expect.element(page.getByRole('button', { name: 'Connection: OpenAI API' })).toBeVisible();
+  await expect.element(page.getByRole('button', { name: 'Model: Test model' })).toBeEnabled();
   return open;
 }
 
-test('uses the shared Mantine selects in the chat toolbar', async () => {
+test('a new conversation is the mark above the composer, with no transcript yet', async () => {
   await chat();
-  expect(document.querySelectorAll('.chat-bar select')).toHaveLength(0);
-  expect(document.querySelectorAll('.chat-bar .axis-select-trigger')).toHaveLength(2);
+  await expect.element(page.getByRole('img', { name: 'Exalto Capture' })).toBeVisible();
+  await expect
+    .element(page.getByLabelText('Message'))
+    .toHaveAttribute('placeholder', 'Ask anything');
+  await expect.element(page.getByRole('log', { name: 'Conversation' })).not.toBeInTheDocument();
+  await expect.element(page.getByText('Capture on')).toBeVisible();
+  await expect.element(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled();
+  await expect.element(page.getByRole('button', { name: 'New chat' })).toBeDisabled();
+});
+
+test('without a connection the only action is to add one in the Connections dialog', async () => {
+  vi.mocked(bridge.listConnections).mockResolvedValue([]);
+  await renderChat();
+  const add = page.getByRole('button', { name: 'Add a connection' });
+  await expect.element(add).toBeVisible();
+  await expect.element(page.getByLabelText('Message')).not.toBeInTheDocument();
+  await userEvent.click(add);
+  const dialog = page.getByRole('dialog', { name: 'Connections' });
+  await expect.element(dialog.getByRole('button', { name: 'Link ChatGPT plan' })).toBeVisible();
+  await userEvent.keyboard('{Escape}');
+  await expect.element(dialog).not.toBeInTheDocument();
+  await userEvent.click(add);
+  await userEvent.click(page.getByRole('button', { name: 'Done' }));
+  await expect.element(dialog).not.toBeInTheDocument();
+});
+
+test('the connection chip switches connections and opens Manage connections', async () => {
+  vi.mocked(bridge.chatgptStatus).mockResolvedValue('connected');
+  await renderChat();
+  // The ChatGPT plan is preferred when it is linked.
+  await expect
+    .element(page.getByRole('button', { name: 'Connection: ChatGPT plan' }))
+    .toBeVisible();
+  await userEvent.click(page.getByRole('button', { name: /^Connection:/ }));
+  await userEvent.click(page.getByRole('menuitemradio', { name: 'OpenAI API' }));
+  await expect.element(page.getByRole('button', { name: 'Connection: OpenAI API' })).toBeVisible();
+  await expect.poll(() => vi.mocked(bridge.listModels).mock.calls.at(-1)?.[0]).toBe('openai');
+  await userEvent.click(page.getByRole('button', { name: /^Connection:/ }));
+  await userEvent.click(page.getByRole('menuitem', { name: 'Manage connections…' }));
+  const dialog = page.getByRole('dialog', { name: 'Connections' });
+  await expect.element(dialog).toBeVisible();
+  await userEvent.click(page.getByRole('button', { name: 'Done' }));
+  await expect.element(dialog).not.toBeInTheDocument();
+});
+
+test('Return sends and Shift-Return adds a line', async () => {
+  vi.mocked(bridge.sendChat).mockResolvedValue({ status: 'complete', traces: [] });
+  await chat();
+  const field = page.getByLabelText('Message');
+  await userEvent.click(field);
+  await userEvent.keyboard('First line{Shift>}{Enter}{/Shift}Second line');
+  await expect.element(field).toHaveValue('First line\nSecond line');
+  expect(bridge.sendChat).not.toHaveBeenCalled();
+  await userEvent.keyboard('{Enter}');
+  await expect.poll(() => vi.mocked(bridge.sendChat).mock.calls.length).toBe(1);
+  expect(vi.mocked(bridge.sendChat).mock.calls[0][3]).toEqual([
+    { role: 'user', content: 'First line\nSecond line' },
+  ]);
+  await expect.element(field).toHaveValue('');
+});
+
+test('the ledger line moves from Sending to Responding to Captured', async () => {
+  let delta: ((text: string) => void) | undefined;
+  let complete: ((result: bridge.ChatResult) => void) | undefined;
+  vi.mocked(bridge.sendChat).mockImplementation((_id, _connection, _model, _messages, onDelta) => {
+    delta = onDelta;
+    return new Promise((resolve) => {
+      complete = resolve;
+    });
+  });
+  await chat();
+  await userEvent.fill(page.getByLabelText('Message'), 'Question');
+  await userEvent.keyboard('{Enter}');
+  const log = page.getByRole('log', { name: 'Conversation' });
+  await expect.element(log.getByText('Sending')).toBeVisible();
+  // Once the conversation starts, the composer docks below the transcript.
+  await expect.element(page.getByRole('img', { name: 'Exalto Capture' })).not.toBeInTheDocument();
+  delta?.('Answer');
+  await expect.element(log.getByText('Responding')).toBeVisible();
+  complete?.({ status: 'complete', traces: [{ id: 'trc-ledger-0001-abcdef', captured: true }] });
+  await expect
+    .element(page.getByRole('button', { name: /^Captured trc-…abcdef Open Trace$/ }))
+    .toBeVisible();
+  await expect.element(log.getByText('Test model')).toBeVisible();
+  await expect.element(page.getByRole('button', { name: 'New chat' })).toBeEnabled();
 });
 
 test('saves a key through native storage and clears the field without browser persistence', async () => {
@@ -207,61 +288,57 @@ test('stops the exact active request and retains its partial response', async ()
   await expect.element(page.getByText('Partial response')).toBeVisible();
 });
 
-test('loads connection models and selects the catalog default automatically', async () => {
+test('selects the catalog default model and switches from the model chip', async () => {
   vi.mocked(bridge.listModels).mockResolvedValue([
     { id: 'first-model', name: 'First model', is_default: false },
     { id: 'preferred-model', name: 'Preferred model', is_default: true },
   ]);
-  renderWithTheme(
-    <BuiltinChat
-      state={await getDesktopState()}
-      refresh={async () => undefined}
-      onOpenTrace={() => undefined}
-    />,
-  );
-  await expect
-    .element(page.getByRole('combobox', { name: 'Model' }))
-    .toHaveValue('Preferred model (default)');
+  vi.mocked(bridge.sendChat).mockResolvedValue({ status: 'complete', traces: [] });
+  await renderChat();
+  await expect.element(page.getByRole('button', { name: 'Model: Preferred model' })).toBeVisible();
   expect(bridge.listModels).toHaveBeenCalledWith('openai');
-  await page.getByRole('combobox', { name: 'Model' }).click();
-  await page.getByRole('option', { name: 'First model' }).click();
-  await expect.element(page.getByRole('combobox', { name: 'Model' })).toHaveValue('First model');
+  await userEvent.click(page.getByRole('button', { name: /^Model:/ }));
+  await userEvent.click(page.getByRole('menuitemradio', { name: 'First model' }));
+  await expect.element(page.getByRole('button', { name: 'Model: First model' })).toBeVisible();
+  await userEvent.fill(page.getByLabelText('Message'), 'Hello');
+  await userEvent.keyboard('{Enter}');
+  await expect.poll(() => vi.mocked(bridge.sendChat).mock.calls[0]?.[2]).toBe('first-model');
+  // A conversation keeps the model it started with.
+  await expect.element(page.getByRole('button', { name: 'Model: First model' })).toBeDisabled();
 });
 
 test('model discovery failure can be retried without inventing an available model', async () => {
   vi.mocked(bridge.listModels).mockRejectedValueOnce(new Error('Model service unavailable.'));
-  renderWithTheme(
-    <BuiltinChat
-      state={await getDesktopState()}
-      refresh={async () => undefined}
-      onOpenTrace={() => undefined}
-    />,
-  );
+  await renderChat();
   await expect.element(page.getByRole('alert')).toHaveTextContent('Model service unavailable.');
-  await expect.element(page.getByRole('combobox', { name: 'Model' })).toHaveValue('');
+  await expect.element(page.getByRole('button', { name: 'Model: none' })).toBeDisabled();
   await expect.element(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled();
   await userEvent.click(page.getByRole('button', { name: 'Retry models' }));
-  await expect
-    .element(page.getByRole('combobox', { name: 'Model' }))
-    .toHaveValue('Test model (default)');
+  await expect.element(page.getByRole('button', { name: 'Model: Test model' })).toBeEnabled();
 });
 
 test('locked connections do not load credentials in the background and unlock is explicit', async () => {
   vi.mocked(bridge.listConnections).mockResolvedValue([{ id: 'openai', status: 'locked' }]);
   vi.mocked(bridge.unlockConnections).mockResolvedValue(undefined);
-  renderWithTheme(
-    <BuiltinChat
-      state={await getDesktopState()}
-      refresh={async () => undefined}
-      onOpenTrace={() => undefined}
-    />,
-  );
+  await renderChat();
   await expect
     .element(page.getByRole('alert'))
     .toHaveTextContent('Unlock the vault in Connections');
   expect(bridge.listModels).not.toHaveBeenCalled();
   expect(bridge.unlockConnections).not.toHaveBeenCalled();
-  await userEvent.click(page.getByRole('button', { name: 'Connections', exact: true }));
+  await userEvent.click(page.getByRole('button', { name: /^Connection:/ }));
+  await userEvent.click(page.getByRole('menuitem', { name: 'Manage connections…' }));
   await userEvent.click(page.getByRole('button', { name: 'Unlock', exact: true }));
   expect(bridge.unlockConnections).toHaveBeenCalledTimes(1);
+});
+
+test('with capture off the composer offers to turn it on and does not send', async () => {
+  window.history.replaceState({}, '', '/?screen=capture-off');
+  await chat();
+  await expect.element(page.getByText('Capture off')).toBeVisible();
+  await expect.element(page.getByRole('button', { name: 'Turn on capture' })).toBeEnabled();
+  await userEvent.fill(page.getByLabelText('Message'), 'Not yet');
+  await expect.element(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled();
+  await userEvent.keyboard('{Enter}');
+  expect(bridge.sendChat).not.toHaveBeenCalled();
 });

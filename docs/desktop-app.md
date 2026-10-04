@@ -192,8 +192,16 @@ normal captured Traces remain in the local store until explicitly deleted.
 - **Claude subscription:** no third-party subscription linking is offered.
   Select Anthropic API for built-in Claude requests.
 
-The user chooses a connection and model ID, acknowledges provider usage and
-private-capture retention, and explicitly turns on capture before sending.
+A new chat shows the Capture mark above the composer. Without a saved
+connection, its only action is **Add a connection**, which opens the
+Connections dialog. The composer's footer holds the connection and model
+pop-up buttons and Send; the connection menu also opens **Manage
+connections…**. Return sends and Shift-Return starts a new line. Under the
+composer, Capture shows whether capture is on and offers to turn it on;
+sending stays disabled until it is. Once a conversation starts, the transcript
+grows above the composer, and its connection and model stay fixed until
+**New chat**. Only one conversation exists at a time and none is stored.
+
 API requests stream through fixed `/openai/v1/responses` and
 `/anthropic/v1/messages` loopback routes. ChatGPT requests use the supported
 Codex runtime through a per-session loopback relay to `/codex/responses`.
@@ -580,7 +588,7 @@ ChatGPT uses the managed Codex `model/list` API, including pagination. API-key
 connections read metadata from the fixed OpenAI or Anthropic `/v1/models` endpoint
 using the native credential owner. These metadata requests contain no conversation
 and do not create Traces; all chat exchanges still require the capture proxy.
-The picker filters non-chat OpenAI model families, with the newest returned chat
+The model menu filters non-chat OpenAI model families, with the newest returned chat
 model selected initially. Provider access is finally checked when sending.
 A failed catalog request offers a retry and leaves sending disabled.
 

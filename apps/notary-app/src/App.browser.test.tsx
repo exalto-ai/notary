@@ -218,6 +218,18 @@ describe('Exalto Capture desktop shell', () => {
     expect(document.body.textContent).not.toContain('REC · Capturing');
   });
 
+  test('opens Chat on its connect action when no connection is saved', async () => {
+    renderApp('?screen=capture-on&view=chat');
+    const add = page.getByRole('button', { name: 'Add a connection' });
+    await expect.element(add).toBeVisible();
+    expect(document.querySelector('.chat-composer')).toBeNull();
+    await userEvent.click(add);
+    const dialog = page.getByRole('dialog', { name: 'Connections' });
+    await expect.element(dialog).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Done' }));
+    await expect.element(dialog).not.toBeInTheDocument();
+  });
+
   test('formats an empty byte balance consistently', () => {
     expect(formatBytes(0)).toBe('0 B');
   });
