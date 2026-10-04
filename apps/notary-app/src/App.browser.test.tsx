@@ -711,11 +711,11 @@ describe('Exalto Capture desktop shell', () => {
     await theme.getByText('Dark', { exact: true }).click();
     await expect.poll(scheme).toBe('dark');
     expect(localStorage.getItem('exalto-capture-color-scheme')).toBe('dark');
-    expect(windowColor()).toBe('#101820');
+    expect(windowColor()).toBe('#1e1e1e');
 
     await theme.getByText('Light', { exact: true }).click();
     await expect.poll(scheme).toBe('light');
-    expect(windowColor()).toBe('#f5f3ec');
+    expect(windowColor()).toBe('#f5f5f5');
 
     cleanup();
     renderApp('?screen=offline&view=settings');
