@@ -15,7 +15,6 @@ import {
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AccountConnectionCard } from '../../../runtime/apps/admin-dashboard/src/AccountConnection';
 import { AgentSetup, agentSetupPrompt, CLAUDE_COMMAND, CODEX_CONFIG } from './AgentSetup';
-import { ProviderConnections } from './BuiltinChat';
 import {
   beginTemporaryCapture,
   completeOnboarding,
@@ -31,6 +30,7 @@ import {
   startDaemon,
 } from './bridge';
 import notaryMark from './notary-mark.svg';
+import { ProviderConnections } from './ProviderConnections';
 import { StatusDot, type TraceTarget, type View, vaultProtection } from './product';
 import './onboarding.css';
 
