@@ -74,8 +74,6 @@ impl AdmissionTier {
 pub struct AdmissionLimits {
     pub max_attestable_http_bytes: i64,
     pub max_frame_bytes: i64,
-    pub max_private_chunk_bytes: i64,
-    pub max_private_chunk_commitments: i64,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -117,8 +115,6 @@ pub struct RedeemedOperationResponse {
     pub activation_deadline: i64,
     pub max_attestable_http_bytes: i64,
     pub max_frame_bytes: i64,
-    pub max_private_chunk_bytes: i64,
-    pub max_private_chunk_commitments: i64,
     pub record_digest: Option<String>,
     pub notarization_allowance_bytes: Option<i64>,
 }
@@ -168,8 +164,6 @@ struct OperationTicketRow {
     notarization_allowance_bytes: Option<i64>,
     max_attestable_http_bytes: i64,
     max_frame_bytes: i64,
-    max_private_chunk_bytes: i64,
-    max_private_chunk_commitments: i64,
     expires_at: i64,
     consumed_at: Option<i64>,
 }
@@ -365,8 +359,8 @@ async fn issue_admission(
         "INSERT INTO admission_tickets
          (token_hash, account_id, credit_subject, admission_tier, mode, registry_generation,
           record_digest, notarization_allowance_bytes, max_attestable_http_bytes, max_frame_bytes,
-          max_private_chunk_bytes, max_private_chunk_commitments, issued_at, expires_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+          issued_at, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
     )
     .bind(sha256_hex(token.as_bytes()))
     .bind(account_id.as_deref())
@@ -378,8 +372,6 @@ async fn issue_admission(
     .bind(notarization_allowance)
     .bind(policy.max_attestable_http_bytes)
     .bind(policy.max_frame_bytes)
-    .bind(policy.max_private_chunk_bytes)
-    .bind(policy.max_private_chunk_commitments)
     .bind(now)
     .bind(expires_at)
     .execute(&mut *transaction)
@@ -456,8 +448,7 @@ async fn redeem_one_operation(
     let ticket = sqlx::query_as::<_, OperationTicketRow>(
         "SELECT account_id, credit_subject, admission_tier, mode, registry_generation,
                 record_digest, notarization_allowance_bytes, max_attestable_http_bytes,
-                max_frame_bytes, max_private_chunk_bytes, max_private_chunk_commitments,
-                expires_at, consumed_at
+                max_frame_bytes, expires_at, consumed_at
          FROM admission_tickets WHERE token_hash = $1 FOR UPDATE",
     )
     .bind(sha256_hex(request.ticket.as_bytes()))
@@ -566,8 +557,6 @@ async fn redeem_one_operation(
         activation_deadline,
         max_attestable_http_bytes: ticket.max_attestable_http_bytes,
         max_frame_bytes: ticket.max_frame_bytes,
-        max_private_chunk_bytes: ticket.max_private_chunk_bytes,
-        max_private_chunk_commitments: ticket.max_private_chunk_commitments,
         record_digest: ticket.record_digest,
         notarization_allowance_bytes: ticket.notarization_allowance_bytes,
     })
@@ -867,8 +856,6 @@ fn admission_limits(policy: &AdmissionTierLimits) -> AdmissionLimits {
     AdmissionLimits {
         max_attestable_http_bytes: policy.max_attestable_http_bytes,
         max_frame_bytes: policy.max_frame_bytes,
-        max_private_chunk_bytes: policy.max_private_chunk_bytes,
-        max_private_chunk_commitments: policy.max_private_chunk_commitments,
     }
 }
 

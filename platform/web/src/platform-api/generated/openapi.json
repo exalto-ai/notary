@@ -3838,9 +3838,7 @@
         "type": "object",
         "required": [
           "max_attestable_http_bytes",
-          "max_frame_bytes",
-          "max_private_chunk_bytes",
-          "max_private_chunk_commitments"
+          "max_frame_bytes"
         ],
         "properties": {
           "max_attestable_http_bytes": {
@@ -3848,14 +3846,6 @@
             "format": "int64"
           },
           "max_frame_bytes": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "max_private_chunk_bytes": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "max_private_chunk_commitments": {
             "type": "integer",
             "format": "int64"
           }
@@ -5698,9 +5688,7 @@
           "operation_id",
           "activation_deadline",
           "max_attestable_http_bytes",
-          "max_frame_bytes",
-          "max_private_chunk_bytes",
-          "max_private_chunk_commitments"
+          "max_frame_bytes"
         ],
         "properties": {
           "activation_deadline": {
@@ -5712,14 +5700,6 @@
             "format": "int64"
           },
           "max_frame_bytes": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "max_private_chunk_bytes": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "max_private_chunk_commitments": {
             "type": "integer",
             "format": "int64"
           },

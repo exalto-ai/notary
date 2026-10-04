@@ -827,10 +827,6 @@ export interface components {
             max_attestable_http_bytes: number;
             /** Format: int64 */
             max_frame_bytes: number;
-            /** Format: int64 */
-            max_private_chunk_bytes: number;
-            /** Format: int64 */
-            max_private_chunk_commitments: number;
         };
         /** @enum {string} */
         AdmissionMode: "capture" | "notarization";
@@ -1353,10 +1349,6 @@ export interface components {
             max_attestable_http_bytes: number;
             /** Format: int64 */
             max_frame_bytes: number;
-            /** Format: int64 */
-            max_private_chunk_bytes: number;
-            /** Format: int64 */
-            max_private_chunk_commitments: number;
             /** Format: int64 */
             notarization_allowance_bytes?: number | null;
             operation_id: string;
