@@ -135,14 +135,34 @@ pub(crate) fn configured_crypto_provider() -> Result<CryptoProvider> {
 pub const DEFAULT_NOTARY_MAX_FRAME_BYTES: usize = 128 << 20;
 /// Shared HTTP transcript budget for local capture and notarization.
 ///
-/// This stays below the notary's 128 × 128 KiB private-proof limit so normal
-/// HTTP headers and transfer framing cannot turn a successfully captured
-/// checkpoint into a proof the public notary must reject.
+/// This stays below 128 × [`MAX_PRIVATE_CHUNK_BYTES`] so normal HTTP headers
+/// and transfer framing cannot turn a successfully captured checkpoint into a
+/// proof the public notary must reject.
 pub const DEFAULT_MAX_ATTESTABLE_HTTP_BYTES: usize = 15 << 20;
 const REQUEST_WRITE_CHUNK: usize = 8 << 10;
-/// Keeps the bounded proof path below the 1 GiB notary budget in the measured
-/// Proxy-TLS configuration.
-const CHUNKED_PROOF_BYTES: usize = 128 << 10;
+/// Protocol-wide size of one private transcript commitment in a notarization
+/// proof. Every client chunks its proof at exactly this size and every notary
+/// accepts chunks up to it; it is not a per-service or per-tier policy.
+///
+/// The notary verifies one child proof VM per commitment, and its memory grows
+/// with the chunk size. 128 KiB keeps one proof below the notary's measured
+/// 1 GiB budget in the Proxy-TLS configuration. Total cost is bounded
+/// separately by the session's total private-byte limit and by
+/// [`max_private_chunk_commitments`]. Changing this value changes the wire
+/// contract with released clients.
+pub const MAX_PRIVATE_CHUNK_BYTES: usize = 128 << 10;
+
+/// Largest number of private commitments a notary accepts for a proof whose
+/// committed bytes are bounded by `max_total_bytes`.
+///
+/// Clients pack each transcript direction greedily into full
+/// [`MAX_PRIVATE_CHUNK_BYTES`] commitments, so each direction ends with at most
+/// one partial chunk: `ceil(sent / C) + ceil(received / C) <= ceil(total / C) + 1`.
+/// The bound still stops a client from fragmenting its bytes into many tiny
+/// commitments, each of which would cost a child proof VM.
+pub const fn max_private_chunk_commitments(max_total_bytes: usize) -> usize {
+    max_total_bytes.div_ceil(MAX_PRIVATE_CHUNK_BYTES) + 1
+}
 const DISCLOSED_HEADER_VALUE_NAME: &str = "transfer-encoding";
 const DISCLOSED_TRANSFER_ENCODING_VALUE: &[u8] = b"chunked";
 pub const CAPTURE_CHECKPOINT_FORMAT: &str = "notary/capture-checkpoint/v1";
@@ -398,9 +418,7 @@ pub struct NotarySessionLimits {
     pub expected_record_digest: Option<[u8; 32]>,
     pub expected_transcript_bytes: Option<usize>,
     pub session_timeout: Duration,
-    pub max_private_chunk_bytes: usize,
     pub max_total_private_chunk_bytes: usize,
-    pub max_private_chunk_commitments: usize,
     pub max_frame_bytes: usize,
 }
 
@@ -648,12 +666,12 @@ fn commit_bounded_ranges(
     for range in ranges {
         let mut start = range.start;
         while start < range.end {
-            let available = CHUNKED_PROOF_BYTES - pending_bytes;
+            let available = MAX_PRIVATE_CHUNK_BYTES - pending_bytes;
             let end = (start + available).min(range.end);
             pending.union_mut(start..end);
             pending_bytes += end - start;
             start = end;
-            if pending_bytes == CHUNKED_PROOF_BYTES {
+            if pending_bytes == MAX_PRIVATE_CHUNK_BYTES {
                 builder.commit(&pending, direction)?;
                 pending = RangeSet::default();
                 pending_bytes = 0;
@@ -1401,7 +1419,7 @@ async fn notarize_capture_checkpoint_within(
     let request_config = request_config_builder.build()?;
     let mut prove_config_builder = ProveConfig::builder(state.transcript());
     prove_config_builder.transcript_commit(transcript_commit);
-    prove_config_builder.chunked_private_commitments(CHUNKED_PROOF_BYTES)?;
+    prove_config_builder.chunked_private_commitments(MAX_PRIVATE_CHUNK_BYTES)?;
     let prove_config = prove_config_builder.build()?;
 
     let liveness = SessionLiveness::new();
@@ -1432,7 +1450,7 @@ async fn notarize_capture_checkpoint_within(
                 state.prove_with_progress(
                     &mut prover_context,
                     &prove_config,
-                    CHUNKED_PROOF_BYTES,
+                    MAX_PRIVATE_CHUNK_BYTES,
                     &|value| {
                         liveness.touch();
                         progress(NotarizationProgress::Proof(NotarizationProofProgress {
@@ -1484,9 +1502,7 @@ pub async fn run_notary_session(
     mut socket: TcpStream,
     signing_key: Arc<SigningKey>,
     allowed_hosts: Arc<Vec<String>>,
-    max_private_chunk_bytes: usize,
     max_total_private_chunk_bytes: usize,
-    max_private_chunk_commitments: usize,
     max_frame_bytes: usize,
 ) -> Result<()> {
     validate_notary_frame_limit(max_frame_bytes)?;
@@ -1497,9 +1513,7 @@ pub async fn run_notary_session(
         prelude.mode(),
         signing_key,
         allowed_hosts,
-        max_private_chunk_bytes,
         max_total_private_chunk_bytes,
-        max_private_chunk_commitments,
         max_frame_bytes,
     )
     .await
@@ -1555,15 +1569,12 @@ pub async fn write_notary_admission(
 }
 
 /// Runs a notary session after its prelude has been validated and consumed.
-#[allow(clippy::too_many_arguments)]
 pub async fn run_notary_session_after_prelude(
     socket: TcpStream,
     mode: NotarySessionMode,
     signing_key: Arc<SigningKey>,
     allowed_hosts: Arc<Vec<String>>,
-    max_private_chunk_bytes: usize,
     max_total_private_chunk_bytes: usize,
-    max_private_chunk_commitments: usize,
     max_frame_bytes: usize,
 ) -> Result<()> {
     run_notary_session_with_limits(
@@ -1571,9 +1582,7 @@ pub async fn run_notary_session_after_prelude(
         mode,
         signing_key,
         allowed_hosts,
-        max_private_chunk_bytes,
         max_total_private_chunk_bytes,
-        max_private_chunk_commitments,
         max_frame_bytes,
         None,
         None,
@@ -1665,9 +1674,7 @@ pub async fn run_notary_session_with_limits_after_prelude(
         mode,
         signing_key,
         allowed_hosts,
-        limits.max_private_chunk_bytes,
         limits.max_total_private_chunk_bytes,
-        limits.max_private_chunk_commitments,
         limits.max_frame_bytes,
         limits.expected_record_digest,
         limits.expected_transcript_bytes,
@@ -1685,9 +1692,7 @@ async fn run_notary_session_with_limits(
     mode: NotarySessionMode,
     signing_key: Arc<SigningKey>,
     allowed_hosts: Arc<Vec<String>>,
-    max_private_chunk_bytes: usize,
     max_total_private_chunk_bytes: usize,
-    max_private_chunk_commitments: usize,
     max_frame_bytes: usize,
     expected_record_digest: Option<[u8; 32]>,
     expected_transcript_bytes: Option<usize>,
@@ -1710,9 +1715,7 @@ async fn run_notary_session_with_limits(
             run_notarization_session(
                 socket,
                 signing_key,
-                max_private_chunk_bytes,
                 max_total_private_chunk_bytes,
-                max_private_chunk_commitments,
                 max_frame_bytes,
                 expected_record_digest,
                 expected_transcript_bytes,
@@ -1861,9 +1864,7 @@ fn application_data_bytes(records: &[tlsn::transcript::Record]) -> Result<usize>
 async fn run_notarization_session(
     mut socket: TcpStream,
     signing_key: Arc<SigningKey>,
-    max_private_chunk_bytes: usize,
     max_total_private_chunk_bytes: usize,
-    max_private_chunk_commitments: usize,
     max_frame_bytes: usize,
     expected_record_digest: Option<[u8; 32]>,
     expected_transcript_bytes: Option<usize>,
@@ -1888,13 +1889,8 @@ async fn run_notarization_session(
         .receipt
         .validate_records(&request.records)
         .map_err(NotarySessionFailure::client)?;
-    validate_notarization_request_limits(
-        &request.prove_request,
-        max_private_chunk_bytes,
-        max_total_private_chunk_bytes,
-        max_private_chunk_commitments,
-    )
-    .map_err(NotarySessionFailure::client)?;
+    validate_notarization_request_limits(&request.prove_request, max_total_private_chunk_bytes)
+        .map_err(NotarySessionFailure::client)?;
     let server_name = request
         .receipt
         .server_name
@@ -1922,7 +1918,7 @@ async fn run_notarization_session(
             &mut verifier_context,
             &request.prove_request,
             Some(ServerName::Dns(server_name)),
-            max_private_chunk_bytes,
+            MAX_PRIVATE_CHUNK_BYTES,
         )
         .await
         .map_err(classify_tlsn_session_failure)?;
@@ -1991,10 +1987,9 @@ fn sign_attestation(
 
 fn validate_notarization_request_limits(
     request: &tlsn::config::prove::ProveRequest,
-    max_chunk_bytes: usize,
     max_total_bytes: usize,
-    max_commitments: usize,
 ) -> Result<()> {
+    let max_commitments = max_private_chunk_commitments(max_total_bytes);
     let Some(commitments) = request.transcript_commit() else {
         bail!("notarization proof requires transcript commitments");
     };
@@ -2005,7 +2000,10 @@ fn validate_notarization_request_limits(
         total = total
             .checked_add(range.len())
             .ok_or_else(|| anyhow!("notarization proof byte count overflow"))?;
-        if range.len() > max_chunk_bytes || total > max_total_bytes || count > max_commitments {
+        if range.len() > MAX_PRIVATE_CHUNK_BYTES
+            || total > max_total_bytes
+            || count > max_commitments
+        {
             bail!("notarization proof request exceeds notary resource limits");
         }
     }
@@ -2013,6 +2011,62 @@ fn validate_notarization_request_limits(
         bail!("notarization proof requires hash commitments");
     }
     Ok(())
+}
+
+/// Builds the private proof request a client sends for one HTTP exchange and
+/// applies the notary's pre-proof limit check to it. This lets admission
+/// adapters prove that their session limits accept every client layout.
+#[cfg(any(test, feature = "test-utils"))]
+#[doc(hidden)]
+pub fn validate_client_proof_layout(
+    sent: Vec<u8>,
+    received: Vec<u8>,
+    max_total_private_chunk_bytes: usize,
+) -> Result<()> {
+    validate_notarization_request_limits(
+        &client_proof_request(&Transcript::new(sent, received))?,
+        max_total_private_chunk_bytes,
+    )
+}
+
+/// An HTTP/1.1 provider exchange whose request and response each total
+/// exactly the given number of bytes, including redacted credential headers.
+#[cfg(any(test, feature = "test-utils"))]
+#[doc(hidden)]
+pub fn test_http_exchange(sent_bytes: usize, received_bytes: usize) -> (Vec<u8>, Vec<u8>) {
+    fn message(head: &str, total: usize) -> Vec<u8> {
+        let mut body_len = total - head.len();
+        loop {
+            let head = format!("{head}Content-Length: {body_len}\r\n\r\n");
+            if head.len() + body_len == total {
+                let mut bytes = head.into_bytes();
+                bytes.resize(total, b'x');
+                return bytes;
+            }
+            body_len = total - head.len();
+        }
+    }
+    (
+        message(
+            "POST /v1/responses HTTP/1.1\r\nHost: api.openai.com\r\nAuthorization: Bearer sk-secret\r\n",
+            sent_bytes,
+        ),
+        message(
+            "HTTP/1.1 200 OK\r\nSet-Cookie: session=secret\r\n",
+            received_bytes,
+        ),
+    )
+}
+
+/// Mirrors the commitment layout in `notarize_capture_checkpoint_to_with_admission`.
+#[cfg(any(test, feature = "test-utils"))]
+fn client_proof_request(transcript: &Transcript) -> Result<tlsn::config::prove::ProveRequest> {
+    let transcript_commit =
+        capture_transcript_commit(transcript, DEFAULT_MAX_ATTESTABLE_HTTP_BYTES)?;
+    let mut builder = ProveConfig::builder(transcript);
+    builder.transcript_commit(transcript_commit);
+    builder.chunked_private_commitments(MAX_PRIVATE_CHUNK_BYTES)?;
+    Ok(builder.build()?.to_request())
 }
 
 struct DisclosedPresentation {
@@ -2589,9 +2643,7 @@ mod tests {
                     expected_record_digest: None,
                     expected_transcript_bytes: None,
                     session_timeout: Duration::from_secs(60),
-                    max_private_chunk_bytes: CHUNKED_PROOF_BYTES,
                     max_total_private_chunk_bytes,
-                    max_private_chunk_commitments: 4096,
                     max_frame_bytes: DEFAULT_NOTARY_MAX_FRAME_BYTES,
                 },
                 Some(recorder),
@@ -3212,6 +3264,78 @@ mod tests {
         }
     }
 
+    fn committed_private_bytes(request: &tlsn::config::prove::ProveRequest) -> usize {
+        request
+            .transcript_commit()
+            .unwrap()
+            .iter_hash()
+            .map(|(_, ranges, _)| ranges.len())
+            .sum()
+    }
+
+    #[test]
+    fn released_client_layout_for_the_onboarding_trace_is_accepted() {
+        // The v0.1.10 onboarding trace that the anonymous tier's former 64 KiB
+        // chunk cap rejected: its response commitment exceeds 64 KiB.
+        let (sent, received) = test_http_exchange(35_558, 68_351);
+        let transcript_bytes = sent.len() + received.len();
+        let request =
+            client_proof_request(&Transcript::new(sent.clone(), received.clone())).unwrap();
+        assert!(
+            request
+                .transcript_commit()
+                .unwrap()
+                .iter_hash()
+                .any(|(_, ranges, _)| ranges.len() > 64 << 10)
+        );
+        validate_client_proof_layout(sent, received, transcript_bytes).unwrap();
+    }
+
+    #[test]
+    fn largest_client_layouts_fit_the_derived_commitment_bound() {
+        // Both directions end in a partial chunk, the worst case for the
+        // derived commitment bound, at hosted per-session ceilings up to the
+        // notary's hard maximum.
+        for total in [1 << 20, 8 << 20, DEFAULT_MAX_ATTESTABLE_HTTP_BYTES] {
+            let sent_bytes = 3 * MAX_PRIVATE_CHUNK_BYTES + 1;
+            let (sent, received) = test_http_exchange(sent_bytes, total - sent_bytes);
+            let request = client_proof_request(&Transcript::new(sent, received)).unwrap();
+            let committed = committed_private_bytes(&request);
+            assert!(committed <= total);
+            assert!(
+                request.transcript_commit().unwrap().iter_hash().count()
+                    <= max_private_chunk_commitments(committed)
+            );
+            // The tightest total limit a notary could admit this proof under.
+            validate_notarization_request_limits(&request, committed).unwrap();
+            validate_notarization_request_limits(&request, total).unwrap();
+            assert!(validate_notarization_request_limits(&request, committed - 1).is_err());
+        }
+    }
+
+    #[test]
+    fn notary_rejects_oversized_or_fragmented_private_commitments() {
+        let (sent, received) = test_http_exchange(4 * MAX_PRIVATE_CHUNK_BYTES, 1024);
+        let transcript = Transcript::new(sent, received);
+        let request = |ranges: Vec<std::ops::Range<usize>>| {
+            let mut commit = TranscriptCommitConfig::builder(&transcript);
+            for range in ranges {
+                commit
+                    .commit(RangeSet::from(range), Direction::Sent)
+                    .unwrap();
+            }
+            let mut builder = ProveConfig::builder(&transcript);
+            builder.transcript_commit(commit.build().unwrap());
+            builder.build().unwrap().to_request()
+        };
+
+        let oversized = request(std::iter::once(0..MAX_PRIVATE_CHUNK_BYTES + 1).collect());
+        assert!(validate_notarization_request_limits(&oversized, 16 << 20).is_err());
+
+        let fragmented = request((0..4096).step_by(2).map(|start| start..start + 1).collect());
+        assert!(validate_notarization_request_limits(&fragmented, 16 << 20).is_err());
+    }
+
     #[test]
     fn deferred_http_commitments_ignore_interim_responses() {
         let sent = b"POST /v1/responses HTTP/1.1\r\nContent-Length: 2\r\n\r\n{}".to_vec();
@@ -3496,9 +3620,7 @@ mod tests {
                 socket,
                 Arc::new(tampered_signing_key),
                 Arc::new(Vec::new()),
-                CHUNKED_PROOF_BYTES,
                 8 << 20,
-                4096,
                 DEFAULT_NOTARY_MAX_FRAME_BYTES,
             )
             .await
@@ -3531,7 +3653,7 @@ mod tests {
                     .unwrap(),
             );
             prove_config
-                .chunked_private_commitments(CHUNKED_PROOF_BYTES)
+                .chunked_private_commitments(MAX_PRIVATE_CHUNK_BYTES)
                 .unwrap();
             let request = NotarizationSessionRequest {
                 receipt: checkpoint.receipt.clone(),
