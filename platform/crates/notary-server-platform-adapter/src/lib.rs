@@ -848,28 +848,6 @@ mod tests {
         serde_json::from_value(operation).unwrap()
     }
 
-    fn http_exchange(sent_bytes: usize, received_bytes: usize) -> (Vec<u8>, Vec<u8>) {
-        fn message(head: &str, total: usize) -> Vec<u8> {
-            let mut body_len = total - head.len();
-            loop {
-                let head = format!("{head}Content-Length: {body_len}\r\n\r\n");
-                if head.len() + body_len == total {
-                    let mut bytes = head.into_bytes();
-                    bytes.resize(total, b'x');
-                    return bytes;
-                }
-                body_len = total - head.len();
-            }
-        }
-        (
-            message(
-                "POST /v1/messages HTTP/1.1\r\nHost: api.anthropic.com\r\nx-api-key: secret\r\n",
-                sent_bytes,
-            ),
-            message("HTTP/1.1 200 OK\r\n", received_bytes),
-        )
-    }
-
     /// A released v0.1.10 client always chunks its private proof at
     /// `MAX_PRIVATE_CHUNK_BYTES`. Its anonymous onboarding trace was rejected
     /// on the public tier's former 64 KiB chunk cap; it must now be admitted on
@@ -877,13 +855,13 @@ mod tests {
     /// per-tier chunk fields.
     #[test]
     fn released_client_proof_layouts_are_admitted_on_every_tier() {
-        let onboarding = http_exchange(35_558, 68_351);
+        let onboarding = notary_core::test_http_exchange(35_558, 68_351);
         for tier in TIERS {
             for legacy_api in [false, true] {
                 let ceiling = usize::try_from(tier.0)
                     .unwrap()
                     .min(notary_core::DEFAULT_MAX_ATTESTABLE_HTTP_BYTES);
-                let largest = http_exchange(1024, ceiling - 1024);
+                let largest = notary_core::test_http_exchange(1024, ceiling - 1024);
                 for (sent, received) in [onboarding.clone(), largest] {
                     let transcript_bytes = sent.len() + received.len();
                     let limits = operation_constraints(

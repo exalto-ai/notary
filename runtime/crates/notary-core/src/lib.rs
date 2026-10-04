@@ -2026,6 +2026,35 @@ pub fn validate_client_proof_layout(
     )
 }
 
+/// An HTTP/1.1 provider exchange whose request and response each total
+/// exactly the given number of bytes, including redacted credential headers.
+#[cfg(any(test, feature = "test-utils"))]
+#[doc(hidden)]
+pub fn test_http_exchange(sent_bytes: usize, received_bytes: usize) -> (Vec<u8>, Vec<u8>) {
+    fn message(head: &str, total: usize) -> Vec<u8> {
+        let mut body_len = total - head.len();
+        loop {
+            let head = format!("{head}Content-Length: {body_len}\r\n\r\n");
+            if head.len() + body_len == total {
+                let mut bytes = head.into_bytes();
+                bytes.resize(total, b'x');
+                return bytes;
+            }
+            body_len = total - head.len();
+        }
+    }
+    (
+        message(
+            "POST /v1/responses HTTP/1.1\r\nHost: api.openai.com\r\nAuthorization: Bearer sk-secret\r\n",
+            sent_bytes,
+        ),
+        message(
+            "HTTP/1.1 200 OK\r\nSet-Cookie: session=secret\r\n",
+            received_bytes,
+        ),
+    )
+}
+
 /// Mirrors the commitment layout in `notarize_capture_checkpoint_to_with_admission`.
 #[cfg(any(test, feature = "test-utils"))]
 fn client_proof_request(transcript: &Transcript) -> Result<tlsn::config::prove::ProveRequest> {
@@ -3181,33 +3210,6 @@ mod tests {
         }
     }
 
-    /// An HTTP/1.1 exchange whose request and response each total exactly
-    /// the given number of bytes, with redacted credential headers.
-    fn http_exchange(sent_bytes: usize, received_bytes: usize) -> (Vec<u8>, Vec<u8>) {
-        fn message(head: &str, total: usize) -> Vec<u8> {
-            let mut body_len = total - head.len();
-            loop {
-                let head = format!("{head}Content-Length: {body_len}\r\n\r\n");
-                if head.len() + body_len == total {
-                    let mut bytes = head.into_bytes();
-                    bytes.resize(total, b'x');
-                    return bytes;
-                }
-                body_len = total - head.len();
-            }
-        }
-        (
-            message(
-                "POST /v1/responses HTTP/1.1\r\nHost: api.openai.com\r\nAuthorization: Bearer sk-secret\r\n",
-                sent_bytes,
-            ),
-            message(
-                "HTTP/1.1 200 OK\r\nSet-Cookie: session=secret\r\n",
-                received_bytes,
-            ),
-        )
-    }
-
     fn committed_private_bytes(request: &tlsn::config::prove::ProveRequest) -> usize {
         request
             .transcript_commit()
@@ -3221,7 +3223,7 @@ mod tests {
     fn released_client_layout_for_the_onboarding_trace_is_accepted() {
         // The v0.1.10 onboarding trace that the anonymous tier's former 64 KiB
         // chunk cap rejected: its response commitment exceeds 64 KiB.
-        let (sent, received) = http_exchange(35_558, 68_351);
+        let (sent, received) = test_http_exchange(35_558, 68_351);
         let transcript_bytes = sent.len() + received.len();
         let request =
             client_proof_request(&Transcript::new(sent.clone(), received.clone())).unwrap();
@@ -3242,7 +3244,7 @@ mod tests {
         // notary's hard maximum.
         for total in [1 << 20, 8 << 20, DEFAULT_MAX_ATTESTABLE_HTTP_BYTES] {
             let sent_bytes = 3 * MAX_PRIVATE_CHUNK_BYTES + 1;
-            let (sent, received) = http_exchange(sent_bytes, total - sent_bytes);
+            let (sent, received) = test_http_exchange(sent_bytes, total - sent_bytes);
             let request = client_proof_request(&Transcript::new(sent, received)).unwrap();
             let committed = committed_private_bytes(&request);
             assert!(committed <= total);
@@ -3259,7 +3261,7 @@ mod tests {
 
     #[test]
     fn notary_rejects_oversized_or_fragmented_private_commitments() {
-        let (sent, received) = http_exchange(4 * MAX_PRIVATE_CHUNK_BYTES, 1024);
+        let (sent, received) = test_http_exchange(4 * MAX_PRIVATE_CHUNK_BYTES, 1024);
         let transcript = Transcript::new(sent, received);
         let request = |ranges: Vec<std::ops::Range<usize>>| {
             let mut commit = TranscriptCommitConfig::builder(&transcript);
