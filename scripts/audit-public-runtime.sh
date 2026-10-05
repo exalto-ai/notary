@@ -9,7 +9,7 @@ fi
 root="$(cd "$root" && pwd)"
 
 for required in \
-  runtime apps/notary-app README.md SECURITY.md LICENSE-MIT \
+  runtime apps/notary-app apps/notary-app/src-tauri/Cargo.lock README.md SECURITY.md LICENSE-MIT \
   rust-toolchain.toml .gitleaks.toml .gitignore .notary-source.json \
   .github/workflows/ci.yml; do
   if test ! -e "$root/$required"; then
