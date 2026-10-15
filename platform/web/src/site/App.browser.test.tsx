@@ -130,6 +130,9 @@ test('names every canonical section in the browser title', () => {
   );
   expect(documentTitle('docs', 'share')).toBe('Share a Trace · Docs · Exalto Capture');
   expect(documentTitle('docs', undefined)).toBe('Overview · Docs · Exalto Capture');
+  // An old link resolves through an alias and is titled as the page it lands on.
+  expect(documentTitle('docs', 'pricing')).toBe('What it costs · Docs · Exalto Capture');
+  expect(documentTitle('docs', 'nonsense')).toBe('Docs · Exalto Capture');
   expect(documentTitle('signin', undefined)).toBe('Sign in · Exalto Capture');
   expect(documentTitle('authorize', undefined)).toBe('Connect device · Exalto Capture');
   expect(documentTitle('app', 'traces')).toBe('Traces · Exalto Capture');
@@ -240,6 +243,24 @@ test('folds the docs rail into a disclosure on a phone', async () => {
   await expect
     .element(page.getByRole('heading', { level: 1, name: 'Trust and guarantees.' }))
     .toBeVisible();
+  // The new page arrives with the menu folded again.
+  expect(container.querySelector('.cp-docs-mobile')?.hasAttribute('open')).toBe(false);
+});
+
+test('a docs page opened from the rail starts at the top', async () => {
+  window.history.replaceState({}, '', '/docs/getting-started');
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  const { container } = mount(<App />);
+
+  await expect.element(page.getByRole('heading', { level: 1 })).toBeVisible();
+  window.scrollTo({ top: 1200, behavior: 'instant' });
+  await waitFor(() => expect(window.scrollY).toBeGreaterThan(600));
+  container.querySelector<HTMLAnchorElement>('.cp-docs-rail a[href="/docs/agents"]')?.click();
+  await expect.element(page.getByRole('heading', { level: 1, name: 'For agents.' })).toBeVisible();
+  await waitFor(() => expect(window.scrollY).toBe(0));
+  // The docs rails follow the reader: the shell must not be a scroll container.
+  const shell = container.querySelector<HTMLElement>('.cp');
+  expect(shell && getComputedStyle(shell).overflowY).toBe('visible');
 });
 
 test('opens docs search from the phone disclosure too', async () => {

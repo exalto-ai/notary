@@ -51,11 +51,13 @@ export function App() {
       ?.setAttribute('content', aperture ? (scheme === 'dark' ? '#0d1013' : '#eff0f2') : '#201e1d');
   }, [scheme, aperture]);
 
+  // A new page starts at the top, unless the address names a place on it: a
+  // hash the browser scrolls to, or a docs section (`?section=`) the page does.
   // biome-ignore lint/correctness/useExhaustiveDependencies: path is intentional; scroll to top on every route change, not only section changes.
   useEffect(() => {
-    if (section !== 'docs' && !window.location.hash)
-      window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [section, path]);
+    if (window.location.hash || parameters.has('section')) return;
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [path]);
 
   const accountView: AccountView = accountViews.includes(page as AccountView)
     ? (page as AccountView)

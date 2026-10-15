@@ -24,7 +24,7 @@ export const lead = 'A procedure for an agent with a shell: install Capture, poi
     `capture --json traces list --metadata-only --limit 20` returns `items[]` with `trace_id`, `provider`, `requested_model`, `state` and `created_at_unix_ms`. Act only on identifiers the service returned, compare timestamps rather than assuming order, and keep `--metadata-only` so prompt previews never enter your transcript.
   </Step>
   <Step title="Seal it, after asking">
-    Sealing spends the account's sealing allowance and takes longer than capture. Ask first. Then `capture --json traces seal <trace_id> --wait` returns the operation; it is done when `state` is `succeeded`, and `failed` or `interrupted` means ask again before retrying.
+    Sealing spends the account's sealing allowance and takes longer than capture. Ask first. Then `capture --json traces seal <trace_id> --wait` returns `trace_id` and the finished `operation`; it is done when `operation.state` is `succeeded`, and `failed` or `interrupted` means ask again before retrying. Without `--wait`, poll `GET http://127.0.0.1:8788/v1/operations/<operation.operation_id>` until the state is one of those three.
   </Step>
   <Step title="Verify it">
     `capture --json traces verify <trace_id>` returns `outcome` as `passed`, `failed` or `unsupported`, with `verified_at_unix_ms`, `notary_key_id` and `trust_source`. Report exactly those. A package you opened is not a package you verified.

@@ -166,11 +166,11 @@ Set the SDK base URL to `http://127.0.0.1:8787/openai/v1` and continue using the
 
 ```toml
 # ~/.codex/config.toml
-model_provider = "notary"
+model_provider = "capture-openai"
 model = "YOUR_RESPONSES_MODEL"
 
-[model_providers.notary]
-name = "Exalto local proxy"
+[model_providers.capture-openai]
+name = "Exalto Capture · OpenAI API key"
 base_url = "http://127.0.0.1:8787/openai/v1"
 env_key = "OPENAI_API_KEY"
 wire_api = "responses"
@@ -184,10 +184,10 @@ This flow is live-tested with Codex CLI. Run `codex login status` first and conf
 
 ```toml
 # ~/.codex/config.toml
-model_provider = "notary-chatgpt"
+model_provider = "capture"
 
-[model_providers.notary-chatgpt]
-name = "Exalto local proxy · ChatGPT plan"
+[model_providers.capture]
+name = "Exalto Capture"
 base_url = "http://127.0.0.1:8787/codex"
 requires_openai_auth = true
 wire_api = "responses"
@@ -216,7 +216,7 @@ For a claude.ai plan, run `claude auth status` first. Remove `apiKeyHelper` and 
 ```sh
 env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN \
   ANTHROPIC_BASE_URL=http://127.0.0.1:8787/anthropic \
-  claude -p 'Reply with exactly: notary'
+  claude -p 'Reply with exactly: hello'
 ```
 
   </Provider>
@@ -230,7 +230,7 @@ curl http://127.0.0.1:8787/openrouter/api/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "HTTP-Referer: https://example.test" \
   -H "X-Title: Exalto example" \
-  -d '{"model":"YOUR_MODEL","stream":true,"messages":[{"role":"user","content":"Reply with exactly: notary"}]}'
+  -d '{"model":"YOUR_MODEL","stream":true,"messages":[{"role":"user","content":"Reply with exactly: hello"}]}'
 ```
 
   </Provider>

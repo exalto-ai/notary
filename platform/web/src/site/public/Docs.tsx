@@ -22,7 +22,7 @@ export function docPath(key: DocPageKey): string {
   return key === 'overview' ? '/docs' : `/docs/${key}`;
 }
 
-function Pages({ current, onNavigate }: { current: DocPageKey; onNavigate?: () => void }) {
+function Pages({ current }: { current: DocPageKey }) {
   let number = 0;
   return (
     <>
@@ -37,7 +37,6 @@ function Pages({ current, onNavigate }: { current: DocPageKey; onNavigate?: () =
                 href={href(docPath(key))}
                 className="cp-docs-page"
                 aria-current={key === current ? 'page' : undefined}
-                onClick={onNavigate}
               >
                 <span>{String(number).padStart(3, '0')}</span>
                 <span>{label}</span>
@@ -201,7 +200,8 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
         </nav>
 
         <article className="cp-docs-article">
-          <details className="cp-docs-mobile">
+          {/* Keyed by page, so the menu is closed again on the page it opened. */}
+          <details key={key} className="cp-docs-mobile">
             <summary aria-label="Documentation pages">
               <span className="cp-label">Docs</span>
               <b>{label}</b>
@@ -242,15 +242,7 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
         <nav className="cp-docs-outline" aria-label="On this page">
           <span className="cp-label">On this page</span>
           {outline.map((item) => (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              data-active={item.id === active || undefined}
-              onClick={(event) => {
-                event.preventDefault();
-                document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
+            <a key={item.id} href={`#${item.id}`} data-active={item.id === active || undefined}>
               {item.heading}
             </a>
           ))}

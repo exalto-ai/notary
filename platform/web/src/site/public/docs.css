@@ -216,6 +216,12 @@
   letter-spacing: -0.02em;
 }
 
+/* An anchor (`#the-procedure`, from the outline or a shared link) lands with
+   the rule above the heading in view. */
+.cp-mdx :is(h2, h3)[id] {
+  scroll-margin-top: 24px;
+}
+
 .cp-mdx > h2:first-child,
 .cp-legal-article .cp-mdx > section:first-child > h2 {
   margin-top: 48px;

@@ -1,3 +1,5 @@
+import { docAliases, docNavigation, isDocPageKey } from '../content/docs';
+
 // The same titles the shipped site sets, so a tab reads the same either side
 // of the cutover.
 const sectionTitles: Record<string, string> = {
@@ -17,20 +19,15 @@ const accountTitles: Record<string, string> = {
 
 export const landingTitle = 'Exalto Capture · The flight recorder for your AI work';
 
-const docTitles: Record<string, string> = {
-  overview: 'Overview',
-  'getting-started': 'Install options',
-  agents: 'For agents',
-  'how-it-works': 'Trust model',
-  'hosted-credits': 'What it costs',
-  'trace-packages': 'Trace packages',
-  share: 'Share a Trace',
-};
+// The docs are titled by the navigation label of the page the address
+// resolves to, aliases included, so the tab reads as the rail does.
+const docTitles = new Map<string, string>(docNavigation.flatMap((group) => group.pages));
 
 export function documentTitle(section: string | undefined, page: string | undefined): string {
   if (!section) return landingTitle;
   if (section === 'docs') {
-    const doc = docTitles[page ?? 'overview'];
+    const key = page ?? 'overview';
+    const doc = docTitles.get(isDocPageKey(key) ? key : (docAliases[key] ?? ''));
     return doc ? `${doc} · Docs · Exalto Capture` : 'Docs · Exalto Capture';
   }
   const name =
