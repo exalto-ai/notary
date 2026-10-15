@@ -1,11 +1,12 @@
 # Aperture, the design system for capture.exalto.ai
 
-Status: shipped. [`DESIGN.md`](../DESIGN.md) Part IIB is the rule; this
+Status: shipped on the account surfaces; the public pages moved to Part IIB
+in October 2026. [`DESIGN.md`](../DESIGN.md) Part IIC is the rule; this
 document is why the rule reads the way it does, and what the port cost. Change
-Part IIB when the system changes, and this document when the reasoning does.
+Part IIC when the system changes, and this document when the reasoning does.
 
-Aperture is a clean-break replacement for Ledger Phosphor on
-`capture.exalto.ai`. It keeps the frozen Part I identity (the Exalto wordmark,
+Aperture was a clean-break replacement for Ledger Phosphor on
+`capture.exalto.ai`; it now covers the account surfaces. It keeps the frozen Part I identity (the Exalto wordmark,
 the product names, the marks, and the capture / seal / verify vocabulary) and
 replaces the palette, typography, geometry, density, and component language
 underneath it.

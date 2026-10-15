@@ -76,17 +76,19 @@ edit them for marketing work.
 | Surface | System | Section |
 | --- | --- | --- |
 | exalto.ai landing ([`exalto-ai/website`](https://github.com/exalto-ai/website)) | **Ledger Phosphor** | Part II |
-| Hosted Exalto Capture site, docs, and Account (`platform/web`) | **Aperture** | Parts I + IIB |
+| capture.exalto.ai public pages: landing, docs, legal (`platform/web/src/site/public`) | **Flight recorder** (Modernist, in negative) | Parts I + IIB |
+| capture.exalto.ai Account, sign-in, device approval (`platform/web/src/site`) | **Aperture** | Parts I + IIC |
 | Local admin dashboard (`runtime/apps/admin-dashboard`) | **Developer workspace** | Part III |
 | Exalto Capture desktop app (`apps/notary-app`) | **Developer workspace**, **Exalto Capture** app icon | Parts I + III |
 | Brand marks, icon kits, illustration | **Shared** | Part I |
 
 The split is settled. Ledger Phosphor carries Exalto's public story on
-exalto.ai. Aperture carries the hosted site a person signs in to. Exalto
-Capture's desktop app and the local dashboard use a quieter, system-native
-workspace for developers. All four keep Part I: the same marks, the same
-attribution meanings, the same vocabulary. A rule scoped to one mode does not
-automatically apply to another.
+exalto.ai. The public pages of capture.exalto.ai print the Proof of Thought
+site's Modernist skeleton in negative (Part IIB). Aperture carries the account
+a person signs in to (Part IIC). Exalto Capture's desktop app and the local
+dashboard use a quieter, system-native workspace for developers. All of them
+keep Part I: the same marks, the same attribution meanings, the same
+vocabulary. A rule scoped to one mode does not automatically apply to another.
 
 ---
 
@@ -318,15 +320,123 @@ shrink need `min-width: 0`; wide content scrolls inside its own container.
 
 ---
 
-# Part IIB · Aperture (capture.exalto.ai)
+# Part IIB · Flight recorder (capture.exalto.ai public pages)
 
-Aperture governs the hosted site: the landing page, documentation, sign in,
-device approval, the account, and the legal pages, all built in
-`platform/web/src/site`. It replaced Ledger Phosphor on this surface because
-the account is most of the surface area, and an editorial system that reads
-well on a marketing page reads badly above five numbers a person came to
-check. [`docs/design-aperture.md`](docs/design-aperture.md) keeps the
-reasoning and the record of the port; this part is the rule.
+The public pages of capture.exalto.ai (the landing, the docs, the legal pages
+and the not-found page, in `platform/web/src/site/public`) share one skeleton
+with the Proof of Thought site: the Modernist system, Archivo, 2px rules, a
+title block, numbered strips, FIG. numbering and grid paper. Capture prints
+that skeleton in negative. The ground is graphite, the accent is the red-orange
+a flight recorder is painted, and Geist Mono carries anything a developer
+would type or read in a terminal. Sealed evidence (a receipt, a disclosed
+exchange, the Proof of Thought card) is shown as paper on the dark page: the
+machine is dark, the proof is paper. The handoff that fixed these values is
+the design of record; recreate it pixel for pixel.
+
+The pages have three audiences, in order. Developers lead: the hero terminal
+replay, how it works, the quickstart and the pieces. Experts get Applications
+and the trust model. Agents get For agents, `llms.txt`, a markdown twin of
+every page, and the docs page written as a procedure.
+
+## Tokens
+
+The dark ground swaps the Modernist ground and ink; every other value is a
+Modernist token.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--color-bg` | `#201e1d` | page ground |
+| `--color-surface` | `#2d2b2b` | spare surface |
+| `--color-text` | `#f3f2f2` | ink on dark |
+| `--color-divider` | text at 28% | 1px row dividers and cell rules |
+| `--muted` | `#bab6b6` | secondary body text |
+| `--faint` | `#9b9797` | labels, micro type, strips |
+| `--screen` | `#161514` | terminal, code boxes, the archive panel |
+| `--paper` / `--ink` | `#f3f2f2` / `#201e1d` | evidence cards and the text on them |
+| `--ink-muted` | `#605d5d` | secondary text on paper |
+| `--ink-rule` | ink at 22% | 1px rules on paper |
+| `--color-accent` | `#ec3013` | REC dot, `$` prompt, focus ring, selection, primary hover, the closing period, the tamper highlight |
+| `--accent-ink` | `#ae1800` | accent text on paper |
+| `--link` / `--link-hover` | `#ff9783` / `#ffc4b8` | links on dark |
+
+The accent on the ground is about 4.0:1: chrome, icons and large type only,
+never body text. Proof of Thought's blue (`#1f4fff`) appears once, as the
+hover fill of the "→ proof.exalto.ai" button. Grid paper sits on the page
+background: 120px lines at 5% and 24px lines at 2.2% of the text colour,
+offset by half a cell.
+
+## Type
+
+Archivo 400 / 600 / 800 for headings and body at its normal width, Geist Mono
+400 / 500 / 600 for commands, terminal output, trace IDs, URLs and receipt
+values. Both are self-hosted. The scale: H1 `clamp(52px, 7.6vw, 96px)` at
+line-height 0.92 and -0.045em; H2 `clamp(36px, 4.6vw, 60px)`; the large H2
+`clamp(40px, 5.4vw, 76px)`; H3 `clamp(26px, 2.6vw, 34px)`; row H3 22px; lead
+22px; body 17px at 1.6; small 15px; label 11px at 0.16em uppercase; micro 10px
+at 0.12em uppercase; terminal and code 13px mono; the closing statement
+`clamp(56px, 15vw, 190px)` at 0.86 with its final period in the accent.
+
+## Shape, rules, spacing
+
+Radius 0 everywhere; the brand marks keep their own geometry. A 2px rule in
+the text colour opens every section strip, figure head, figure caption, list
+and table; 1px dividers separate rows; boxes carry a 2px border; cell grids are
+drawn with a 1px gap on the divider colour so rules survive wrapping. The page
+measures 1200px including a side padding of `clamp(20px, 4vw, 48px)`; every
+section starts 160px below the previous one and its content row 48px below the
+strip. No shadows, no gradients, no hover lift.
+
+## The load-bearing components
+
+- **Strip**: `Log 00N`, the section name, and the section's anchor as a mono
+  link on the right, under a 2px rule.
+- **Title block**: a cell grid of Product / Subject / For agents / Log, the
+  first thing on the landing and on every docs page.
+- **Figure head and caption**: "Fig. 0N", a title, a right-hand label; keys
+  numbered 60 / 62 / 64 / 66 and 70 / 72 / 74 / 76 on the plates.
+- **Terminal and receipt**: the hero's replay on the screen ground beside a
+  paper receipt that moves from Recording to Captured to Sealed to Verified.
+- **Disclosure demo**: fifty cells on the screen ground; the disclosed ones
+  are paper, the private ones outlined; one byte can be changed to show the
+  integrity check fail.
+- **Code box**: a command on the screen ground with an accent `$` and a mono
+  Copy button that reads "Copied" for 1.6s.
+- **Paper card**: anything sealed, including the Proof of Thought card.
+- **Docs shell**: the same ground; a left rail of numbered pages, the article,
+  an "On this page" rail; H2s open with a 2px rule; code boxes and tables as
+  above; callouts are 2px boxes with a micro head, never tinted washes.
+
+## Motion and states
+
+The replay types two characters every 24ms and starts once, when the terminal
+is 30% visible; under `prefers-reduced-motion` it shows its final state and
+never animates. The caret and the REC dot blink with `steps(1)` over 1.1s,
+REC only while the replay plays. Focus is a 2px accent outline offset 2px;
+selection is the accent at 40%; links turn `--link`; outlined controls tint
+6 to 10% on hover and 14 to 18% when pressed; the primary button fills with
+the accent on hover.
+
+## Copy rules
+
+Copy comes verbatim from the website copy doc and is audited in the build.
+Banned in rendered copy: em and en dashes; notariz\* and finaliz\*;
+tamper-proof (say tamper-evident); "perfect audit trail", "oracle",
+"human-authored", "court-ready", "guaranteed compliance". You capture, Seal
+seals, anyone verifies; the CTA is "Verify a trace". The public command names
+are `capture` and `captured` ([ADR 0003](docs/adr/0003-public-cli-names.md)).
+
+---
+
+# Part IIC · Aperture (capture.exalto.ai account)
+
+Aperture governs the surfaces a person signs in to: sign in, device approval
+and the account, built in `platform/web/src/site`. It replaced Ledger Phosphor
+there because an editorial system that reads well on a marketing page reads
+badly above five numbers a person came to check.
+[`docs/design-aperture.md`](docs/design-aperture.md) keeps the reasoning and
+the record of the port; this part is the rule. The public pages left Aperture
+in October 2026 for Part IIB; the account will follow once it has a design of
+its own in that system.
 
 Aperture keeps Part I whole. The wordmark, the product names, the marks, the
 attribution meanings, and the capture / seal / verify vocabulary are unchanged.
@@ -593,7 +703,11 @@ including compatible third-party and self-hosted notaries.
 - `scripts/check-terminology.mjs` — repo-wide retired-term and brand audit
   (scans tracked files; stage new files before running).
 - `platform/web/scripts/test-brand.mjs` — the hosted Exalto Capture identity,
-  the typeset wordmark, the disclosure warning, and retired-brand regressions.
+  the typeset wordmarks of both shells, the disclosure warning, and
+  retired-brand regressions.
+- `platform/web/src/site/public/copy.test.tsx` — the landing copy audit: the
+  required strings from the website copy doc, the banned list, and the dash
+  rule, checked against the rendered page.
 - Vercel deploys the standalone website repository on every merge to main and
   creates preview deployments for pull requests.
 

@@ -1,0 +1,712 @@
+/* The public Capture site: landing, docs, legal pages.
+   Modernist printed in negative: a graphite ground, Archivo, 2px rules,
+   Geist Mono for anything a developer types or reads in a terminal, and paper
+   cards for sealed evidence. Tokens and values come from the design handoff
+   (DESIGN.md, Part IIB). Everything is scoped to `.cp` so the account surfaces,
+   which keep Aperture, are untouched. */
+
+html.cp-root {
+  background: #201e1d;
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+html.cp-root body {
+  background: #201e1d;
+  color: #f3f2f2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.cp-root {
+    scroll-behavior: auto;
+  }
+}
+
+.cp {
+  --color-bg: #201e1d;
+  --color-surface: #2d2b2b;
+  --color-text: #f3f2f2;
+  --color-divider: color-mix(in srgb, #f3f2f2 28%, transparent);
+  --muted: #bab6b6;
+  --faint: #9b9797;
+  --screen: #161514;
+  --paper: #f3f2f2;
+  --ink: #201e1d;
+  --ink-muted: #605d5d;
+  --ink-rule: color-mix(in srgb, #201e1d 22%, transparent);
+  --color-accent: #ec3013;
+  --accent-ink: #ae1800;
+  --link: #ff9783;
+  --link-hover: #ffc4b8;
+  --proof-blue: #1f4fff;
+  --font-heading: 'Archivo Variable', Archivo, system-ui, sans-serif;
+  --font-body: 'Archivo Variable', Archivo, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --pad: clamp(20px, 4vw, 48px);
+  --measure: 1200px;
+
+  position: relative;
+  isolation: isolate;
+  /* `clip`, not `hidden`: hidden would make this the scroll container and
+     stop position: sticky (the docs rails) from following the viewport. */
+  overflow-x: clip;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to right, color-mix(in srgb, var(--color-text) 2.2%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-text) 2.2%, transparent) 1px, transparent 1px);
+  background-size:
+    120px 120px,
+    120px 120px,
+    24px 24px,
+    24px 24px;
+  background-position: calc(50% + 60px) 0;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  font-variation-settings: normal;
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+  text-wrap: pretty;
+}
+
+.cp h1,
+.cp h2,
+.cp h3,
+.cp h4,
+.cp p,
+.cp figure,
+.cp dl,
+.cp dd,
+.cp ol,
+.cp ul {
+  margin: 0;
+}
+
+.cp ol,
+.cp ul {
+  padding: 0;
+  list-style: none;
+}
+
+.cp h1,
+.cp h2,
+.cp h3,
+.cp h4 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-variation-settings: normal;
+  letter-spacing: normal;
+}
+
+.cp a {
+  color: var(--link);
+  text-underline-offset: 3px;
+}
+
+.cp a:hover {
+  color: var(--link-hover);
+}
+
+.cp button {
+  font: inherit;
+  color: inherit;
+}
+
+.cp :focus {
+  outline: none;
+}
+
+.cp :focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.cp ::selection {
+  background: color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+.cp code,
+.cp kbd,
+.cp pre,
+.cp .cp-mono {
+  font-family: var(--font-mono);
+  font-variation-settings: normal;
+}
+
+@keyframes cp-blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---- Layout ------------------------------------------------------------ */
+
+.cp-wrap {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding-left: var(--pad);
+  padding-right: var(--pad);
+}
+
+.cp-section {
+  padding-top: 160px;
+}
+
+/* ---- Type roles -------------------------------------------------------- */
+
+.cp-label {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.cp-micro {
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.cp-lead {
+  font-size: 22px;
+  line-height: 1.5;
+}
+
+.cp-body {
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.cp-small {
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.cp-muted {
+  color: var(--muted);
+}
+
+.cp-faint {
+  color: var(--faint);
+}
+
+.cp-h1 {
+  font-size: clamp(52px, 7.6vw, 96px);
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+  max-width: 15ch;
+  text-wrap: balance;
+}
+
+.cp-h2 {
+  font-size: clamp(36px, 4.6vw, 60px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.cp-h2-large {
+  font-size: clamp(40px, 5.4vw, 76px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  max-width: 13ch;
+}
+
+.cp-h3 {
+  font-size: clamp(26px, 2.6vw, 34px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.cp-h3-row {
+  font-size: 22px;
+  line-height: 27px;
+  letter-spacing: -0.01em;
+}
+
+.cp-h3-step {
+  font-size: 18px;
+  line-height: 24px;
+}
+
+/* ---- Strips, figure heads and captions --------------------------------- */
+
+/* Every section after the hero opens with a strip under a 2px rule:
+   "Log 00N", the section name, and its anchor on the right. */
+.cp-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  align-items: baseline;
+  border-top: 2px solid var(--color-text);
+  padding-top: 14px;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.cp-strip > b {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cp-strip > a {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--faint);
+  text-decoration: none;
+}
+
+.cp-strip > a:hover {
+  color: var(--link);
+}
+
+.cp-fighead {
+  border-top: 2px solid var(--color-text);
+  padding-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  align-items: baseline;
+}
+
+.cp-fighead-num {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+.cp-fighead-title {
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.cp-fighead-right {
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.cp-figcap {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: baseline;
+  border-top: 2px solid var(--color-text);
+  padding-top: 12px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-text);
+}
+
+.cp-figcap-num {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.cp-figcap-key {
+  display: flex;
+  gap: 8px;
+}
+
+.cp-figcap-key b {
+  font-weight: 600;
+}
+
+.cp-figcap-src {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--faint);
+}
+
+.cp-caption {
+  margin-top: 20px;
+  font-size: 15px;
+  line-height: 24px;
+  color: var(--muted);
+  max-width: 84ch;
+}
+
+/* ---- Controls ---------------------------------------------------------- */
+
+.cp-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.2;
+  color: var(--ink);
+  background: var(--paper);
+  border: 0;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.cp-btn-primary:hover {
+  background: var(--color-accent);
+  color: var(--paper);
+}
+
+.cp-btn-primary:active {
+  background: var(--link);
+  color: var(--ink);
+}
+
+.cp-btn-primary svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: square;
+}
+
+.cp-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.2;
+  color: var(--color-text);
+  background: transparent;
+  border: 2px solid var(--color-text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cp-btn-secondary:hover {
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+  color: var(--color-text);
+}
+
+.cp-btn-secondary:active {
+  background: color-mix(in srgb, var(--color-text) 18%, transparent);
+}
+
+.cp-ulink {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--color-text);
+  text-decoration: none;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-divider);
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.cp-ulink:hover {
+  color: var(--link);
+  border-color: var(--link);
+}
+
+/* A small mono control on the dark ground: replay, reset, tamper. */
+.cp-btn-mono {
+  padding: 5px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  cursor: pointer;
+}
+
+.cp-btn-mono:hover {
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.cp-btn-mono:active {
+  background: color-mix(in srgb, var(--color-text) 18%, transparent);
+}
+
+/* A command with its Copy button, on the screen ground. */
+.cp-codebox {
+  display: flex;
+  background: var(--screen);
+  border: 1px solid var(--color-divider);
+}
+
+.cp-codebox > code {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+}
+
+.cp-codebox .cp-prompt {
+  color: var(--color-accent);
+}
+
+.cp-codebox > button {
+  flex: none;
+  padding: 0 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--color-divider);
+  cursor: pointer;
+}
+
+.cp-codebox > button:hover {
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+/* Paper: the evidence surface. */
+.cp-paper {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.cp-paper a {
+  color: var(--accent-ink);
+}
+
+/* A cell grid drawn with a 1px gap on the divider colour, so the rules
+   survive wrapping. */
+.cp-cells {
+  display: grid;
+  gap: 1px;
+  background: var(--color-divider);
+}
+
+.cp-cells > * {
+  background: var(--color-bg);
+}
+
+.cp-box {
+  border: 2px solid var(--color-text);
+  background: var(--color-bg);
+}
+
+.cp-box-head {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.cp-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+  color: var(--color-text);
+}
+
+/* ---- Header ------------------------------------------------------------ */
+
+.cp-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 40px;
+  padding: 28px max(var(--pad), calc((100% - var(--measure)) / 2 + var(--pad)));
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-bg);
+}
+
+.cp-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--color-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.cp-brand:hover {
+  color: var(--color-text);
+}
+
+.cp-brand svg {
+  display: block;
+  flex: none;
+}
+
+.cp-brand span {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.cp-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 28px;
+  margin-left: auto;
+}
+
+.cp-nav a {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.cp-nav a:hover,
+.cp-nav a[aria-current='page'] {
+  color: var(--link);
+}
+
+.cp-nav a.cp-nav-sibling {
+  padding-bottom: 3px;
+  border-bottom: 2px solid var(--color-text);
+  white-space: nowrap;
+}
+
+.cp-nav a.cp-nav-sibling:hover {
+  border-color: var(--link);
+}
+
+/* The account entry sits apart from the product links: mono, quiet. */
+.cp-nav a.cp-nav-account {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--faint);
+}
+
+.cp-nav a.cp-nav-account:hover {
+  color: var(--link);
+}
+
+/* ---- Footer ------------------------------------------------------------ */
+
+.cp-footer {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 144px var(--pad) 48px;
+}
+
+.cp-footer-note {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--muted);
+  max-width: 80ch;
+}
+
+.cp-footer-nav {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-divider);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  align-items: center;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.cp-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cp-footer-brand svg {
+  display: block;
+  flex: none;
+}
+
+.cp-footer-nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.cp-footer-nav a:hover {
+  color: var(--link);
+}
+
+/* ---- Not found --------------------------------------------------------- */
+
+.cp-notfound {
+  padding: 120px var(--pad) 96px;
+  max-width: var(--measure);
+  margin: 0 auto;
+}
+
+.cp-notfound h1 {
+  font-size: clamp(36px, 4.6vw, 60px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.cp-notfound p {
+  margin-top: 20px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.cp-notfound code {
+  color: var(--color-text);
+}
+
+.cp-notfound a.cp-ulink {
+  margin-top: 28px;
+}

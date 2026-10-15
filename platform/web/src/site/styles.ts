@@ -12,3 +12,5 @@ import '@fontsource-variable/geist-mono';
 // page rather than trusting that the build succeeded.
 import '@mantine/core/styles.css';
 import './system.css';
+// The public pages' own system (DESIGN.md Part IIB), scoped to `.cp`.
+import './public/public.css';
