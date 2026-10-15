@@ -273,7 +273,7 @@ function toMarkdown(route, html) {
       '',
       `> ${route.description}`,
       '',
-      `Part of the Exalto Capture docs. Page: ${url}. Every page is listed in ${origin}/llms.txt; the whole site in one file is ${origin}/llms-full.txt.`,
+      `${route.kind === 'legal' ? 'A legal page of capture.exalto.ai' : 'Part of the Exalto Capture docs'}. Page: ${url}. Every page is listed in ${origin}/llms.txt; the whole site in one file is ${origin}/llms-full.txt.`,
     );
   }
   lines.push('', body.replace(/^# [^\n]*\n+/, ''));
