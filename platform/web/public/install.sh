@@ -68,8 +68,39 @@ mkdir -p "$install_dir"
 install -m 0755 "$temporary_dir/notary-runtime-${version}-${platform}-${architecture}/notaryctl" "$install_dir/notaryctl"
 install -m 0755 "$temporary_dir/notary-runtime-${version}-${platform}-${architecture}/notaryd" "$install_dir/notaryd"
 
-echo "Installed notaryctl and notaryd $version from latest to $install_dir"
+# The public command names are `capture` and `captured`, and the public verb
+# for notarization is `seal`. Until the Runtime ships the renamed binaries
+# (docs/adr/0003-public-cli-names.md), two shims make every documented command
+# work. They resolve the sibling binary at run time, so `capture update` keeps
+# working after the updater replaces notaryctl and notaryd in place.
+cat > "$temporary_dir/captured" <<'SHIM'
+#!/bin/sh
+# Exalto Capture local service. Shim for notaryd; see docs/adr/0003-public-cli-names.md.
+exec "$(dirname "$0")/notaryd" "$@"
+SHIM
+cat > "$temporary_dir/capture" <<'SHIM'
+#!/bin/sh
+# Exalto Capture command client. Shim for notaryctl; see docs/adr/0003-public-cli-names.md.
+# `capture traces seal` is the public spelling of `notaryctl traces notarize`.
+previous=""
+count=$#
+while [ "$count" -gt 0 ]; do
+  argument=$1
+  shift
+  if [ "$previous" = "traces" ] && [ "$argument" = "seal" ]; then
+    argument="notarize"
+  fi
+  previous=$argument
+  set -- "$@" "$argument"
+  count=$((count - 1))
+done
+exec "$(dirname "$0")/notaryctl" "$@"
+SHIM
+install -m 0755 "$temporary_dir/capture" "$install_dir/capture"
+install -m 0755 "$temporary_dir/captured" "$install_dir/captured"
+
+echo "Installed capture and captured $version from latest to $install_dir"
 case ":$PATH:" in
   *":$install_dir:"*) ;;
-  *) echo "Add $install_dir to your PATH, then run: notaryd" ;;
+  *) echo "Add $install_dir to your PATH, then run: captured" ;;
 esac

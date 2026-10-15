@@ -14,7 +14,7 @@ mkdir -p "$build_root" "$test_root/package/$package" "$test_root/fake-bin"
 printf '%s %s\n' "$build_id" "$version" > "$fixture_root/latest"
 
 for program in notaryctl notaryd; do
-  printf '#!/bin/sh\nprintf "%%s fixture\\n" "%s"\n' "$program" > "$test_root/package/$package/$program"
+  printf '#!/bin/sh\nprintf "%%s fixture%%s\\n" "%s" "${1:+ $*}"\n' "$program" > "$test_root/package/$package/$program"
   chmod 0755 "$test_root/package/$package/$program"
 done
 tar -czf "$build_root/$archive" -C "$test_root/package" "$package"
@@ -42,6 +42,12 @@ PATH="$test_root/fake-bin:$PATH" \
 
 test "$("$test_root/bin/notaryctl")" = "notaryctl fixture"
 test "$("$test_root/bin/notaryd")" = "notaryd fixture"
+# The public names resolve to the installed binaries, and the public verb
+# `seal` reaches the Runtime as `notarize` wherever `traces` precedes it.
+test "$("$test_root/bin/captured" --config x.toml)" = "notaryd fixture --config x.toml"
+test "$("$test_root/bin/capture" --json status)" = "notaryctl fixture --json status"
+test "$("$test_root/bin/capture" --json traces seal trc-1 --wait)" = "notaryctl fixture --json traces notarize trc-1 --wait"
+test "$("$test_root/bin/capture" traces list --query seal)" = "notaryctl fixture traces list --query seal"
 
 printf 'tampered\n' >> "$build_root/$archive"
 if PATH="$test_root/fake-bin:$PATH" \
