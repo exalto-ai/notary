@@ -21,7 +21,7 @@ export function HeroReplay({
   return (
     <div className="cp-replay">
       <div className="cp-term">
-        <div className="cp-term-bar">
+        <div className="cp-term-bar" data-md="skip">
           <span>~/evals</span>
           <span>zsh</span>
           <span className="cp-term-rec">
@@ -36,7 +36,13 @@ export function HeroReplay({
             {control}
           </button>
         </div>
-        <div ref={terminalRef} className="cp-term-body" role="log" aria-label="Terminal replay">
+        <div
+          ref={terminalRef}
+          className="cp-term-body"
+          role="log"
+          aria-label="Terminal replay"
+          data-md="code"
+        >
           {script.slice(0, shown).map((line, index) => {
             const key = `${index}-${line[1]}`;
             if (line[0] === 'cmd')
@@ -77,7 +83,7 @@ export function HeroReplay({
             </div>
           ) : null}
         </div>
-        <div className="cp-steps">
+        <div className="cp-steps" data-md="skip">
           {STEP_NAMES.map((name, step) => {
             const isDone = state.i >= ends[step];
             const isCurrent = !isDone && step === stepsDone && state.started;
@@ -98,7 +104,11 @@ export function HeroReplay({
         </div>
       </div>
 
-      <div className="cp-receipt cp-paper" aria-live="polite">
+      <div
+        className="cp-receipt cp-paper"
+        aria-live="polite"
+        data-md-alt="The receipt beside it moves from Recording to Captured to Sealed to Verified: trace trc-8f3k2q, provenance api.openai.com over authenticated TLS, integrity sha256 9c41…e07b over 6 entries, time 14:03:52 UTC witnessed by Exalto Seal; request and response bodies disclosed, every header value hidden; link seal.exalto.ai/trc-8f3k2q."
+      >
         <div className="cp-receipt-head">
           <span className="cp-micro">Sealed trace</span>
           <span className="cp-state-tag" data-tag={receipt.tag}>

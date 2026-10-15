@@ -199,7 +199,11 @@ test('shows Captured and Sealed evidence in the interactive Trace anatomy', asyn
   stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
   const { container } = mount(<App />);
 
-  await expect.element(page.getByText('capture.llmcapture', { exact: true })).toBeVisible();
+  await expect.element(page.getByRole('button', { name: 'Sealed' })).toBeVisible();
+  // The card starts on Captured; a hidden static twin carries both states for
+  // readers without script, so look at the card itself.
+  expect(container.querySelector('.cp-anatomy')?.textContent).toContain('capture.llmcapture');
+  expect(container.querySelector('[data-md-only]')?.textContent).toContain('evidence.tlsn');
   await page.getByRole('button', { name: 'Sealed' }).click();
   await waitFor(() =>
     expect(container.querySelector('.cp-anatomy')?.textContent).toContain('Verifiable .llmtrace'),

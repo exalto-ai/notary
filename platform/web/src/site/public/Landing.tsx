@@ -15,7 +15,7 @@ import { XEmbed } from './XEmbed';
 
 function Strip({ log, name, anchor }: { log: string; name: string; anchor: string }) {
   return (
-    <div className="cp-strip">
+    <div className="cp-strip" data-md="skip">
       <b>Log {log}</b>
       <span>{name}</span>
       <a href={`#${anchor}`}>#{anchor}</a>
@@ -25,7 +25,7 @@ function Strip({ log, name, anchor }: { log: string; name: string; anchor: strin
 
 function FigHead({ num, title, right }: { num: string; title: string; right: string }) {
   return (
-    <div className="cp-fighead">
+    <div className="cp-fighead" data-md="fig">
       <span className="cp-fighead-num">Fig. {num}</span>
       <span className="cp-fighead-title">{title}</span>
       <span className="cp-fighead-right">{right}</span>
@@ -152,7 +152,7 @@ export function Landing() {
   return (
     <main>
       <header id="top" className="cp-wrap cp-hero">
-        <div className="cp-titleblock">
+        <div className="cp-titleblock" data-md="skip">
           <div>
             <div className="cp-label">Product</div>
             <div className="cp-titleblock-value">Exalto Capture</div>
@@ -184,7 +184,7 @@ export function Landing() {
             </p>
           </div>
           <div className="cp-hero-actions">
-            <div className="cp-hero-buttons">
+            <div className="cp-hero-buttons" data-md="inline">
               <a href={release?.url ?? href('/docs/getting-started')} className="cp-btn-primary">
                 Download Exalto Capture
                 <DownloadIcon />
@@ -226,7 +226,7 @@ export function Landing() {
               When something needs proof, seal the trace and hand it to anyone. Until that day, it’s
               just a folder on your computer that nobody, including the notary, can read.
             </p>
-            <dl>
+            <dl data-md="definitions">
               <div>
                 <dt>Who it is for</dt>
                 <dd>
@@ -311,7 +311,9 @@ export function Landing() {
             right="Interactive · reasoning-50"
           />
         </div>
-        <DisclosureDemo />
+        <div data-md-alt="Interactive demo: an archive of 50 exchanges, three of them disclosed. Disclosing one shows its request.disclosed.http (every header value hidden, body in the clear) and response.disclosed.http, with Provenance, Integrity and Time checks; changing one byte of the answer fails the integrity check.">
+          <DisclosureDemo />
+        </div>
         <p className="cp-caption">
           Header values are hidden in every sealed trace, so your API key never travels. Request and
           response bodies are what you disclose.
@@ -329,7 +331,7 @@ export function Landing() {
             the call, records it, and keeps the private checkpoint on your machine.
           </p>
         </div>
-        <ol className="cp-qs-list">
+        <ol className="cp-qs-list" data-md="steps">
           {quickstart.map((step, index) => (
             <li key={step.key}>
               <span className="cp-qs-num">0{index + 1}</span>
@@ -354,7 +356,7 @@ export function Landing() {
           What Capture is
         </h2>
         <div className="cp-pieces-table">
-          <div className="cp-pieces-head" aria-hidden="true">
+          <div className="cp-pieces-head" aria-hidden="true" data-md="skip">
             <span>Piece</span>
             <span>What it does</span>
             <span>Who it is for</span>
@@ -419,7 +421,7 @@ export function Landing() {
             title="Inside a sealed trace."
             right=".llmtrace · six entries, in order"
           />
-          <div className="cp-package-tree">
+          <div className="cp-package-tree" data-md="package">
             <div className="cp-package-name">trc-8f3k2q.llmtrace</div>
             {packageEntries.map(([entry, num, description]) => (
               <div key={num} className="cp-package-row">
@@ -537,7 +539,7 @@ export function Landing() {
           </div>
         </article>
 
-        <div className="cp-chips" role="group" aria-label="More uses">
+        <div className="cp-chips" role="group" aria-label="More uses" data-md="inline">
           <span className="cp-micro">More uses</span>
           <span className="cp-tag">the published eval</span>
           <span className="cp-tag">prompt-injection forensics</span>
@@ -550,7 +552,7 @@ export function Landing() {
           One trace proves what happened. Capture enforced across an organization also proves what
           didn’t.
         </h2>
-        <div className="cp-box cp-trust-table">
+        <div className="cp-box cp-trust-table" data-md="table">
           <div className="cp-trust-row cp-trust-head">
             <div>A sealed trace proves</div>
             <div>It cannot prove</div>
@@ -603,20 +605,20 @@ export function Landing() {
             </p>
           </div>
           <div className="cp-promptbox">
-            <div className="cp-promptbox-head">
+            <div className="cp-promptbox-head" data-md="skip">
               <span className="cp-micro">Prompt</span>
               <button type="button" onClick={() => copy('prompt', COPY.prompt)}>
                 {copied === 'prompt' ? 'Copied' : 'Copy'}
               </button>
             </div>
-            <div className="cp-promptbox-body">
+            <div className="cp-promptbox-body" data-md="code">
               {COPY.prompt.split('\n').map((line) => (
                 <span key={line}>{line}</span>
               ))}
             </div>
           </div>
         </div>
-        <div className="cp-agents-rows">
+        <div className="cp-agents-rows" data-md="list">
           <div>
             <a href="/llms.txt">capture.exalto.ai/llms.txt</a>
             <p>
@@ -639,6 +641,13 @@ export function Landing() {
             <code>127.0.0.1:8788/openapi.json</code>
             <p>The local service publishes its OpenAPI 3.1 contract. Add --json to any command.</p>
           </div>
+          <div>
+            <a href={href('/docs/agents')}>capture.exalto.ai/docs/agents</a>
+            <p>
+              The procedure, step by step, with the command and the field that proves each step
+              worked, and what to ask before.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -656,7 +665,7 @@ export function Landing() {
           </div>
           <a href={proofOrigin}>→ proof.exalto.ai</a>
         </div>
-        <div className="cp-cells cp-sig">
+        <div className="cp-cells cp-sig" data-md="inline">
           <div>
             <div className="cp-micro">Captured by</div>
             <div className="cp-sig-value">You</div>
@@ -670,7 +679,11 @@ export function Landing() {
             <div className="cp-sig-value">Anyone</div>
           </div>
         </div>
-        <h2 className="cp-closing" aria-label="Capture. Seal. Verify.">
+        <h2
+          className="cp-closing"
+          aria-label="Capture. Seal. Verify."
+          data-md-alt="Capture. Seal. Verify."
+        >
           <span>Capture.</span>
           <span>Seal.</span>
           <span>

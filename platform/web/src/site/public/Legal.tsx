@@ -4,7 +4,7 @@ export function Legal({ pageKey }: { pageKey: 'privacy' | 'terms' }) {
   const page = legalPages[pageKey];
   return (
     <main className="cp-wrap cp-docs cp-legal">
-      <div className="cp-titleblock">
+      <div className="cp-titleblock" data-md="skip">
         <div>
           <div className="cp-label">Section</div>
           <div className="cp-titleblock-value">Legal</div>
@@ -19,8 +19,10 @@ export function Legal({ pageKey }: { pageKey: 'privacy' | 'terms' }) {
         </div>
       </div>
       <article className="cp-docs-article cp-legal-article">
-        <h1>{page.title}</h1>
-        <p className="cp-docs-lead">{page.intro}</p>
+        <h1 data-md="skip">{page.title}</h1>
+        <p className="cp-docs-lead" data-md="skip">
+          {page.intro}
+        </p>
         <div className="cp-mdx">
           {page.sections.map(([heading, copy]) => (
             <section key={heading}>

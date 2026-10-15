@@ -46,7 +46,7 @@ export function PublicHeader({
   current?: 'docs';
 }) {
   return (
-    <header className="cp-header">
+    <header className="cp-header" data-md="skip">
       <a href={href('/')} className="cp-brand" aria-label="Exalto Capture home">
         <CaptureMark size={34} stroke={4} />
         <span>Exalto Capture</span>
@@ -95,7 +95,7 @@ export function PublicFooter() {
         technical role term, in the way public-key infrastructure uses “certificate authority.”
         Built on TLSNotary.
       </p>
-      <nav className="cp-footer-nav" aria-label="Footer">
+      <nav className="cp-footer-nav" aria-label="Footer" data-md="skip">
         <span className="cp-footer-brand">
           <CaptureMark size={20} stroke={5} />
           Exalto Capture · Exalto

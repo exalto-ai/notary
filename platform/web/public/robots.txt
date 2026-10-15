@@ -1,5 +1,29 @@
+# capture.exalto.ai is written to be read by people and by agents alike.
+# Every public page has a Markdown twin at the same address with .md added;
+# the index is /llms.txt and the whole site in one file is /llms-full.txt.
+
 User-agent: *
 Allow: /
+Disallow: /app
+Disallow: /signin
+Disallow: /authorize
 
-# Machine-readable documentation index
-# /llms.txt
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://capture.exalto.ai/sitemap.xml

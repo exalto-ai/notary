@@ -1,4 +1,4 @@
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { COPIED_MS, delayAfter, SCRIPT, type ScriptLine, stepEnds, TIMING } from './replay';
 
 function fallbackCopy(text: string) {
@@ -70,11 +70,14 @@ export function useReplay(
   terminalRef: RefObject<HTMLElement | null>,
   script: readonly ScriptLine[] = SCRIPT,
 ): Replay {
+  // The page is prerendered with the replay complete, so a reader without
+  // script, and an agent, gets the whole transcript. Before the first paint
+  // the client rewinds it, unless motion is reduced.
   const [state, setState] = useState<ReplayState>({
-    i: 0,
+    i: script.length,
     c: 0,
     playing: false,
-    started: false,
+    started: true,
   });
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const stateRef = useRef(state);
@@ -106,6 +109,11 @@ export function useReplay(
     },
     [tick],
   );
+
+  useLayoutEffect(() => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    if (!reduce) setState({ i: 0, c: 0, playing: false, started: false });
+  }, []);
 
   useEffect(() => {
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;

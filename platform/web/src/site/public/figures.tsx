@@ -38,7 +38,10 @@ export function PotMark({ size = 56 }: { size?: number }) {
 /** Fig. 2: Leonardo's design for a flying machine, inverted, with callouts. */
 export function LeonardoPlate() {
   return (
-    <figure className="cp-plate">
+    <figure
+      className="cp-plate"
+      data-md-alt="Fig. 2: Leonardo da Vinci's design for a flying machine, with callouts 60 Instructions, 62 Responses, 64 Tool calls, 66 Time."
+    >
       <div className="cp-plate-frame">
         <img
           src="/art/flying-857.webp"
@@ -121,7 +124,10 @@ const relayHolds = [
 /** Fig. 3: the relay. One TLS session through the notary; later, the trace to anyone. */
 export function RelayFigure() {
   return (
-    <figure className="cp-relay">
+    <figure
+      className="cp-relay"
+      data-md-alt="Fig. 3, the relay: 01 Start a session (70 You: Exalto Capture on your machine; holds the key and plaintext). 02 Witness, never read (72 The notary: Exalto Seal, or one you run; holds one key share). 03 Answer as usual (74 The AI provider: api.openai.com, api.anthropic.com; serves TLS as usual). One authenticated TLS session; the notary co-signs ciphertext only. 04 Verify, anywhere (76 Anyone: seal.exalto.ai, or offline; needs the notary key). Later, you hand over the sealed trace; only what you disclose travels. Multiparty TLS, built on TLSNotary."
+    >
       <div className="cp-relay-scroll">
         <svg
           viewBox="0 0 1104 384"

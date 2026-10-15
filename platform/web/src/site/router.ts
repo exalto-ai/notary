@@ -3,8 +3,17 @@ import { useEffect, useState } from 'react';
 // The application is mounted at the origin root. Vercel rewrites every path
 // that is not an asset to the index document, so a deep link resolves.
 
+// Prerendering runs the application without a window; the build sets the
+// route it is rendering here, and everything else reads the browser.
+let serverPath: string | null = null;
+
+export function setServerPath(path: string | null): void {
+  serverPath = path;
+}
+
 /** The route, without the mount prefix, as `/docs/share?section=x`. */
 export function currentPath(): string {
+  if (serverPath !== null) return serverPath;
   return `${window.location.pathname || '/'}${window.location.search}`;
 }
 
