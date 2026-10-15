@@ -1,15 +1,17 @@
-// Legal page copy. Data only, so any renderer can read it.
+// Legal page copy. Data only, so any renderer can read it. The vocabulary is
+// the product's (Captured and Sealed, the Exalto Capture Protocol); legal
+// review of the substance is still to come.
 
 export const legalPages = {
   privacy: {
-    eyebrow: 'Legal · Privacy',
     title: 'Privacy Policy',
+    updated: 'October 2026',
     intro:
-      'This policy explains the information handled by Exalto Seal and Exalto Capture, including the hosted Trace-sharing service and local tooling.',
+      'This policy explains the information handled by Exalto Capture, Exalto Seal and this website: the local capture tooling, the hosted sealing, verification and Trace-sharing service, and your account.',
     sections: [
       [
         'Local capture stays local',
-        'The local proxy handles application plaintext and provider credentials. Within the protocol, the remote notary witnesses encrypted traffic and protocol metadata; it does not receive your API key, prompt, or response plaintext.',
+        'The local proxy on your machine handles application plaintext and provider credentials. Under the Exalto Capture Protocol (ECP), the remote notary witnesses encrypted traffic and protocol metadata; it does not receive your API key, your prompts or the provider’s responses. Captured Traces stay in an encrypted archive on your machine. Sealing one sends the notary only what the protocol needs in order to sign, never the plaintext, and publishes nothing; sharing is a separate, explicit action.',
       ],
       [
         'Account information',
@@ -17,7 +19,7 @@ export const legalPages = {
       ],
       [
         'Shared Traces',
-        'Sharing is an explicit action on a notarized Trace. The service verifies and safety-scans a submitted .llmtrace package before admission, then hosts the disclosed conversation and exact admitted package at a stable link. Header values are hidden by the package’s default disclosure policy, but request and response bodies—including prompts, responses, tool definitions, and tool results—may be accessible. Do not share content you are not permitted to disclose.',
+        'Sharing is an explicit action on a Sealed Trace. The service verifies and safety-scans a submitted .llmtrace package before admission, then hosts the disclosed conversation and the exact admitted package at a stable link. Header values are hidden by the package’s default disclosure policy, but request and response bodies, including prompts, responses, tool definitions and tool results, may be accessible to anyone with the link. Do not share content you are not permitted to disclose.',
       ],
       [
         'Service processing',
@@ -25,7 +27,7 @@ export const legalPages = {
       ],
       [
         'Plan, usage, and billing',
-        'We record the capture and notarization bytes your account settles and the storage your uploaded packages occupy, so allowances and balances can be enforced. Paid plans and additional notarization are processed by Stripe as our payment processor; card details are handled by Stripe and are not stored by this service.',
+        'We record the capture and sealing usage your account settles and the storage your shared packages occupy, so allowances and balances can be enforced. Paid plans and additional sealing are processed by Stripe as our payment processor; card details are handled by Stripe and are not stored by this service.',
       ],
       [
         'Devices and API keys',
@@ -33,11 +35,15 @@ export const legalPages = {
       ],
       [
         'Cookies',
-        'The hosted site sets host-only cookies only where they are strictly necessary. Signing in sets a session cookie, and the sign-in redirect briefly sets state and verifier cookies for that one exchange. Separately, unlocking a password-protected shared Trace sets a cookie for that Trace so you are not asked again for 24 hours; that one is set for visitors who are not signed in. We do not set advertising or cross-site tracking cookies.',
+        'The hosted service sets host-only cookies only where they are strictly necessary. Signing in sets a session cookie, and the sign-in redirect briefly sets state and verifier cookies for that one exchange. Separately, unlocking a password-protected shared Trace sets a cookie for that Trace so you are not asked again for 24 hours; that one is set for visitors who are not signed in. We do not set advertising or cross-site tracking cookies.',
+      ],
+      [
+        'This website',
+        'capture.exalto.ai serves static pages and runs no advertising or analytics scripts. When you open a page, your browser asks the hosted service whether you are signed in, so the header can offer your account; the pages with a download button also read the current release version from our download storage. The landing page embeds one post from X, loaded from X’s servers with a do-not-track request; X may set its own cookies when that embed loads, under X’s privacy policy.',
       ],
       [
         'Deleting your account',
-        'Deleting your account removes the account record and queues every stored trace artifact it owns for deletion, and signs you out. Local traces on your own devices are not touched; disconnecting or deleting does not remove evidence you hold locally.',
+        'Deleting your account removes the account record, queues every hosted Trace it owns for deletion, and signs you out. Local Traces on your own devices are not touched; disconnecting or deleting does not remove evidence you hold locally.',
       ],
       [
         'Trace reports',
@@ -45,7 +51,7 @@ export const legalPages = {
       ],
       [
         'Your choices',
-        'You choose whether a shared Trace is Unlisted or Listed. Both start accessible to anyone with the link; Unlisted only keeps it out of public Traces. After admission, you can stop sharing, require a password, or set an expiry. Keep private capture checkpoints and credentials under your control. For privacy questions or requests, contact the Exalto Seal operator through the project’s support channel.',
+        'You choose whether a shared Trace is Unlisted or Listed. Both start accessible to anyone with the link; Unlisted only keeps it out of public Traces. After admission, you can stop sharing, require a password, or set an expiry. Keep private captures and credentials under your control. For privacy questions or requests, contact the Exalto Seal operator through the project’s support channel.',
       ],
       [
         'Updates',
@@ -54,22 +60,30 @@ export const legalPages = {
     ],
   },
   terms: {
-    eyebrow: 'Legal · Terms',
     title: 'Terms of Service',
+    updated: 'October 2026',
     intro:
-      'These terms govern your use of Exalto Seal, Exalto Capture, the local tooling, and the Trace-sharing service.',
+      'These terms govern your use of Exalto Capture, Exalto Seal, the local tooling, and the Trace-sharing service.',
     sections: [
       [
         'Using the service',
-        'Use Exalto Seal and Exalto Capture lawfully and only with content, credentials, and provider accounts you are authorized to use. Do not interfere with the service, bypass access controls, or submit material that infringes the rights of others.',
+        'Use Exalto Capture and Exalto Seal lawfully and only with content, credentials, and provider accounts you are authorized to use. Do not interfere with the service, bypass access controls, or submit material that infringes the rights of others.',
       ],
       [
         'Your shared Traces',
         'You are responsible for every package you choose to submit. Sharing is an explicit consent boundary: once admitted, its disclosed conversation and exact package can be accessed by anyone with the link. Unlisted is not private; it only keeps the Trace out of public Traces.',
       ],
       [
-        'What verification means',
-        'The retained .llmtrace package can be checked against its cryptographic and protocol evidence. The readable conversation is derived from that admitted package, and the download preserves its exact bytes. Neither result establishes that a model output or user interpretation is true, complete, safe, or suitable for a particular purpose.',
+        'What a Sealed Trace establishes',
+        'A Sealed .llmtrace package can be checked against its cryptographic and protocol evidence: that the disclosed bytes traveled an authenticated connection with the named provider, that they have not changed since capture, and that the named notary witnessed them at the stated time. The readable conversation is derived from that package, and the download preserves its exact bytes. Neither result establishes that a model output or a person’s interpretation of it is true, complete, safe, or suitable for a particular purpose, who was at the keyboard, that a local tool ran, or that every interaction was disclosed.',
+      ],
+      [
+        'Not a notarial act',
+        'Exalto Seal is not a notary public. Sealing is not a notarial act, and a Sealed Trace or receipt is cryptographic evidence, not a legal instrument. The Exalto Capture Protocol uses “notary” as a technical role term, in the way public-key infrastructure uses “certificate authority.”',
+      ],
+      [
+        'Other notaries',
+        'The protocol is open. A Trace may be sealed by a notary you run or that a third party operates; that notary’s terms govern its service. Exalto Seal’s hosted verification checks a package against the notary keys in its own Registry; a package sealed elsewhere is verified with that notary’s public key using the local tooling.',
       ],
       [
         'Availability',

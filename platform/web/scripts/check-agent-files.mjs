@@ -46,15 +46,13 @@ for (const [html, md, heading] of pages) {
   );
   expect(!twin.includes('data-md'), `${md} leaked a data-md attribute`);
   expect(!/<\/?(div|span|svg|button)\b/.test(twin), `${md} contains unconverted HTML`);
-  if (md !== 'privacy.md' && md !== 'terms.md') {
-    for (const [pattern, label] of banned) {
-      // The landing's copy is the website copy doc's, checkpoint included.
-      if (md === 'index.md' && label === 'retired word checkpoint') continue;
-      const match = pattern.exec(
-        twin.replace(/\/v1\/traces\/[^\s`]*\/notarizations|notarization_failed/g, ''),
-      );
-      expect(!match, `${md} contains ${label}: ${match?.[0]}`);
-    }
+  for (const [pattern, label] of banned) {
+    // The landing's copy is the website copy doc's, checkpoint included.
+    if (md === 'index.md' && label === 'retired word checkpoint') continue;
+    const match = pattern.exec(
+      twin.replace(/\/v1\/traces\/[^\s`]*\/notarizations|notarization_failed/g, ''),
+    );
+    expect(!match, `${md} contains ${label}: ${match?.[0]}`);
   }
 }
 

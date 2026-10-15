@@ -15,7 +15,7 @@ export function Legal({ pageKey }: { pageKey: 'privacy' | 'terms' }) {
         </div>
         <div>
           <div className="cp-label">Last updated</div>
-          <div className="cp-titleblock-value">August 2026</div>
+          <div className="cp-titleblock-value">{page.updated}</div>
         </div>
       </div>
       <article className="cp-docs-article cp-legal-article">
