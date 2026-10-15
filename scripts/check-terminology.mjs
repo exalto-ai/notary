@@ -57,6 +57,12 @@ const rules = [
     // third-party digest or writer API and is matched out before this runs.
     pattern: /\bfinaliz(?:e|es|ed|ing|ation|ations|er|ers)\b/gi,
   },
+  {
+    label: 'retired protocol name',
+    // The protocol is the Exalto Capture Protocol (ECP). Its earlier name and
+    // acronym are retired from every user-facing and contributor surface.
+    pattern: /\bExalto Notary Protocol\b|\bENP\b/g,
+  },
 ];
 
 // A match is allowed only when the file is listed here and the matched line
@@ -66,6 +72,21 @@ const classified = [
     file: 'platform/web/scripts/test-brand.mjs',
     contains: "'Notary by Exalto'",
     reason: 'asserts the retired public product name never reappears',
+  },
+  {
+    file: 'AGENTS.md',
+    contains: 'its predecessor name, Exalto Notary Protocol (ENP), is retired',
+    reason: 'states the retired protocol name so agents recognise it',
+  },
+  {
+    file: 'CLAUDE.md', // the symlink to AGENTS.md is tracked on its own
+    contains: 'its predecessor name, Exalto Notary Protocol (ENP), is retired',
+    reason: 'states the retired protocol name so agents recognise it',
+  },
+  {
+    file: 'DESIGN.md',
+    contains: 'formerly ENP',
+    reason: 'records the rename in the frozen product names',
   },
   {
     file: 'platform/crates/notary-api/src/config.rs',

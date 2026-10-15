@@ -1,5 +1,5 @@
 #!/bin/sh
-# Install the latest Exalto Notary Protocol command-line tools for Apple silicon macOS or Linux.
+# Install the latest Exalto Capture command-line tools for Apple silicon macOS or Linux.
 set -eu
 
 download_root="${NOTARY_DOWNLOAD_ROOT:-https://notary-prod-downloads.t3.tigrisfiles.io/releases}"
