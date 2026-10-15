@@ -1,8 +1,8 @@
-import { Anchor, Box, Text, useComputedColorScheme } from '@mantine/core';
+import { Box, Text, useComputedColorScheme } from '@mantine/core';
 import { useEffect } from 'react';
 import { AccountPlaceholder } from './components/AccountPlaceholder';
 import { Lamp } from './components/primitives';
-import { Footer, Header, Page } from './components/Shell';
+import { Footer, Header } from './components/Shell';
 import { useAccount } from './data/account';
 import { documentTitle } from './documentTitle';
 import { Authorize } from './pages/Authorize';
@@ -12,36 +12,19 @@ import { Settings } from './pages/account/Settings';
 import { Traces } from './pages/account/Traces';
 import { Usage } from './pages/account/Usage';
 import { Docs } from './pages/Docs';
-import { Landing } from './pages/Landing';
 import { Legal } from './pages/Legal';
 import { SignIn } from './pages/SignIn';
 import { localPreview } from './preview';
-import { go, href, query, segments, useLinkNavigation, usePath } from './router';
+import { Landing } from './public/Landing';
+import { PublicLayout, PublicNotFound } from './public/PublicShell';
+import { go, query, segments, useLinkNavigation, usePath } from './router';
 import { useSettledWait } from './settledWait';
 
 const accountViews: AccountView[] = ['overview', 'traces', 'usage', 'settings'];
 
-function NotFound({ path }: { path: string }) {
-  return (
-    <Page width={640}>
-      <Box py={96}>
-        <Text component="h1" fz={33} fw={620} m={0}>
-          That page is not here.
-        </Text>
-        <Text c="var(--x-quiet)" mt="sm">
-          Nothing answers to{' '}
-          <Text component="span" className="x-data">
-            {path}
-          </Text>
-          .
-        </Text>
-        <Anchor href={href('/')} fz="sm" c="var(--x-seal)" display="inline-block" mt="lg">
-          Back to Exalto Capture
-        </Anchor>
-      </Box>
-    </Page>
-  );
-}
+// The public pages (DESIGN.md Part IIB) and the account surfaces (Part IIC)
+// are two shells over one application. A route belongs to exactly one.
+const apertureSections = new Set(['docs', 'signin', 'authorize', 'privacy', 'terms', 'app']);
 
 export function App() {
   const path = usePath();
@@ -50,20 +33,28 @@ export function App() {
   const scheme = useComputedColorScheme('light');
   const { account, pending, error, refresh, signOut, forget } = useAccount();
   useLinkNavigation();
+  const aperture = section !== undefined && apertureSections.has(section);
 
   useEffect(() => {
     document.title = documentTitle(section, page);
   }, [section, page]);
 
+  // The document behind the public shell is graphite (overscroll, and the
+  // first paint before hydration); index.html sets the same class statically.
+  useEffect(() => {
+    document.documentElement.classList.toggle('cp-root', !aperture);
+  }, [aperture]);
+
   useEffect(() => {
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', scheme === 'dark' ? '#0d1013' : '#eff0f2');
-  }, [scheme]);
+      ?.setAttribute('content', aperture ? (scheme === 'dark' ? '#0d1013' : '#eff0f2') : '#201e1d');
+  }, [scheme, aperture]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: path is intentional; scroll to top on every route change, not only section changes.
   useEffect(() => {
-    if (section !== 'docs') window.scrollTo({ top: 0, behavior: 'instant' });
+    if (section !== 'docs' && !window.location.hash)
+      window.scrollTo({ top: 0, behavior: 'instant' });
   }, [section, path]);
 
   const accountView: AccountView = accountViews.includes(page as AccountView)
@@ -74,9 +65,17 @@ export function App() {
   const waiting = section === 'app' && pending;
   const placeholderVisible = useSettledWait(waiting);
 
-  let body: React.ReactNode;
-  if (!section) body = <Landing signedIn={account !== null} />;
-  else if (section === 'docs')
+  if (!aperture) {
+    const session = pending ? 'pending' : account ? 'signed-in' : 'signed-out';
+    return (
+      <PublicLayout session={session}>
+        {section ? <PublicNotFound path={path} /> : <Landing />}
+      </PublicLayout>
+    );
+  }
+
+  let body: React.ReactNode = null;
+  if (section === 'docs')
     body = <Docs pageKey={page ?? 'overview'} section={parameters.get('section') ?? undefined} />;
   else if (section === 'signin')
     body = <SignIn returnTo={parameters.get('return_to')} account={account} />;
@@ -105,7 +104,6 @@ export function App() {
         )}
       </AccountShell>
     );
-  else body = <NotFound path={path} />;
 
   const bare = section === 'signin' || section === 'authorize';
 

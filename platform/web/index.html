@@ -1,40 +1,92 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="cp-root">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Exalto Seal turns selected local captures into portable, independently verifiable AI traces." />
-    <meta name="theme-color" content="#eff0f2" />
+    <meta name="description" content="The flight recorder for your AI work. Capture your sessions on your machine, have a third party seal the ones you need to show, and let anyone verify them. The desktop app, the SDK and CLI, and the open protocol underneath." />
+    <meta name="theme-color" content="#201e1d" />
     <link rel="canonical" href="%CAPTURE_ORIGIN%/" />
-    <link rel="alternate" type="text/plain" href="/llms.txt" title="Exalto Seal documentation index" />
-    <title>Exalto Capture</title>
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="Exalto Capture for agents" />
+    <link rel="alternate" type="text/markdown" href="/index.md" title="This page as Markdown" />
+    <title>Exalto Capture · The flight recorder for your AI work</title>
+    <script>
+      // The public pages are graphite from the first paint; the account surfaces
+      // keep their own ground. Mirrors apertureSections in src/site/App.tsx.
+      if (/^\/(docs|signin|authorize|privacy|terms|app)(\/|$)/.test(location.pathname))
+        document.documentElement.classList.remove('cp-root');
+    </script>
     <link rel="icon" type="image/svg+xml" href="/capture-mark.svg" />
     <link rel="icon" href="/favicon.ico?v=%BRAND_ASSET_VERSION%" sizes="48x48" />
     <link rel="apple-touch-icon" href="/apple-touch-icon-180.png?v=%BRAND_ASSET_VERSION%" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="%CAPTURE_ORIGIN%/" />
     <meta property="og:site_name" content="Exalto Capture" />
-    <meta property="og:title" content="Exalto Seal · Verifiable intelligence" />
-    <meta property="og:description" content="Capture AI interactions locally with Exalto Capture, then seal them with Exalto Seal as portable evidence for independent verification." />
+    <meta property="og:title" content="Exalto Capture · The flight recorder for your AI work" />
+    <meta property="og:description" content="Capture your AI sessions on your machine, have a third party seal the ones you need to show, and let anyone verify them." />
     <meta property="og:image" content="%CAPTURE_ORIGIN%/social-preview.png?v=%BRAND_ASSET_VERSION%" />
     <meta property="og:image:secure_url" content="%CAPTURE_ORIGIN%/social-preview.png?v=%BRAND_ASSET_VERSION%" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Exalto Seal · Verifiable intelligence · Sealed traces for independent verification" />
+    <meta property="og:image:alt" content="Sometimes the exchange itself is the evidence. Exalto Capture, the flight recorder for your AI work, with a sealed trace receipt." />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Exalto Seal · Verifiable intelligence" />
-    <meta name="twitter:description" content="Capture AI interactions locally with Exalto Capture, then seal them with Exalto Seal as portable evidence for independent verification." />
+    <meta name="twitter:title" content="Exalto Capture · The flight recorder for your AI work" />
+    <meta name="twitter:description" content="Capture your AI sessions on your machine, have a third party seal the ones you need to show, and let anyone verify them." />
     <meta name="twitter:image" content="%CAPTURE_ORIGIN%/social-preview.png?v=%BRAND_ASSET_VERSION%" />
-    <meta name="twitter:image:alt" content="Exalto Seal · Verifiable intelligence · Sealed traces for independent verification" />
+    <meta name="twitter:image:alt" content="Sometimes the exchange itself is the evidence. Exalto Capture, the flight recorder for your AI work, with a sealed trace receipt." />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Exalto Capture",
-        "applicationCategory": "DeveloperApplication",
-        "url": "%CAPTURE_ORIGIN%/",
-        "image": "%CAPTURE_ORIGIN%/social-preview.png?v=%BRAND_ASSET_VERSION%"
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://exalto.ai/#organization",
+            "name": "Exalto",
+            "url": "https://exalto.ai/",
+            "logo": "%CAPTURE_ORIGIN%/icon-512.png"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "%CAPTURE_ORIGIN%/#website",
+            "name": "Exalto Capture",
+            "url": "%CAPTURE_ORIGIN%/",
+            "publisher": { "@id": "https://exalto.ai/#organization" }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "%CAPTURE_ORIGIN%/#app",
+            "name": "Exalto Capture",
+            "alternateName": "The flight recorder for your AI work",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "macOS 12 or later on Apple silicon; command line for macOS and Linux",
+            "url": "%CAPTURE_ORIGIN%/",
+            "downloadUrl": "%CAPTURE_ORIGIN%/docs/getting-started",
+            "installUrl": "%CAPTURE_ORIGIN%/install.sh",
+            "image": "%CAPTURE_ORIGIN%/social-preview.png?v=%BRAND_ASSET_VERSION%",
+            "description": "Capture your AI sessions on your machine, have a third party seal the ones you need to show, and let anyone verify them. The desktop app, the SDK and CLI, and the open protocol underneath.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD",
+              "description": "Local capture is free, always. You pay for what you seal."
+            },
+            "publisher": { "@id": "https://exalto.ai/#organization" }
+          },
+          {
+            "@type": "HowTo",
+            "@id": "%CAPTURE_ORIGIN%/#quickstart",
+            "name": "From install to a sealed trace",
+            "description": "Install Exalto Capture, point a client at the local service, find the call, seal it, verify it.",
+            "step": [
+              { "@type": "HowToStep", "position": 1, "name": "Install the CLI and local service", "text": "curl -fsSL https://capture.exalto.ai/install.sh | sh", "url": "%CAPTURE_ORIGIN%/#quickstart" },
+              { "@type": "HowToStep", "position": 2, "name": "Start the local service", "text": "captured", "url": "%CAPTURE_ORIGIN%/#quickstart" },
+              { "@type": "HowToStep", "position": 3, "name": "Point your client at it", "text": "export OPENAI_BASE_URL=http://127.0.0.1:8787/openai/v1", "url": "%CAPTURE_ORIGIN%/#quickstart" },
+              { "@type": "HowToStep", "position": 4, "name": "Find the call", "text": "capture traces list --provider openai --limit 20", "url": "%CAPTURE_ORIGIN%/#quickstart" },
+              { "@type": "HowToStep", "position": 5, "name": "Seal it", "text": "capture traces seal trc-8f3k2q --wait", "url": "%CAPTURE_ORIGIN%/#quickstart" },
+              { "@type": "HowToStep", "position": 6, "name": "Verify it", "text": "capture traces verify trc-8f3k2q", "url": "%CAPTURE_ORIGIN%/#quickstart" }
+            ]
+          }
+        ]
       }
     </script>
   </head>

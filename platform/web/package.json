@@ -16,6 +16,7 @@
     "test:site": "vitest run --config vitest.site.config.js",
     "test:install": "sh scripts/test-install.sh",
     "test:brand": "node scripts/test-brand.mjs",
+    "render:og": "node scripts/render-og.mjs",
     "test:unit": "vitest run --environment node src/creditUtilization.test.js",
     "preview": "vite preview --host 127.0.0.1",
     "dev:capture": "vite",

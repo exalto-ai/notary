@@ -9,7 +9,7 @@ export default defineConfig({
   optimizeDeps: { include: ['openapi-fetch', 'react-dom/client'] },
   plugins: [docMetadata(), docMdx(), react({ include: /\.(js|jsx|ts|tsx|md|mdx)$/ })],
   test: {
-    include: ['src/site/App.browser.test.tsx'],
+    include: ['src/site/App.browser.test.tsx', 'src/site/public/copy.test.tsx'],
     browser: {
       enabled: true,
       headless: true,

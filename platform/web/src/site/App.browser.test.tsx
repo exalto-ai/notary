@@ -123,7 +123,9 @@ function stubApi(routes: Record<string, (url: URL, init?: RequestInit) => Respon
 // ---- Shell and routing ----------------------------------------------------
 
 test('names every canonical section in the browser title', () => {
-  expect(documentTitle(undefined, undefined)).toBe('Exalto Capture');
+  expect(documentTitle(undefined, undefined)).toBe(
+    'Exalto Capture · The flight recorder for your AI work',
+  );
   expect(documentTitle('docs', 'share')).toBe('Docs · Exalto Capture');
   expect(documentTitle('signin', undefined)).toBe('Sign in · Exalto Capture');
   expect(documentTitle('authorize', undefined)).toBe('Connect device · Exalto Capture');
@@ -246,10 +248,22 @@ test('opens docs search independently from the mobile navigation', async () => {
 });
 
 test('reserves the account control while the session is still resolving', async () => {
+  window.history.replaceState({}, '', '/app/overview');
   stubApi({ '/api/account': () => new Promise(() => json({})) as unknown as Response });
   const { container } = mount(<App />);
   await waitFor(() => expect(container.querySelector('header .x-skeleton')).toBeTruthy());
   expect(container.querySelector('header a[href="/signin"]')).toBeNull();
+});
+
+test('the public shell keeps its footprint while the session resolves', async () => {
+  stubApi({ '/api/account': () => new Promise(() => json({})) as unknown as Response });
+  const { container } = mount(<App />);
+  await expect
+    .element(page.getByRole('heading', { name: /Sometimes the exchange itself/ }))
+    .toBeVisible();
+  expect(container.querySelector('header a[href="/signin"]')).toBeNull();
+  expect(container.querySelector('header a[href="/app/overview"]')).toBeNull();
+  expect(container.querySelector('header .cp-nav-account')).toBeTruthy();
 });
 
 test('keeps a signed-out visitor at the account route they asked for', async () => {
@@ -308,16 +322,36 @@ test('the appearance preference is the one the site already stored', () => {
 
 // ---- Landing --------------------------------------------------------------
 
-test('leads the root with the macOS download for signed-out and signed-in alike', async () => {
+test('leads the root with the download and reaches the account when signed in', async () => {
   stubApi({
     '/api/account': () => json(accountPayload()),
     '/api/usage': () => json(usagePayload()),
   });
   mount(<App />);
-  const downloads = page.getByRole('link', { name: /Download for macOS/ });
-  await expect.element(downloads.first()).toBeVisible();
-  await expect.element(page.getByRole('heading', { name: /Record every session/ })).toBeVisible();
-  await expect.element(page.getByRole('link', { name: 'Open dashboard' })).toBeVisible();
+  await expect.element(page.getByRole('link', { name: /Download Exalto Capture/ })).toBeVisible();
+  await expect
+    .element(page.getByRole('heading', { name: /Sometimes the exchange itself/ }))
+    .toBeVisible();
+  await expect.element(page.getByRole('link', { name: 'Account' })).toBeVisible();
+});
+
+test('the public shell offers sign in and the hero replay reaches its receipt', async () => {
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  mount(<App />);
+  await expect.element(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  // Jumping to the last step completes the replay without waiting for it.
+  await page.getByRole('button', { name: 'Show step 5, Verify' }).click();
+  await expect.element(page.getByText('Verified', { exact: true })).toBeVisible();
+  await expect.element(page.getByText('seal.exalto.ai/trc-8f3k2q')).toBeVisible();
+  // One byte changed in the disclosure demo fails integrity, and only integrity.
+  await page.getByRole('button', { name: 'Change one byte' }).click();
+  await expect.element(page.getByText(/fails at integrity/)).toBeVisible();
+  await page.getByRole('button', { name: 'Reset' }).click();
+  await expect.element(page.getByText(/trc-8f3k2q · passes/)).toBeVisible();
+  // A private cell shows the private card; clicking it again discloses it.
+  await page.getByRole('button', { name: 'Item 1, private' }).click();
+  await expect.element(page.getByRole('button', { name: 'Item 1, disclosed' })).toBeVisible();
+  await expect.element(page.getByText('4 disclosed · 46 private')).toBeVisible();
 });
 
 test('the one filled action on a screen is actually filled', async () => {

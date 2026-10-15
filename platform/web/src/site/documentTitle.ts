@@ -15,7 +15,10 @@ const accountTitles: Record<string, string> = {
   settings: 'Settings',
 };
 
+export const landingTitle = 'Exalto Capture · The flight recorder for your AI work';
+
 export function documentTitle(section: string | undefined, page: string | undefined): string {
+  if (!section) return landingTitle;
   const name =
     section === 'app' ? (accountTitles[page ?? ''] ?? 'Overview') : sectionTitles[section ?? ''];
   return name ? `${name} · Exalto Capture` : 'Exalto Capture';
