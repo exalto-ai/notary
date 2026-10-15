@@ -26,10 +26,10 @@ PUT /v1/traces/{trace_id}/share
 
 ### Script-friendly output
 
-Poll the same Trace share singleton on the loopback administration API so the browser or agent never receives the vault-held hosted credential. Do not treat the trace as reachable until `progress` is `shared`.
+Poll the same Trace share singleton on the loopback administration API so the browser or agent never receives the vault-held hosted credential. Do not treat the trace as reachable until `progress` is `shared`, and use the `share_url` the service returns rather than building one; the public Trace pages are moving to seal.exalto.ai, and the link follows.
 
 ```json
-{"trace_id":"trc-…","progress":"shared","visibility":"unlisted","access_enabled":true,"password_protected":false,"expires_at_unix_ms":null,"failure_code":null,"share_url":"https://seal.exalto.ai/trc-…","package_url":"https://api.exalto.ai/api/public/traces/trc-…/package.llmtrace","updated_at_unix_ms":1785294000000}
+{"trace_id":"trc-…","progress":"shared","visibility":"unlisted","access_enabled":true,"password_protected":false,"expires_at_unix_ms":null,"failure_code":null,"share_url":"https://exalto.ai/s/trc-…","package_url":"https://api.exalto.ai/api/public/traces/trc-…/package.llmtrace","updated_at_unix_ms":1785294000000}
 ```
 
 ## The upload boundary
