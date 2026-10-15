@@ -48,6 +48,7 @@ Use the generated contract when prose and an installed service disagree.
 - [Documentation coverage checklist](documentation-coverage.md)
 - [Cursor-pagination contract and array inventory](adr/0001-cursor-pagination.md)
 - [Provider-neutral account identities](adr/0002-provider-neutral-identities.md)
+- [Public command names: capture, captured, traces seal](adr/0003-public-cli-names.md)
 - [Design language](../DESIGN.md)
 - [Aperture design system rationale](design-aperture.md)
 - [Provider icon assets and usage terms](provider-icons.md)
