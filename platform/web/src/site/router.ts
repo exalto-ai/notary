@@ -38,6 +38,11 @@ export function query(path: string): URLSearchParams {
   return new URLSearchParams(path.split('?')[1] ?? '');
 }
 
+/** Whether a path names a served file (`/llms.txt`, `/docs/share.md`) rather than a route. */
+export function isFile(pathname: string): boolean {
+  return /\.[a-z0-9]+$/i.test(pathname.split('/').pop() ?? '');
+}
+
 /**
  * Links are written as ordinary anchors so they open in a new tab, copy, and
  * survive a hard reload. This turns a plain left click on one of them into an
@@ -54,6 +59,9 @@ export function useLinkNavigation(): void {
       if (anchor.hasAttribute('download')) return;
       const url = new URL(anchor.href, window.location.origin);
       if (url.origin !== window.location.origin) return;
+      // A file the server serves as it is (`/llms.txt`, a Markdown twin, the
+      // install script) is not a route; the browser fetches it.
+      if (isFile(url.pathname)) return;
       // A link to an anchor on the page this already is belongs to the
       // browser, which knows how to scroll to it.
       const sameDocument =

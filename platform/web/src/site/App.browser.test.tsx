@@ -13,6 +13,7 @@ import { Settings } from './pages/account/Settings';
 import { Traces } from './pages/account/Traces';
 import { Usage } from './pages/account/Usage';
 import { allowedReturnTo, SignIn } from './pages/SignIn';
+import { isFile } from './router';
 import { cssVariablesResolver, theme } from './theme';
 
 afterEach(async () => {
@@ -352,6 +353,33 @@ test('the public shell offers sign in and the hero replay reaches its receipt', 
   await page.getByRole('button', { name: 'Item 1, private' }).click();
   await expect.element(page.getByRole('button', { name: 'Item 1, disclosed' })).toBeVisible();
   await expect.element(page.getByText('4 disclosed · 46 private')).toBeVisible();
+});
+
+test('route links navigate in place while served files are left to the browser', async () => {
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  mount(<App />);
+  await expect.element(page.getByRole('link', { name: 'Read the docs' })).toBeVisible();
+  // The router listens on the document; a window listener runs after it and
+  // can see whether it claimed the click, then stop the browser leaving.
+  const claimed: boolean[] = [];
+  const observe = (event: MouseEvent) => {
+    claimed.push(event.defaultPrevented);
+    event.preventDefault();
+  };
+  window.addEventListener('click', observe);
+  try {
+    document.querySelector<HTMLAnchorElement>('a[href="/llms.txt"]')?.click();
+    document.querySelector<HTMLAnchorElement>('a[href="/docs"]')?.click();
+  } finally {
+    window.removeEventListener('click', observe);
+  }
+  expect(claimed).toEqual([false, true]);
+  expect(isFile('/llms.txt')).toBe(true);
+  expect(isFile('/docs/getting-started.md')).toBe(true);
+  expect(isFile('/install.sh')).toBe(true);
+  expect(isFile('/docs/getting-started')).toBe(false);
+  expect(isFile('/')).toBe(false);
+  expect(window.location.pathname).toBe('/docs');
 });
 
 test('the one filled action on a screen is actually filled', async () => {
