@@ -78,12 +78,10 @@ export function Header({
   account,
   onSignOut,
   authPending = false,
-  showDownload = false,
 }: {
   account: Account | null;
   onSignOut?: () => void;
   authPending?: boolean;
-  showDownload?: boolean;
 }) {
   const name = account ? accountName(account) : '';
   return (
@@ -118,11 +116,6 @@ export function Header({
           Docs
         </Anchor>
         <ColorSchemeToggle />
-        {showDownload ? (
-          <Button component="a" href={href('/')} size="xs" h={30} px={14}>
-            Download
-          </Button>
-        ) : null}
         {account ? (
           <Menu position="bottom-end" width={240} shadow="md">
             <Menu.Target>

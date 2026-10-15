@@ -12,7 +12,7 @@
     <script>
       // The public pages are graphite from the first paint; the account surfaces
       // keep their own ground. Mirrors apertureSections in src/site/App.tsx.
-      if (/^\/(docs|signin|authorize|privacy|terms|app)(\/|$)/.test(location.pathname))
+      if (/^\/(signin|authorize|app)(\/|$)/.test(location.pathname))
         document.documentElement.classList.remove('cp-root');
     </script>
     <link rel="icon" type="image/svg+xml" href="/capture-mark.svg" />

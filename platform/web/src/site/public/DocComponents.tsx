@@ -1,5 +1,3 @@
-import { Anchor, Box, Button, CopyButton, Text, UnstyledButton } from '@mantine/core';
-import { IconArrowDown, IconCheck, IconCopy } from '@tabler/icons-react';
 import type { MDXComponents } from 'mdx/types';
 import {
   Children,
@@ -12,7 +10,10 @@ import {
   useId,
   useState,
 } from 'react';
-import { downloadSize, fetchLatestMacosDownload, type MacosDownload } from '../../release';
+import { downloadSize, fetchLatestMacosDownload, type MacosDownload } from '../release';
+import { href } from '../router';
+import { DownloadIcon } from './figures';
+import { useCopied } from './hooks';
 
 function nodeText(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
@@ -21,63 +22,46 @@ function nodeText(node: ReactNode): string {
   return '';
 }
 
-function Heading2({ className, ...props }: ComponentPropsWithoutRef<'h2'>) {
-  return <h2 {...props} className={['x-mdx-h2', className].filter(Boolean).join(' ')} />;
-}
-
-function Heading3({ className, ...props }: ComponentPropsWithoutRef<'h3'>) {
-  return <h3 {...props} className={['x-mdx-h3', className].filter(Boolean).join(' ')} />;
-}
-
-function Paragraph({ className, ...props }: ComponentPropsWithoutRef<'p'>) {
-  return <p {...props} className={['x-mdx-p', className].filter(Boolean).join(' ')} />;
-}
-
-function DocLink({ href = '', ...props }: ComponentPropsWithoutRef<'a'>) {
-  const external = /^https?:\/\//.test(href);
+function DocLink({ href: target = '', ...props }: ComponentPropsWithoutRef<'a'>) {
+  const external = /^https?:\/\//.test(target);
   return (
-    <Anchor
+    <a
       {...props}
-      href={href}
+      href={external ? target : href(target)}
       target={external ? '_blank' : undefined}
       rel={external ? 'noreferrer' : undefined}
     />
   );
 }
 
-function CodeBlock({ children, className, ...props }: ComponentPropsWithoutRef<'pre'>) {
+function CodeBlock({ children, ...props }: ComponentPropsWithoutRef<'pre'>) {
   const value = nodeText(children).replace(/\n$/, '');
+  const [copied, copy] = useCopied();
   return (
-    <Box className="x-mdx-code">
-      <CopyButton value={value}>
-        {({ copied, copy }) => (
-          <UnstyledButton
-            className="x-mdx-copy"
-            onClick={copy}
-            aria-label={copied ? 'Copied code' : 'Copy code'}
-          >
-            {copied ? <IconCheck size={13} stroke={1.8} /> : <IconCopy size={13} stroke={1.8} />}
-            <span>{copied ? 'Copied' : 'Copy'}</span>
-          </UnstyledButton>
-        )}
-      </CopyButton>
-      <pre {...props} className={className}>
-        {children}
-      </pre>
-    </Box>
+    <div className="cp-mdx-code">
+      <pre {...props}>{children}</pre>
+      <button
+        type="button"
+        className="cp-mdx-copy"
+        onClick={() => copy('code', value)}
+        aria-label={copied ? 'Copied code' : 'Copy code'}
+      >
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
   );
 }
 
-function Table({ className, ...props }: ComponentPropsWithoutRef<'table'>) {
+function Table(props: ComponentPropsWithoutRef<'table'>) {
   return (
-    <Box className="x-mdx-table-wrap">
-      <table {...props} className={className} />
-    </Box>
+    <div className="cp-mdx-table">
+      <table {...props} />
+    </div>
   );
 }
 
 export function Cards({ children }: { children: ReactNode }) {
-  return <Box className="x-doc-cards">{children}</Box>;
+  return <div className="cp-cells cp-doc-cards">{children}</div>;
 }
 
 export function Card({
@@ -90,33 +74,39 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <Box className="x-doc-card">
-      <Text className="x-data" c="var(--x-faint)">
-        {eyebrow}
-      </Text>
-      <Text component="h3" fz={16} fw={610} mt={8} mb={0}>
-        {title}
-      </Text>
-      <Box c="var(--x-quiet)" mt={7} className="x-doc-card-copy">
-        {children}
-      </Box>
-    </Box>
+    <div className="cp-doc-card">
+      <div className="cp-micro">{eyebrow}</div>
+      <h3>{title}</h3>
+      <div className="cp-doc-card-copy">{children}</div>
+    </div>
+  );
+}
+
+export function Columns({ children }: { children: ReactNode }) {
+  return <div className="cp-cells cp-doc-columns">{children}</div>;
+}
+
+export function Column({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="cp-doc-column">
+      <h3>{title}</h3>
+      {children}
+    </div>
   );
 }
 
 export function Steps({ children }: { children: ReactNode }) {
-  return <ol className="x-doc-steps">{children}</ol>;
+  return <ol className="cp-doc-steps">{children}</ol>;
 }
 
 export function Step({ title, children }: { title: string; children: ReactNode }) {
   return (
     <li>
-      <Box>
-        <Text fw={610}>{title}</Text>
-        <Box c="var(--x-quiet)" mt={3}>
-          {children}
-        </Box>
-      </Box>
+      <span aria-hidden="true" />
+      <div>
+        <h3>{title}</h3>
+        <div className="cp-doc-step-body">{children}</div>
+      </div>
     </li>
   );
 }
@@ -131,20 +121,19 @@ export function Callout({
   children: ReactNode;
 }) {
   return (
-    <aside className="x-doc-callout" data-tone={tone}>
+    <aside className="cp-callout">
       {title ? (
-        <Text fw={610} fz="sm" mb={4}>
+        <div className="cp-box-head" data-tone={tone}>
           {title}
-        </Text>
+        </div>
       ) : null}
-      <Box>{children}</Box>
+      <div className="cp-callout-body">{children}</div>
     </aside>
   );
 }
 
 export function DownloadCard() {
   const [release, setRelease] = useState<MacosDownload | null | undefined>(undefined);
-
   useEffect(() => {
     let cancelled = false;
     fetchLatestMacosDownload().then((value) => {
@@ -156,49 +145,36 @@ export function DownloadCard() {
   }, []);
 
   return (
-    <Box className="x-doc-download">
-      <Box>
-        <Text className="x-data" c="var(--x-faint)">
-          SIGNED DESKTOP APP
-        </Text>
-        <Text fw={610} fz={17} mt={5}>
-          Exalto Capture for Apple silicon
-        </Text>
-        <Text c="var(--x-quiet)" fz="sm" mt={4}>
-          macOS 12 Monterey or later · bundled local service
-        </Text>
-      </Box>
-      <Box className="x-doc-download-action">
+    <div className="cp-doc-download">
+      <div>
+        <div className="cp-micro">Signed desktop app</div>
+        <h3>Exalto Capture for Apple silicon</h3>
+        <p>macOS 12 Monterey or later · bundled local service</p>
+      </div>
+      <div className="cp-doc-download-action">
         {release ? (
-          <Button
-            component="a"
-            href={release.url}
-            leftSection={<IconArrowDown size={16} stroke={1.8} />}
-          >
+          <a href={release.url} className="cp-btn-primary">
             Download {release.version}
-          </Button>
+            <DownloadIcon />
+          </a>
         ) : release === null ? (
-          <Button component="a" href="/" variant="default">
-            View downloads
-          </Button>
+          <a href={href('/#quickstart')} className="cp-btn-secondary">
+            Install the CLI instead
+          </a>
         ) : (
-          <Button disabled loading>
+          <span className="cp-btn-primary" aria-disabled="true">
             Checking release
-          </Button>
+          </span>
         )}
-        <Text className="x-data" c="var(--x-faint)" ta="right" mt={7}>
+        <span className="cp-hero-note">
           {release ? `${downloadSize(release.sizeBytes)} · DMG` : 'Latest stable release'}
-        </Text>
-      </Box>
-    </Box>
+        </span>
+      </div>
+    </div>
   );
 }
 
-type ProviderProps = {
-  name: string;
-  auth: string;
-  children: ReactNode;
-};
+type ProviderProps = { name: string; auth: string; children: ReactNode };
 
 export function Provider(_props: ProviderProps) {
   return null;
@@ -227,34 +203,34 @@ export function ProviderTabs({ children }: { children: ReactNode }) {
   if (!selected) return null;
 
   return (
-    <Box className="x-provider-tabs">
-      <Box className="x-provider-tablist" role="tablist" aria-label="Provider setup">
+    <div className="cp-provider-tabs">
+      <div className="cp-provider-tablist" role="tablist" aria-label="Provider setup">
         {providers.map((provider, index) => (
-          <UnstyledButton
+          <button
+            type="button"
             key={provider.props.name}
             id={`${id}-tab-${index}`}
             role="tab"
             aria-selected={index === active}
             aria-controls={`${id}-panel`}
             tabIndex={index === active ? 0 : -1}
-            data-active={index === active || undefined}
             onClick={() => setActive(index)}
             onKeyDown={(event) => move(event, index)}
           >
             <span>{provider.props.name}</span>
             <small>{provider.props.auth}</small>
-          </UnstyledButton>
+          </button>
         ))}
-      </Box>
-      <Box
+      </div>
+      <div
         id={`${id}-panel`}
         role="tabpanel"
         aria-labelledby={`${id}-tab-${active}`}
-        className="x-provider-panel"
+        className="cp-provider-panel"
       >
         {selected.props.children}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
@@ -296,73 +272,58 @@ const anatomy = {
 export function TraceAnatomy() {
   const [state, setState] = useState<keyof typeof anatomy>('captured');
   const current = anatomy[state];
-
   return (
-    <Box className="x-trace-anatomy" data-state={state}>
-      <Box className="x-anatomy-head">
-        <Box>
-          <Text className="x-data" c="var(--x-faint)">
-            TRACE ANATOMY
-          </Text>
-          <Text fw={620} fz={18} mt={4}>
-            What changes when a Trace is sealed?
-          </Text>
-        </Box>
-        <Box className="x-anatomy-switch" role="group" aria-label="Trace evidence state">
+    <div className="cp-anatomy cp-paper" data-state={state}>
+      <div className="cp-anatomy-head">
+        <div>
+          <div className="cp-micro">Trace anatomy</div>
+          <h3>What changes when a Trace is sealed?</h3>
+        </div>
+        <div className="cp-anatomy-switch" role="group" aria-label="Trace evidence state">
           {(Object.keys(anatomy) as Array<keyof typeof anatomy>).map((value) => (
-            <UnstyledButton
+            <button
+              type="button"
               key={value}
-              data-active={state === value || undefined}
               aria-pressed={state === value}
               onClick={() => setState(value)}
             >
               {anatomy[value].label}
-            </UnstyledButton>
+            </button>
           ))}
-        </Box>
-      </Box>
-
-      <Box className="x-anatomy-path" aria-label={`${current.label} evidence path`}>
+        </div>
+      </div>
+      <div className="cp-anatomy-path" role="list" aria-label={`${current.label} evidence path`}>
         {current.path.map((node, index) => (
-          <Box key={node} className="x-anatomy-node">
+          <div key={node} className="cp-anatomy-node" role="listitem">
             <span>{String(index + 1).padStart(2, '0')}</span>
             <strong>{node}</strong>
-          </Box>
+          </div>
         ))}
-      </Box>
-
-      <Text c="var(--x-quiet)" fz="sm" maw="62ch" mt="md">
-        {current.description}
-      </Text>
-
-      <Box className="x-anatomy-layers" role="tabpanel" aria-live="polite">
+      </div>
+      <p className="cp-anatomy-description">{current.description}</p>
+      <div className="cp-anatomy-layers" aria-live="polite">
         {current.layers.map(([name, status, description]) => (
-          <Box key={name} className="x-anatomy-layer">
-            <Text className="x-data" fw={560}>
-              {name}
-            </Text>
-            <Text className="x-anatomy-status" data-status={status.toLowerCase()}>
+          <div key={name} className="cp-anatomy-layer">
+            <code>{name}</code>
+            <span className="cp-anatomy-status" data-status={status.toLowerCase()}>
               {status}
-            </Text>
-            <Text fz="sm" c="var(--x-quiet)">
-              {description}
-            </Text>
-          </Box>
+            </span>
+            <p>{description}</p>
+          </div>
         ))}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
 export const mdxComponents = {
-  h2: Heading2,
-  h3: Heading3,
-  p: Paragraph,
   a: DocLink,
   pre: CodeBlock,
   table: Table,
   Cards,
   Card,
+  Columns,
+  Column,
   Steps,
   Step,
   Callout,

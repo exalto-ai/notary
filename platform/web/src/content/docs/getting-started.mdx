@@ -26,7 +26,7 @@ Download Exalto Capture below. Open the DMG, move Exalto Capture to Applications
 
 </Callout>
 
-The app configures capture protection, helps connect a provider or coding tool, starts and stops its bundled `notaryd`, and renders the capture workspace natively. Provider credentials stay on your machine; the remote notary never receives them.
+The app configures capture protection, helps connect a provider or coding tool, starts and stops its bundled local service, and renders the capture workspace natively. Provider credentials stay on your machine; the remote notary never receives them.
 
 ## Install the CLI and local service
 
@@ -36,11 +36,11 @@ The shell installer supports Apple silicon Macs and x86-64 or ARM64 Linux system
 curl -fsSL https://capture.exalto.ai/install.sh | sh
 ```
 
-`notaryd` is the long-running local service. `notaryctl` is its short-lived REST client. The command-line archive installs both together.
+`captured` is the long-running local service. `capture` is its short-lived REST client. The installer places both in `~/.local/bin`. The Runtime's own binaries are still named `notaryd` and `notaryctl`; the installer adds `capture` and `captured` in front of them until the Runtime ships the public names, so both spellings work.
 
 ### Build from source
 
-Use Rust 1.95.0 and the toolchain file in the [public runtime repository](https://github.com/exalto-ai/notary-runtime). That repository contains the protocol, daemon, CLI, generic notary, local dashboard, updater, and verification implementation. Hosted accounts, billing, admission policy, and this public website are operated separately.
+Use Rust 1.95.0 and the toolchain file in the [public runtime repository](https://github.com/exalto-ai/notary-runtime). That repository contains the protocol, daemon, CLI, generic notary, local dashboard, updater, and verification implementation. Hosted accounts, billing, admission policy, and this public website are operated separately. A source build produces the Runtime's own names, `notaryd` and `notaryctl`; every `capture` command on this site is the same command under that name, and the Runtime README lists the one subcommand whose spelling differs.
 
 ```sh
 git clone https://github.com/exalto-ai/notary-runtime.git
@@ -54,9 +54,9 @@ cargo install --locked --path crates/notaryctl --bin notaryctl
 The CLI bundles portable instructions for finding Traces, sealing with approval, verifying packages, diagnosing operations, and protecting private evidence. Install them for Codex, Claude Code, or both. This command neither contacts nor starts the daemon.
 
 ```sh
-notaryctl skill install --target codex
-notaryctl skill install --target claude
-notaryctl skill install --target all
+capture skill install --target codex
+capture skill install --target claude
+capture skill install --target all
 ```
 
 Use `--skills-dir /path/to/agent/skills` for another Agent Skills compatible client. Re-run with `--force` only after inspecting a different existing skill. Claude Code uses `$CLAUDE_CONFIG_DIR/skills` when that variable is nonempty and `~/.claude/skills` otherwise. Restart Claude Code if its personal skills directory did not exist when the current session started.
@@ -64,7 +64,7 @@ Use `--skills-dir /path/to/agent/skills` for another Agent Skills compatible cli
 ### Start the service
 
 ```sh
-notaryd
+captured
 ```
 
 Open `http://127.0.0.1:8788` to use the local dashboard. The default loopback configuration opens directly. If `admin.auth` is enabled, sign in with the configured username and password; the dashboard exchanges them for an `HttpOnly` session and does not store the password.
@@ -82,21 +82,21 @@ The first service start creates an editable `config.toml` at the standard config
 Start with an explicit file when needed:
 
 ```sh
-notaryd --config /path/to/config.toml
+captured --config /path/to/config.toml
 ```
 
 ## Operate the service
 
 ### Use the command client
 
-`notaryctl` talks to the daemon's versioned loopback API. It checks daemon health and never opens the metadata store or vault directly. Add `--json` for automation. Raw Trace-list JSON includes stored prompt and output previews, so add `--metadata-only` before sending structured results to an agent transcript.
+`capture` talks to the daemon's versioned loopback API. It checks daemon health and never opens the metadata store or vault directly. Add `--json` for automation. Raw Trace-list JSON includes stored prompt and output previews, so add `--metadata-only` before sending structured results to an agent transcript.
 
 ```sh
-notaryctl status
-notaryctl traces list --provider openai
-notaryctl --json traces list --provider openai --metadata-only
-notaryctl traces show trc-example --json
-notaryctl open
+capture status
+capture traces list --provider openai
+capture --json traces list --provider openai --metadata-only
+capture traces show trc-example --json
+capture open
 ```
 
 ### Connect a hosted account when needed
@@ -104,16 +104,16 @@ notaryctl open
 Local capture, sealing, and verification do not require an account. Connect one to use account allowances, share a Sealed Trace, or manage the same device from hosted Settings. The rotating device credential is stored only in the daemon credential vault.
 
 ```sh
-notaryctl account connect
-notaryctl account show
-notaryctl account disconnect
+capture account connect
+capture account show
+capture account disconnect
 ```
 
 For an unattended host, create a deployment-specific, least-privilege key in hosted Account settings and inject it through `NOTARYD_PLATFORM_API_KEY` or the private `NOTARYD_PLATFORM_API_KEY_FILE`. The complete key is shown once and never belongs in `config.toml`, logs, or artifacts. One daemon can use an injected key or a browser-approved device session, never both.
 
 ```sh
 export NOTARYD_PLATFORM_API_KEY_FILE=/run/secrets/notary-platform-api-key
-notaryd
+captured
 ```
 
 ### What configuration controls
@@ -138,7 +138,7 @@ If you prefer a passphrase, point `NOTARYD_VAULT_PASSPHRASE_FILE` at a private U
 
 ```sh
 export NOTARYD_VAULT_PASSPHRASE_FILE=/private/local/path/vault-passphrase
-notaryd
+captured
 ```
 
 ## Understand the capture lifecycle
@@ -157,7 +157,7 @@ notaryd
 
 ## Connect a provider
 
-Keep credentials where your SDK or agent already expects them—for example, `OPENAI_API_KEY` in your shell or secret manager. Exalto Capture neither creates nor requires a `.env` file.
+Keep credentials where your SDK or agent already expects them, for example `OPENAI_API_KEY` in your shell or secret manager. Exalto Capture neither creates nor requires a `.env` file.
 
 <ProviderTabs>
   <Provider name="OpenAI" auth="API key">
@@ -222,7 +222,7 @@ env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN \
   </Provider>
   <Provider name="OpenRouter" auth="API key">
 
-Use the OpenAI-compatible base URL and keep `OPENROUTER_API_KEY` in the client environment. The evidence authenticates OpenRouter—not the vendor named in a model slug. Authorization, HTTP-Referer, and X-Title header values are hidden in the Sealed package.
+Use the OpenAI-compatible base URL and keep `OPENROUTER_API_KEY` in the client environment. The evidence authenticates OpenRouter, not the vendor named in a model slug. Authorization, HTTP-Referer, and X-Title header values are hidden in the Sealed package.
 
 ```sh
 curl http://127.0.0.1:8787/openrouter/api/v1/chat/completions \
@@ -247,7 +247,13 @@ The supported, live-tested clients are Codex CLI with its saved ChatGPT login an
 
 </Callout>
 
-The first local path segment selects a fixed adapter: `/openai`, `/codex`, `/anthropic`, `/deepseek`, or `/openrouter`. Each adapter fixes the upstream hostname and path to an explicit allowlist. The notary—not a caller-supplied URL—resolves and opens the provider connection.
+<Callout title="An agent cannot re-point its own session">
+
+Claude Code reads `ANTHROPIC_BASE_URL` and Codex reads `~/.codex/config.toml` when they start. A session that is already running keeps talking to the provider directly. Configure the client, then start a new session; the new one is captured.
+
+</Callout>
+
+The first local path segment selects a fixed adapter: `/openai`, `/codex`, `/anthropic`, `/deepseek`, or `/openrouter`. Each adapter fixes the upstream hostname and path to an explicit allowlist. The notary, not a caller-supplied URL, resolves and opens the provider connection.
 
 ## Find local Traces
 

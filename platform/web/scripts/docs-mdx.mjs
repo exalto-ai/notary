@@ -1,5 +1,4 @@
 import mdx from '@mdx-js/rollup';
-import rehypeShiki from '@shikijs/rehype';
 import GithubSlugger from 'github-slugger';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeSlug from 'rehype-slug';
@@ -85,7 +84,6 @@ export function docMdx() {
             content: { type: 'text', value: '#' },
           },
         ],
-        [rehypeShiki, { themes: { light: 'github-light', dark: 'github-dark' } }],
       ],
     }),
     // Vite 8's built-in transform parses MDX as JSX when React includes the

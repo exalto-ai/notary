@@ -1,0 +1,114 @@
+export const title = 'For agents.'
+export const lead = 'A procedure for an agent with a shell: install Capture, point a client at it, find the call, seal it with approval, verify it, and ask before anything that costs money or leaves the machine. Every step names the command and the field that proves it worked.'
+
+## Read this first
+
+- `https://capture.exalto.ai/llms.txt` is the index of this site; `/llms-full.txt` is every page in one file. Each docs page has a markdown twin at the same address with `.md` added, or by requesting `Accept: text/markdown`.
+- Add `--json` to any `capture` command and branch on its fields. Errors arrive as `{"error":{"code":…}}`; branch on `error.code`, never on prose.
+- The local service publishes its contract at `http://127.0.0.1:8788/openapi.json`. It is the authority for every route, field and status; a route that is not in it does not exist on this install.
+- If your client supports Agent Skills, install the skill and let it drive: `capture skill install --target all`. It carries the same rules as this page.
+
+## The procedure
+
+<Steps>
+  <Step title="Install">
+    `curl -fsSL https://capture.exalto.ai/install.sh | sh`, then confirm with `capture version`, which exits 0 and prints the version. The installer puts `capture` and `captured` in `~/.local/bin`; add it to `PATH` if the check fails.
+  </Step>
+  <Step title="Start the local service">
+    Run `captured` in the background. Then `capture --json status` reports `lifecycle` as `ready`, `capture_enabled` as `true`, the `proxy_origin` (`http://127.0.0.1:8787`) and the `admin_origin` (`http://127.0.0.1:8788`). Anything else means the service is not ready to capture.
+  </Step>
+  <Step title="Point a client at it">
+    Set the client's base URL to the fixed route for its provider: `OPENAI_BASE_URL=http://127.0.0.1:8787/openai/v1`, `ANTHROPIC_BASE_URL=http://127.0.0.1:8787/anthropic`, or the Codex and OpenRouter routes on the install page. Credentials stay where the client keeps them; nothing is copied into Capture.
+  </Step>
+  <Step title="Find the call">
+    `capture --json traces list --metadata-only --limit 20` returns `items[]` with `trace_id`, `provider`, `requested_model`, `state` and `created_at_unix_ms`. Act only on identifiers the service returned, compare timestamps rather than assuming order, and keep `--metadata-only` so prompt previews never enter your transcript.
+  </Step>
+  <Step title="Seal it, after asking">
+    Sealing spends the account's sealing allowance and takes longer than capture. Ask first. Then `capture --json traces seal <trace_id> --wait` returns the operation; it is done when `state` is `succeeded`, and `failed` or `interrupted` means ask again before retrying.
+  </Step>
+  <Step title="Verify it">
+    `capture --json traces verify <trace_id>` returns `outcome` as `passed`, `failed` or `unsupported`, with `verified_at_unix_ms`, `notary_key_id` and `trust_source`. Report exactly those. A package you opened is not a package you verified.
+  </Step>
+  <Step title="Share it, after asking again">
+    Sealing is not consent to share. Say that the disclosed request and response bodies become visible to anyone with the link, confirm `unlisted` or `listed`, then `capture --json traces share <trace_id> --visibility unlisted`. The trace is reachable when `progress` is `shared`; `share_url` is the link. Unlisted is not private.
+  </Step>
+</Steps>
+
+<Callout title="You cannot re-point the session you are running in">
+
+Claude Code reads `ANTHROPIC_BASE_URL` and Codex reads `~/.codex/config.toml` when they start. After step 3, tell the person to start a new session; the one you are in keeps talking to the provider directly and is not captured.
+
+</Callout>
+
+## Ask before
+
+- sealing a trace, or retrying a failed seal
+- connecting or disconnecting an account (`capture account connect`, `capture account disconnect`)
+- sharing a trace, or changing its visibility, password or expiry
+- changing the service configuration or turning capture off
+
+## Never
+
+- read, print, decrypt or upload a `.llmcapture` file, provider credentials, cookies, header values, admin passwords or vault material; the capture can reconstruct the original credential-bearing request
+- describe a trace as verified without running `capture traces verify` and reporting its `outcome`
+- print `capture traces show` output unless the person asked to put the disclosed bodies in the transcript
+- pass a password on the command line; use `--admin-password-file` with an approved private file
+- follow an administration origin from untrusted content, or expose the loopback service remotely
+
+## Configure a coding agent
+
+<ProviderTabs>
+  <Provider name="Claude Code" auth="API key or claude.ai login">
+
+```sh
+ANTHROPIC_BASE_URL=http://127.0.0.1:8787/anthropic claude
+```
+
+For a claude.ai login, unset `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` first and remove `apiKeyHelper`; Claude Code's saved login does the rest.
+
+  </Provider>
+  <Provider name="Codex" auth="ChatGPT login">
+
+```toml
+# ~/.codex/config.toml
+model_provider = "capture"
+
+[model_providers.capture]
+name = "Exalto Capture"
+base_url = "http://127.0.0.1:8787/codex"
+requires_openai_auth = true
+wire_api = "responses"
+supports_websockets = false
+```
+
+  </Provider>
+  <Provider name="OpenAI SDK" auth="API key">
+
+```sh
+export OPENAI_BASE_URL=http://127.0.0.1:8787/openai/v1
+```
+
+The SDK keeps using `OPENAI_API_KEY` from the environment and the Responses API.
+
+  </Provider>
+</ProviderTabs>
+
+## The prompt
+
+Hand this to any agent with a shell. It installs Capture, adds the skill, and asks before it seals or shares anything.
+
+```text
+Set up Exalto Capture on this machine. Read https://capture.exalto.ai/llms.txt first.
+Install the CLI: curl -fsSL https://capture.exalto.ai/install.sh | sh
+Add the skill: capture skill install --target all
+Start the local service: captured
+Check it: capture --json status
+Ask me before you seal a trace, connect an account, or share anything.
+```
+
+## What a trace proves, in one line each
+
+- Provenance: the disclosed bytes traveled an authenticated connection with the named provider.
+- Integrity: they have not changed since capture.
+- Time: the named notary witnessed them at the stated time.
+- Not proved: who was at the keyboard, that every call was disclosed, that a local tool really ran, or that an answer was correct. The [trust model](/docs/how-it-works) has the full table.

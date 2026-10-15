@@ -11,11 +11,11 @@ import { Overview } from './pages/account/Overview';
 import { Settings } from './pages/account/Settings';
 import { Traces } from './pages/account/Traces';
 import { Usage } from './pages/account/Usage';
-import { Docs } from './pages/Docs';
-import { Legal } from './pages/Legal';
 import { SignIn } from './pages/SignIn';
 import { localPreview } from './preview';
+import { Docs } from './public/Docs';
 import { Landing } from './public/Landing';
+import { Legal } from './public/Legal';
 import { PublicLayout, PublicNotFound } from './public/PublicShell';
 import { go, query, segments, useLinkNavigation, usePath } from './router';
 import { useSettledWait } from './settledWait';
@@ -24,7 +24,7 @@ const accountViews: AccountView[] = ['overview', 'traces', 'usage', 'settings'];
 
 // The public pages (DESIGN.md Part IIB) and the account surfaces (Part IIC)
 // are two shells over one application. A route belongs to exactly one.
-const apertureSections = new Set(['docs', 'signin', 'authorize', 'privacy', 'terms', 'app']);
+const apertureSections = new Set(['signin', 'authorize', 'app']);
 
 export function App() {
   const path = usePath();
@@ -67,20 +67,23 @@ export function App() {
 
   if (!aperture) {
     const session = pending ? 'pending' : account ? 'signed-in' : 'signed-out';
+    let body: React.ReactNode;
+    if (!section) body = <Landing />;
+    else if (section === 'docs')
+      body = <Docs pageKey={page ?? 'overview'} section={parameters.get('section') ?? undefined} />;
+    else if (section === 'privacy' || section === 'terms') body = <Legal pageKey={section} />;
+    else body = <PublicNotFound path={path} />;
     return (
-      <PublicLayout session={session}>
-        {section ? <PublicNotFound path={path} /> : <Landing />}
+      <PublicLayout session={session} current={section === 'docs' ? 'docs' : undefined}>
+        {body}
       </PublicLayout>
     );
   }
 
   let body: React.ReactNode = null;
-  if (section === 'docs')
-    body = <Docs pageKey={page ?? 'overview'} section={parameters.get('section') ?? undefined} />;
-  else if (section === 'signin')
+  if (section === 'signin')
     body = <SignIn returnTo={parameters.get('return_to')} account={account} />;
   else if (section === 'authorize') body = <Authorize route={path} account={account} />;
-  else if (section === 'privacy' || section === 'terms') body = <Legal pageKey={section} />;
   else if (section === 'app' && waiting) body = placeholderVisible ? <AccountPlaceholder /> : null;
   else if (section === 'app' && !account)
     body = <SignIn returnTo={`/${path.replace(/^\//, '')}`} account={null} loadError={error} />;
@@ -117,14 +120,7 @@ export function App() {
           </Text>
         </Box>
       ) : null}
-      {!bare ? (
-        <Header
-          account={account}
-          onSignOut={signOut}
-          authPending={pending}
-          showDownload={section === 'docs'}
-        />
-      ) : null}
+      {!bare ? <Header account={account} onSignOut={signOut} authPending={pending} /> : null}
       {body}
       {!waiting ? <Footer /> : null}
     </>

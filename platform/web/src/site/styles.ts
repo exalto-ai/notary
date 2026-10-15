@@ -15,3 +15,4 @@ import './system.css';
 // The public pages' own system (DESIGN.md Part IIB), scoped to `.cp`.
 import './public/public.css';
 import './public/landing.css';
+import './public/docs.css';
