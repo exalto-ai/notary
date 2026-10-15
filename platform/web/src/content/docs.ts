@@ -30,7 +30,7 @@ export type DocNavigationGroup = { label: string; pages: Array<readonly [DocPage
 
 const installCommand = 'curl -fsSL https://capture.exalto.ai/install.sh | sh';
 export const legalNotice =
-  'Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ENP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."';
+  'Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ECP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."';
 
 export const docPages: Record<DocPageKey, DocPage> = {
   overview: {
@@ -92,13 +92,13 @@ export const docPages: Record<DocPageKey, DocPage> = {
       },
       {
         heading: 'The claim',
-        note: 'A trusted notary attests that disclosed bytes came from an authenticated TLS interaction with the named provider, and the Exalto Notary Protocol deterministically binds the OpenTelemetry representation to those bytes.',
+        note: 'A trusted notary attests that disclosed bytes came from an authenticated TLS interaction with the named provider, and the Exalto Capture Protocol deterministically binds the OpenTelemetry representation to those bytes.',
       },
     ],
   },
   'how-it-works': {
     title: 'Trust and guarantees',
-    lead: 'The Exalto Notary Protocol makes a narrow provenance claim. Understanding who sees what—and what the proof does not establish—is part of using it correctly.',
+    lead: 'The Exalto Capture Protocol (ECP) makes a narrow provenance claim. Understanding who sees what—and what the proof does not establish—is part of using it correctly.',
     blocks: [
       {
         heading: 'Each participant',

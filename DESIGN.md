@@ -106,7 +106,7 @@ automatically apply to another.
   doctrine; it heads the plans on the Exalto Seal landing under the label
   "WHAT IT COSTS"). Plans are sold where the product is: exalto.ai carries no
   prices and links to `capture.exalto.ai/app/usage`.
-- **Product names (frozen):** Exalto Notary Protocol (**ENP**), **Exalto
+- **Product names (frozen):** Exalto Capture Protocol (**ECP**; formerly ENP), **Exalto
   Capture** (the macOS capture app), **Exalto Seal** (the hosted sealing and
   verification product), **Proof of Thought**
   (first-party writing app, early access). **Exalto Verify is retired as a
@@ -289,7 +289,7 @@ unevenness with the shared seed, not the palette.
 - **Ecosystem stack:** layered rows with a right-aligned mono rail (APP LAYER
   → ON YOUR MACHINE → THE NOTARIES → THE NETWORK), connector lines that state
   the trust boundary ("THE NOTARY WITNESSES ONLY CIPHERTEXT · A SIGNED RECEIPT
-  RETURNS"), the Capture mini-window with blinking REC, and the ENP band with
+  RETURNS"), the Capture mini-window with blinking REC, and the ECP band with
   the animated node graph. Exalto Seal is the first-party hosted option, never
   the only notary; the kicker sentence is a required string.
 - **Trust model:** the two lists stay on the homepage — filled blue ✓ squares

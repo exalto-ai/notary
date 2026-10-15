@@ -89,7 +89,7 @@ for (const [name, source] of [
 }
 
 const legalNotice =
-  'Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ENP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."';
+  'Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ECP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."';
 for (const [name, source] of [
   ['public site documentation', publicDocs],
   ['llms.txt', llms],

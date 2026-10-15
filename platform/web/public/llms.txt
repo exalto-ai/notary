@@ -17,7 +17,7 @@
 
 The local proxy handles plaintext and provider credentials. The remote notary participates in the authenticated provider TLS connection without receiving API-key values, prompts, or responses. A pending encrypted `.llmcapture` is private retry state, not public proof. A sealed `.llmtrace` package is independently verifiable with the trusted notary public key. It hides every HTTP header value except the exact structural value `Transfer-Encoding: chunked`, but its authenticated request and response bodies remain disclosed.
 
-Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ENP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."
+Exalto Seal is not a notary public. Sealing is not a notarial act. A receipt is cryptographic evidence, not a legal instrument. The ECP specification uses "notary" as a technical role term, in the way public-key infrastructure uses "certificate authority."
 
 The independently buildable public runtime is at https://github.com/exalto-ai/notary-runtime. It contains the protocol and evidence contracts, local daemon, REST CLI, generic remote notary, local dashboard, signed updater logic, runtime documentation, and pinned TLSNotary sources. Hosted account, billing, admission-policy, upload, and website implementations are outside that public tree; the generic notary exposes an admission-policy seam for deployments that need them.
 
