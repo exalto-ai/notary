@@ -1,10 +1,20 @@
 # Capture and public website
 
-`platform/web` is the Capture SPA: the Capture landing page, account overview,
-usage and billing, hosted Trace management, device approval, sign-in, docs, and
-legal pages. Its root is a short landing led by the macOS download and stays
-that way when signed in; the account lives under `/app`. It does not repeat the
-exalto.ai story and has no public Trace/Registry/verifier routes.
+`platform/web` is the Capture site: the landing page, docs and legal pages
+(the public pages, DESIGN.md Part IIB), and the account overview, usage and
+billing, hosted Trace management, device approval and sign-in under `/app`,
+`/signin` and `/authorize` (Part IIC). It does not repeat the exalto.ai story
+and has no public Trace/Registry/verifier routes.
+
+The public pages are prerendered at build time (`scripts/prerender.mjs`, from
+the SSR entry `src/site/prerender.tsx`): a fetch of `/docs/getting-started`
+returns the page's content without running any script, and the client
+hydrates it. The same render produces a Markdown twin of every public page at
+the same address with `.md` added, `llms.txt` (the index, kept in `public/`)
+and `llms-full.txt` (the whole site in one file), and `sitemap.xml`. A request
+with `Accept: text/markdown` is redirected to the twin. The account routes
+are served from `_shell.html`, the empty build output, and render on the
+client. `scripts/check-agent-files.mjs` verifies all of it in every build.
 
 The sibling `website` repository owns the exalto.ai marketing page and public
 `/traces`, `/s/{trace_id}`, `/registry`, and `/verify` routes. Public tools do
@@ -15,7 +25,8 @@ requires disclosure consent before uploading a package.
 Both sites use `VITE_API_ORIGIN` (production: `https://api.exalto.ai`). JSON and
 package requests go directly to the API with host-only cookies and explicit
 credentialed CORS. OAuth navigation also goes directly to the API. Vercel's
-local HTML fallback serves deep SPA routes; it does not forward API requests.
+rewrite to `_shell.html` serves deep account routes; it does not forward API
+requests.
 
 ## Local development
 

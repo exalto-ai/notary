@@ -45,6 +45,7 @@ function CodeBlock({ children, ...props }: ComponentPropsWithoutRef<'pre'>) {
         className="cp-mdx-copy"
         onClick={() => copy('code', value)}
         aria-label={copied ? 'Copied code' : 'Copy code'}
+        data-md="skip"
       >
         {copied ? 'Copied' : 'Copy'}
       </button>
@@ -96,7 +97,11 @@ export function Column({ title, children }: { title: string; children: ReactNode
 }
 
 export function Steps({ children }: { children: ReactNode }) {
-  return <ol className="cp-doc-steps">{children}</ol>;
+  return (
+    <ol className="cp-doc-steps" data-md="doc-steps">
+      {children}
+    </ol>
+  );
 }
 
 export function Step({ title, children }: { title: string; children: ReactNode }) {
@@ -121,7 +126,7 @@ export function Callout({
   children: ReactNode;
 }) {
   return (
-    <aside className="cp-callout">
+    <aside className="cp-callout" data-md="callout">
       {title ? (
         <div className="cp-box-head" data-tone={tone}>
           {title}
@@ -145,7 +150,10 @@ export function DownloadCard() {
   }, []);
 
   return (
-    <div className="cp-doc-download">
+    <div
+      className="cp-doc-download"
+      data-md-alt="Download Exalto Capture for Apple silicon (macOS 12 Monterey or later, bundled local service): the latest signed DMG is linked from https://capture.exalto.ai/docs/getting-started."
+    >
       <div>
         <div className="cp-micro">Signed desktop app</div>
         <h3>Exalto Capture for Apple silicon</h3>
@@ -186,8 +194,6 @@ export function ProviderTabs({ children }: { children: ReactNode }) {
   );
   const [active, setActive] = useState(0);
   const id = useId();
-  const selected = providers[active] ?? providers[0];
-
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     let next = index;
     if (event.key === 'ArrowRight') next = (index + 1) % providers.length;
@@ -200,7 +206,7 @@ export function ProviderTabs({ children }: { children: ReactNode }) {
     document.getElementById(`${id}-tab-${next}`)?.focus();
   };
 
-  if (!selected) return null;
+  if (!providers.length) return null;
 
   return (
     <div className="cp-provider-tabs">
@@ -212,7 +218,7 @@ export function ProviderTabs({ children }: { children: ReactNode }) {
             id={`${id}-tab-${index}`}
             role="tab"
             aria-selected={index === active}
-            aria-controls={`${id}-panel`}
+            aria-controls={`${id}-panel-${index}`}
             tabIndex={index === active ? 0 : -1}
             onClick={() => setActive(index)}
             onKeyDown={(event) => move(event, index)}
@@ -222,14 +228,19 @@ export function ProviderTabs({ children }: { children: ReactNode }) {
           </button>
         ))}
       </div>
-      <div
-        id={`${id}-panel`}
-        role="tabpanel"
-        aria-labelledby={`${id}-tab-${active}`}
-        className="cp-provider-panel"
-      >
-        {selected.props.children}
-      </div>
+      {providers.map((provider, index) => (
+        <div
+          key={provider.props.name}
+          id={`${id}-panel-${index}`}
+          role="tabpanel"
+          aria-labelledby={`${id}-tab-${index}`}
+          className="cp-provider-panel"
+          hidden={index !== active}
+          data-md-heading={`${provider.props.name} (${provider.props.auth})`}
+        >
+          {provider.props.children}
+        </div>
+      ))}
     </div>
   );
 }
@@ -273,46 +284,66 @@ export function TraceAnatomy() {
   const [state, setState] = useState<keyof typeof anatomy>('captured');
   const current = anatomy[state];
   return (
-    <div className="cp-anatomy cp-paper" data-state={state}>
-      <div className="cp-anatomy-head">
-        <div>
-          <div className="cp-micro">Trace anatomy</div>
-          <h3>What changes when a Trace is sealed?</h3>
+    <>
+      {/* The static twin for readers without script and for the markdown. */}
+      <div hidden data-md-only="">
+        {(Object.keys(anatomy) as Array<keyof typeof anatomy>).map((value) => (
+          <div key={value}>
+            <p>
+              <strong>{anatomy[value].label}.</strong> {anatomy[value].description} Path:{' '}
+              {anatomy[value].path.join(' → ')}.
+            </p>
+            <ul>
+              {anatomy[value].layers.map(([name, status, description]) => (
+                <li key={name}>
+                  <code>{name}</code>, {status.toLowerCase()}: {description}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div className="cp-anatomy cp-paper" data-state={state} data-md="skip">
+        <div className="cp-anatomy-head">
+          <div>
+            <div className="cp-micro">Trace anatomy</div>
+            <h3>What changes when a Trace is sealed?</h3>
+          </div>
+          <div className="cp-anatomy-switch" role="group" aria-label="Trace evidence state">
+            {(Object.keys(anatomy) as Array<keyof typeof anatomy>).map((value) => (
+              <button
+                type="button"
+                key={value}
+                aria-pressed={state === value}
+                onClick={() => setState(value)}
+              >
+                {anatomy[value].label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="cp-anatomy-switch" role="group" aria-label="Trace evidence state">
-          {(Object.keys(anatomy) as Array<keyof typeof anatomy>).map((value) => (
-            <button
-              type="button"
-              key={value}
-              aria-pressed={state === value}
-              onClick={() => setState(value)}
-            >
-              {anatomy[value].label}
-            </button>
+        <div className="cp-anatomy-path" role="list" aria-label={`${current.label} evidence path`}>
+          {current.path.map((node, index) => (
+            <div key={node} className="cp-anatomy-node" role="listitem">
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <strong>{node}</strong>
+            </div>
+          ))}
+        </div>
+        <p className="cp-anatomy-description">{current.description}</p>
+        <div className="cp-anatomy-layers" aria-live="polite">
+          {current.layers.map(([name, status, description]) => (
+            <div key={name} className="cp-anatomy-layer">
+              <code>{name}</code>
+              <span className="cp-anatomy-status" data-status={status.toLowerCase()}>
+                {status}
+              </span>
+              <p>{description}</p>
+            </div>
           ))}
         </div>
       </div>
-      <div className="cp-anatomy-path" role="list" aria-label={`${current.label} evidence path`}>
-        {current.path.map((node, index) => (
-          <div key={node} className="cp-anatomy-node" role="listitem">
-            <span>{String(index + 1).padStart(2, '0')}</span>
-            <strong>{node}</strong>
-          </div>
-        ))}
-      </div>
-      <p className="cp-anatomy-description">{current.description}</p>
-      <div className="cp-anatomy-layers" aria-live="polite">
-        {current.layers.map(([name, status, description]) => (
-          <div key={name} className="cp-anatomy-layer">
-            <code>{name}</code>
-            <span className="cp-anatomy-status" data-status={status.toLowerCase()}>
-              {status}
-            </span>
-            <p>{description}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+    </>
   );
 }
 

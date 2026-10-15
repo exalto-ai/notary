@@ -4,10 +4,38 @@
   "buildCommand": "npm run build:site",
   "outputDirectory": "dist",
   "ignoreCommand": "sh scripts/vercel-ignore.sh",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "destination": "/index.md",
+      "permanent": false
+    },
+    {
+      "source": "/docs",
+      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "destination": "/docs.md",
+      "permanent": false
+    },
+    {
+      "source": "/docs/:page",
+      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "destination": "/docs/:page.md",
+      "permanent": false
+    },
+    {
+      "source": "/:page(privacy|terms)",
+      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "destination": "/:page.md",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!assets/|api/).*)",
-      "destination": "/index.html"
+      "destination": "/_shell.html"
     }
   ],
   "headers": [
@@ -19,6 +47,17 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    },
+    {
+      "source": "/:path*.md",
+      "headers": [
+        { "key": "Content-Type", "value": "text/markdown; charset=utf-8" },
+        { "key": "X-Robots-Tag", "value": "index, follow" }
+      ]
+    },
+    {
+      "source": "/(llms|llms-full).txt",
+      "headers": [{ "key": "Content-Type", "value": "text/plain; charset=utf-8" }]
     }
   ]
 }

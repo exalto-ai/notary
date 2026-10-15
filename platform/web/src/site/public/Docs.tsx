@@ -76,7 +76,13 @@ function Search({ open, onClose }: { open: boolean; onClose: () => void }) {
   }, [term]);
 
   return (
-    <dialog ref={dialog} className="cp-dialog" aria-label="Search the docs" onClose={onClose}>
+    <dialog
+      ref={dialog}
+      className="cp-dialog"
+      aria-label="Search the docs"
+      onClose={onClose}
+      data-md="skip"
+    >
       <div className="cp-dialog-head">
         <span className="cp-micro">Search the docs</span>
         <button type="button" className="cp-btn-mono" onClick={onClose}>
@@ -167,7 +173,7 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
 
   return (
     <main className="cp-wrap cp-docs">
-      <div className="cp-titleblock">
+      <div className="cp-titleblock" data-md="skip">
         <div>
           <div className="cp-label">Section</div>
           <div className="cp-titleblock-value">Docs</div>
@@ -191,7 +197,7 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
       </div>
 
       <div className="cp-docs-grid">
-        <nav className="cp-docs-rail" aria-label="Documentation">
+        <nav className="cp-docs-rail" aria-label="Documentation" data-md="skip">
           <button type="button" className="cp-docs-search" onClick={() => setSearchOpen(true)}>
             Search
             <kbd>⌘K</kbd>
@@ -201,7 +207,7 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
 
         <article className="cp-docs-article">
           {/* Keyed by page, so the menu is closed again on the page it opened. */}
-          <details key={key} className="cp-docs-mobile">
+          <details key={key} className="cp-docs-mobile" data-md="skip">
             <summary aria-label="Documentation pages">
               <span className="cp-label">Docs</span>
               <b>{label}</b>
@@ -215,13 +221,15 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
             </div>
           </details>
 
-          <h1>{doc.title}</h1>
-          <p className="cp-docs-lead">{doc.lead}</p>
+          <h1 data-md="skip">{doc.title}</h1>
+          <p className="cp-docs-lead" data-md="skip">
+            {doc.lead}
+          </p>
           <div className="cp-mdx">
             <doc.Content components={mdxComponents} />
           </div>
 
-          <nav className="cp-docs-pager" aria-label="Previous and next page">
+          <nav className="cp-docs-pager" aria-label="Previous and next page" data-md="skip">
             {previous ? (
               <a href={href(docPath(previous))}>
                 <span className="cp-label">Previous</span>
@@ -239,7 +247,7 @@ export function Docs({ pageKey, section }: { pageKey: string; section?: string }
           </nav>
         </article>
 
-        <nav className="cp-docs-outline" aria-label="On this page">
+        <nav className="cp-docs-outline" aria-label="On this page" data-md="skip">
           <span className="cp-label">On this page</span>
           {outline.map((item) => (
             <a key={item.id} href={`#${item.id}`} data-active={item.id === active || undefined}>

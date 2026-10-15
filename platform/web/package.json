@@ -8,7 +8,7 @@
     "generate:platform-api": "node scripts/generate-platform-api.mjs",
     "check:platform-api": "node scripts/generate-platform-api.mjs --check",
     "build": "npm run check:frontend && npm run check:platform-api && npm run check:docs && npm run test:brand && npm run build:site",
-    "build:site": "npm run check:platform-types && vite build",
+    "build:site": "npm run check:platform-types && vite build && vite build --ssr src/site/prerender.tsx --outDir dist-ssr && node scripts/prerender.mjs && node scripts/check-agent-files.mjs",
     "check:frontend": "biome check .",
     "check:docs": "node scripts/check-docs.mjs",
     "format": "biome check --write .",
@@ -49,6 +49,8 @@
     "rehype-autolink-headings": "^7.1.0",
     "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
+    "turndown": "7.2.2",
+    "turndown-plugin-gfm": "1.0.2",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
   }
