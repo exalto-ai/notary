@@ -1,0 +1,40 @@
+export const title = 'Trust and guarantees.'
+export const lead = 'The Exalto Capture Protocol (ECP) makes a narrow provenance claim. Understanding who sees what, and what the proof does not establish, is part of using it correctly.'
+
+## Each participant
+
+<Cards>
+  <Card eyebrow="USER / CLIENT" title="Holds the plaintext">
+    The local proxy sees the request and response. A user cannot change authenticated bytes or invent a provider response and still produce valid sealed evidence.
+  </Card>
+  <Card eyebrow="NOTARY" title="Witnesses ciphertext">
+    The notary sees the provider hostname, encrypted traffic, sizes, timing, and protocol metadata. It does not receive the API key, prompt, or response plaintext.
+  </Card>
+  <Card eyebrow="PROVIDER" title="Serves a normal request">
+    No provider integration is required. Origin follows from the authenticated provider TLS session, not from a special provider signature.
+  </Card>
+  <Card eyebrow="VERIFIER" title="Checks independently">
+    A verifier checks the notary signature, provider identity, disclosed transcript, artifact hashes, and deterministic mapping using the trusted notary public key.
+  </Card>
+</Cards>
+
+## Authenticated versus observed
+
+- A model-emitted tool call is authenticated provider output.
+- A tool result in the next request proves that the client sent that value, not that the local tool really ran or returned a truthful result.
+- A session ID is authenticated as client-supplied request metadata. It can correlate calls, but it does not prove one genuine agent process created them.
+- Each provider call is proved independently. A larger agent run can group those calls without upgrading locally observed activity into provider-authenticated evidence.
+
+## What this does not prove
+
+- That a response is correct, safe, complete, or useful.
+- That a particular human authored the prompt.
+- That every call from a larger session was disclosed.
+- That a local tool executed, or that its reported output was accurate.
+- That the trusted notary private key has never been compromised.
+
+A trace covers the interactions you capture, and for most uses that is what matters. Where completeness matters, enforce capture across the organization: then the record also shows what never happened.
+
+## How trust is established
+
+The service retrieves the versioned Exalto Seal Registry over authenticated HTTPS and caches its key history. The JSON directory is not separately signed. Sealed packages identify the notary key that signed their evidence; verification accepts it only if that key was trusted at the package timestamp. A self-hosted deployment pairs `notary.endpoint` with `notary.public_key` in `config.toml`, but that is not part of the normal hosted workflow.

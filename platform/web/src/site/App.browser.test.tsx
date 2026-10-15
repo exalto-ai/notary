@@ -128,7 +128,11 @@ test('names every canonical section in the browser title', () => {
   expect(documentTitle(undefined, undefined)).toBe(
     'Exalto Capture · The flight recorder for your AI work',
   );
-  expect(documentTitle('docs', 'share')).toBe('Docs · Exalto Capture');
+  expect(documentTitle('docs', 'share')).toBe('Share a Trace · Docs · Exalto Capture');
+  expect(documentTitle('docs', undefined)).toBe('Overview · Docs · Exalto Capture');
+  // An old link resolves through an alias and is titled as the page it lands on.
+  expect(documentTitle('docs', 'pricing')).toBe('What it costs · Docs · Exalto Capture');
+  expect(documentTitle('docs', 'nonsense')).toBe('Docs · Exalto Capture');
   expect(documentTitle('signin', undefined)).toBe('Sign in · Exalto Capture');
   expect(documentTitle('authorize', undefined)).toBe('Connect device · Exalto Capture');
   expect(documentTitle('app', 'traces')).toBe('Traces · Exalto Capture');
@@ -173,9 +177,11 @@ test('renders MDX docs with generated headings and outline anchors', async () =>
     .toBeVisible();
 
   const heading = container.querySelector('#choose-an-interface');
-  const outline = container.querySelector('.x-docs-outline a[href="#choose-an-interface"]');
+  const outline = container.querySelector('.cp-docs-outline a[href="#choose-an-interface"]');
   expect(heading).not.toBeNull();
   expect(outline?.textContent).toBe('Choose an interface');
+  // Every docs page points agents at its markdown twin.
+  expect(container.querySelector('a[href="/docs/getting-started.md"]')).not.toBeNull();
 });
 
 test('switches provider instructions inside the MDX setup guide', async () => {
@@ -195,13 +201,10 @@ test('shows Captured and Sealed evidence in the interactive Trace anatomy', asyn
 
   await expect.element(page.getByText('capture.llmcapture', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Sealed' }).click();
-  const anatomy = page.getByRole('tabpanel');
-  await expect.element(anatomy.getByText('evidence.tlsn', { exact: true })).toBeVisible();
   await waitFor(() =>
-    expect(container.querySelector('.x-trace-anatomy')?.textContent).toContain(
-      'Verifiable .llmtrace',
-    ),
+    expect(container.querySelector('.cp-anatomy')?.textContent).toContain('Verifiable .llmtrace'),
   );
+  expect(container.querySelector('.cp-anatomy-layers')?.textContent).toContain('evidence.tlsn');
 });
 
 test('searches text extracted from MDX at build time', async () => {
@@ -209,44 +212,70 @@ test('searches text extracted from MDX at build time', async () => {
   stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
   mount(<App />);
 
-  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByRole('button', { name: 'Search ⌘K' }).click();
   await page.getByPlaceholder('Type to search').fill('Argon2id');
   await expect
     .element(page.getByRole('link', { name: /Protect local administration/ }))
     .toBeVisible();
 });
 
-test('uses a compact mobile docs menu instead of a horizontal page rail', async () => {
+test('folds the docs rail into a disclosure on a phone', async () => {
   await page.viewport(390, 844);
   window.history.replaceState({}, '', '/docs/overview');
   stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
-  mount(<App />);
+  const { container } = mount(<App />);
 
-  const menu = page.getByRole('button', { name: 'Open documentation navigation' });
-  await expect.element(menu).toBeVisible();
-  await expect.element(page.getByText('Overview', { exact: true }).first()).toBeVisible();
-  await menu.click();
-
-  const drawer = page.getByRole('dialog', { name: 'Documentation' });
-  await expect.element(drawer).toBeVisible();
-  await drawer.getByRole('link', { name: 'Trust model' }).click();
+  const summary = container.querySelector<HTMLElement>('.cp-docs-mobile > summary');
+  expect(summary).not.toBeNull();
+  await expect.element(page.getByRole('heading', { level: 1 })).toBeVisible();
+  // The sticky rail is hidden on a phone; the disclosure carries the pages.
+  const rail = container.querySelector<HTMLElement>('.cp-docs-rail');
+  expect(rail && getComputedStyle(rail).display).toBe('none');
+  summary?.click();
+  await waitFor(() =>
+    expect(container.querySelector('.cp-docs-mobile')?.hasAttribute('open')).toBe(true),
+  );
+  const link = container.querySelector<HTMLAnchorElement>(
+    '.cp-docs-mobile a[href="/docs/how-it-works"]',
+  );
+  expect(link).not.toBeNull();
+  link?.click();
   await expect
-    .element(page.getByRole('heading', { level: 1, name: 'Trust and guarantees' }))
+    .element(page.getByRole('heading', { level: 1, name: 'Trust and guarantees.' }))
     .toBeVisible();
-  await expect.element(drawer).not.toBeInTheDocument();
+  // The new page arrives with the menu folded again.
+  expect(container.querySelector('.cp-docs-mobile')?.hasAttribute('open')).toBe(false);
 });
 
-test('opens docs search independently from the mobile navigation', async () => {
+test('a docs page opened from the rail starts at the top', async () => {
+  window.history.replaceState({}, '', '/docs/getting-started');
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  const { container } = mount(<App />);
+
+  await expect.element(page.getByRole('heading', { level: 1 })).toBeVisible();
+  window.scrollTo({ top: 1200, behavior: 'instant' });
+  await waitFor(() => expect(window.scrollY).toBeGreaterThan(600));
+  container.querySelector<HTMLAnchorElement>('.cp-docs-rail a[href="/docs/agents"]')?.click();
+  await expect.element(page.getByRole('heading', { level: 1, name: 'For agents.' })).toBeVisible();
+  await waitFor(() => expect(window.scrollY).toBe(0));
+  // The docs rails follow the reader: the shell must not be a scroll container.
+  const shell = container.querySelector<HTMLElement>('.cp');
+  expect(shell && getComputedStyle(shell).overflowY).toBe('visible');
+});
+
+test('opens docs search from the phone disclosure too', async () => {
   await page.viewport(390, 844);
   window.history.replaceState({}, '', '/docs/getting-started');
   stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
-  mount(<App />);
+  const { container } = mount(<App />);
 
-  await page.getByRole('button', { name: 'Search documentation' }).click();
+  await expect.element(page.getByRole('heading', { level: 1 })).toBeVisible();
+  container.querySelector<HTMLElement>('.cp-docs-mobile > summary')?.click();
+  await waitFor(() =>
+    expect(container.querySelector('.cp-docs-mobile')?.hasAttribute('open')).toBe(true),
+  );
+  container.querySelector<HTMLElement>('.cp-docs-mobile .cp-docs-search')?.click();
   await expect.element(page.getByRole('dialog', { name: 'Search the docs' })).toBeVisible();
-  await expect
-    .element(page.getByRole('button', { name: 'Open documentation navigation' }))
-    .toHaveAttribute('aria-expanded', 'false');
 });
 
 test('reserves the account control while the session is still resolving', async () => {

@@ -1,0 +1,60 @@
+export const title = 'How Capture and Seal fit.'
+export const lead = 'Run your existing model client through a local proxy, keep encrypted evidence on your machine, and turn only the interactions you choose into independently verifiable OpenTelemetry trace packages.'
+
+## The workflow
+
+<Steps>
+  <Step title="Capture">
+    Point an SDK or agent at the local proxy. Requests and streamed responses continue normally while each completed provider call becomes an encrypted local capture.
+  </Step>
+  <Step title="Choose">
+    Captures wait on your disk. Nothing is shared automatically, and interactive model use does not wait for the expensive proof step.
+  </Step>
+  <Step title="Seal">
+    Turn a selected capture into authenticated TLS evidence and a deterministic OTel GenAI trace. This can happen long after the original model call.
+  </Step>
+  <Step title="Verify or share">
+    Check the package locally, keep it private, or deliberately share its disclosed conversation and portable proof through a stable link.
+  </Step>
+</Steps>
+
+## One Trace, two evidence states
+
+<Cards>
+  <Card eyebrow="CAPTURED" title="Private local evidence">
+    The Trace retains a sensitive encrypted capture that can be sealed later. It is not yet evidence another person can verify.
+  </Card>
+  <Card eyebrow="SEALED" title="Portable Trace package">
+    TLSNotary evidence, disclosed authenticated HTTP, canonical OTLP, and a manifest binding the files together.
+  </Card>
+</Cards>
+
+## Sharing is a separate action
+
+A Sealed Trace can remain local or be shared deliberately. Sharing hosts the exact admitted `.llmtrace` package and its disclosed conversation; it does not create another evidence state.
+
+## What is automatic
+
+- The first service start creates or opens the local encrypted-capture vault. On a desktop OS, its random key is stored in the system credential service.
+- The service discovers the production notary endpoint and public key from the Exalto Seal Registry, then pins that trust information locally.
+- Sealing and verification use the pinned notary identity. Normal hosted use does not require copying a public key into an API request.
+- Provider credentials remain in your existing SDK or agent environment; the local service does not require a project `.env` file.
+
+## A first successful run
+
+```sh
+curl -fsSL https://capture.exalto.ai/install.sh | sh
+
+captured
+# Open http://127.0.0.1:8788 for the local dashboard.
+# Point an OpenAI client at http://127.0.0.1:8787/openai/v1.
+
+capture status
+capture traces list
+```
+
+<Callout title="The claim">
+
+A trusted notary attests that disclosed bytes came from an authenticated TLS interaction with the named provider, and the Exalto Capture Protocol deterministically binds the OpenTelemetry representation to those bytes.
+
+</Callout>

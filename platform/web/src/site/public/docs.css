@@ -1,0 +1,948 @@
+/* The docs, in the same system as the landing: the dark ground, a title block,
+   a rail of numbered pages, the article with 2px-ruled sections, and an
+   "On this page" rail. Code sits on the screen ground; evidence is paper. */
+
+.cp-docs {
+  padding-top: 56px;
+}
+
+.cp-docs-md {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.cp-docs-grid {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 200px;
+  gap: 48px 56px;
+  padding-top: 48px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .cp-docs-grid {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .cp-docs-outline {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .cp-docs-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .cp-docs-rail {
+    display: none;
+  }
+}
+
+/* ---- Rail -------------------------------------------------------------- */
+
+.cp-docs-rail {
+  position: sticky;
+  top: 24px;
+}
+
+.cp-docs-search {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+  background: var(--screen);
+  border: 1px solid var(--color-divider);
+  cursor: pointer;
+  text-align: left;
+}
+
+.cp-docs-search:hover {
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+
+.cp-docs-search kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.cp-docs-group {
+  margin-top: 28px;
+}
+
+.cp-docs-group > .cp-label {
+  display: block;
+  border-top: 2px solid var(--color-text);
+  padding-top: 12px;
+}
+
+.cp-docs-page {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.cp-docs-page:hover {
+  color: var(--color-text);
+}
+
+.cp-docs-page > span:first-child {
+  flex: 0 0 28px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.cp-docs-page[aria-current='page'] {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.cp-docs-page[aria-current='page'] > span:first-child {
+  color: var(--color-accent);
+}
+
+/* On narrow screens the rail folds into a disclosure above the article. */
+.cp-docs-mobile {
+  display: none;
+  margin-bottom: 28px;
+  border-top: 2px solid var(--color-text);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+@media (max-width: 760px) {
+  .cp-docs-mobile {
+    display: block;
+  }
+}
+
+.cp-docs-mobile > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.cp-docs-mobile > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cp-docs-mobile > summary > .cp-label {
+  line-height: 22px;
+}
+
+.cp-docs-mobile > summary > b {
+  font-weight: 600;
+}
+
+.cp-docs-mobile > summary > i {
+  margin-left: auto;
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.cp-docs-mobile[open] > summary > i::before {
+  content: 'close';
+}
+
+.cp-docs-mobile:not([open]) > summary > i::before {
+  content: 'pages';
+}
+
+.cp-docs-mobile > div {
+  padding-bottom: 16px;
+}
+
+.cp-docs-mobile .cp-docs-search {
+  margin-top: 4px;
+}
+
+.cp-docs-mobile .cp-docs-group {
+  margin-top: 20px;
+}
+
+/* ---- Article ----------------------------------------------------------- */
+
+.cp-docs-article {
+  min-width: 0;
+  max-width: 760px;
+}
+
+.cp-docs-article > h1 {
+  font-size: clamp(36px, 4.6vw, 60px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  max-width: 16ch;
+  text-wrap: balance;
+}
+
+.cp-docs-lead {
+  margin-top: 24px;
+  font-size: 20px;
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
+.cp-mdx > h2,
+.cp-legal-article .cp-mdx > section > h2 {
+  margin-top: 56px;
+  border-top: 2px solid var(--color-text);
+  padding-top: 20px;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* An anchor (`#the-procedure`, from the outline or a shared link) lands with
+   the rule above the heading in view. */
+.cp-mdx :is(h2, h3)[id] {
+  scroll-margin-top: 24px;
+}
+
+.cp-mdx > h2:first-child,
+.cp-legal-article .cp-mdx > section:first-child > h2 {
+  margin-top: 48px;
+}
+
+.cp-mdx > h3 {
+  margin-top: 36px;
+  font-size: 22px;
+  line-height: 27px;
+  letter-spacing: -0.01em;
+}
+
+.cp-mdx .x-heading-anchor {
+  margin-left: 10px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--faint);
+  text-decoration: none;
+  opacity: 0;
+}
+
+.cp-mdx :is(h2, h3):hover .x-heading-anchor,
+.cp-mdx .x-heading-anchor:focus-visible {
+  opacity: 1;
+}
+
+.cp-mdx > p,
+.cp-mdx > ul,
+.cp-mdx > ol,
+.cp-legal-article .cp-mdx > section > p {
+  margin-top: 16px;
+  font-size: 17px;
+  line-height: 1.6;
+  max-width: 70ch;
+}
+
+.cp-mdx li {
+  position: relative;
+  padding-left: 22px;
+  margin-top: 8px;
+}
+
+.cp-mdx li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  background: var(--faint);
+}
+
+.cp-mdx ol {
+  counter-reset: cp-item;
+}
+
+.cp-mdx ol > li {
+  padding-left: 32px;
+}
+
+.cp-mdx ol > li::before {
+  counter-increment: cp-item;
+  content: counter(cp-item, decimal-leading-zero);
+  width: auto;
+  height: auto;
+  top: 0.2em;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.cp-mdx strong,
+.cp-mdx b {
+  font-weight: 600;
+}
+
+.cp-mdx code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  padding: 1px 5px;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  color: var(--color-text);
+}
+
+/* A code block is the quickstart's code box: the code, then Copy in its own
+   column, so a long line scrolls under nothing. */
+.cp-mdx-code {
+  display: flex;
+  margin-top: 16px;
+  background: var(--screen);
+  border: 1px solid var(--color-divider);
+}
+
+.cp-mdx-code pre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-text);
+  overflow-x: auto;
+  background: transparent;
+}
+
+.cp-mdx-code pre code {
+  padding: 0;
+  background: none;
+  font-size: 13px;
+}
+
+.cp-mdx-copy {
+  flex: none;
+  align-self: stretch;
+  padding: 0 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--color-divider);
+  cursor: pointer;
+}
+
+.cp-mdx-copy:hover {
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.cp-mdx-table {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.cp-mdx table {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 2px solid var(--color-text);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.cp-mdx th {
+  text-align: left;
+  padding: 8px 16px 8px 0;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.cp-mdx td {
+  padding: 12px 16px 12px 0;
+  border-bottom: 1px solid var(--color-divider);
+  vertical-align: top;
+}
+
+.cp-mdx td code {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ---- Doc components ---------------------------------------------------- */
+
+.cp-callout {
+  margin-top: 24px;
+  border: 2px solid var(--color-text);
+  max-width: 70ch;
+}
+
+.cp-callout > .cp-box-head[data-tone='alert'] {
+  color: var(--link);
+}
+
+.cp-callout-body {
+  padding: 16px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.cp-callout-body > :first-child {
+  margin-top: 0;
+}
+
+.cp-callout-body > p,
+.cp-callout-body > ul {
+  margin-top: 12px;
+}
+
+.cp-callout-body li {
+  position: relative;
+  padding-left: 22px;
+  margin-top: 6px;
+}
+
+.cp-callout-body li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  background: var(--faint);
+}
+
+.cp-doc-cards {
+  margin-top: 24px;
+  border: 2px solid var(--color-text);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.cp-doc-card {
+  padding: 16px 16px 20px;
+}
+
+.cp-doc-card > h3 {
+  margin-top: 10px;
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.cp-doc-card-copy {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.cp-doc-card-copy > p {
+  margin: 0;
+}
+
+.cp-doc-steps,
+.cp-mdx .cp-doc-steps {
+  margin-top: 24px;
+  border-top: 2px solid var(--color-text);
+  counter-reset: cp-step;
+}
+
+.cp-mdx .cp-doc-steps > li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.cp-mdx .cp-doc-steps > li::before {
+  content: none;
+}
+
+.cp-doc-steps > li > span {
+  flex: 0 0 32px;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-doc-steps > li > span::before {
+  counter-increment: cp-step;
+  content: counter(cp-step, decimal-leading-zero);
+}
+
+.cp-doc-steps > li > div {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.cp-doc-steps h3 {
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.cp-doc-step-body {
+  margin-top: 4px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.cp-doc-step-body > p {
+  margin: 0;
+}
+
+.cp-doc-step-body code {
+  color: var(--color-text);
+}
+
+.cp-doc-columns {
+  margin-top: 24px;
+  border: 2px solid var(--color-text);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.cp-doc-column {
+  padding: 16px 16px 20px;
+}
+
+.cp-doc-column > h3 {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.cp-doc-column ul {
+  margin-top: 10px;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.cp-doc-download {
+  margin-top: 24px;
+  border: 2px solid var(--color-text);
+  padding: 20px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  align-items: center;
+}
+
+.cp-doc-download > div:first-child {
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.cp-doc-download h3 {
+  margin-top: 8px;
+  font-size: 22px;
+  line-height: 27px;
+  letter-spacing: -0.01em;
+}
+
+.cp-doc-download p {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--muted);
+}
+
+.cp-doc-download-action {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cp-doc-download-action .cp-hero-note {
+  font-size: 12px;
+}
+
+.cp-doc-download .cp-btn-primary[aria-disabled='true'] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.cp-provider-tabs {
+  margin-top: 24px;
+  border: 2px solid var(--color-text);
+}
+
+.cp-provider-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.cp-provider-tablist > button {
+  flex: 1 1 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 14px 12px;
+  margin-top: -2px;
+  background: transparent;
+  border: 0;
+  border-top: 2px solid transparent;
+  color: var(--faint);
+  cursor: pointer;
+  text-align: left;
+}
+
+.cp-provider-tablist > button:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+
+.cp-provider-tablist > button[aria-selected='true'] {
+  border-top-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.cp-provider-tablist > button > span {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.cp-provider-tablist > button > small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.cp-provider-panel {
+  padding: 4px 16px 20px;
+}
+
+.cp-provider-panel > p {
+  margin-top: 16px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* The trace anatomy is evidence, so it sits on paper. */
+.cp-anatomy {
+  margin-top: 24px;
+  padding: 20px 24px 24px;
+}
+
+.cp-anatomy-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px 24px;
+}
+
+.cp-anatomy-head h3 {
+  margin-top: 6px;
+  font-size: 22px;
+  line-height: 27px;
+  letter-spacing: -0.01em;
+}
+
+.cp-anatomy-switch {
+  display: flex;
+  gap: 6px;
+}
+
+.cp-anatomy-switch > button {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--ink);
+  cursor: pointer;
+}
+
+.cp-anatomy-switch > button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.cp-anatomy-path {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 0;
+  border-top: 2px solid var(--ink);
+}
+
+.cp-anatomy-node {
+  flex: 1 1 160px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 12px 10px 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.cp-anatomy-node > span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.cp-anatomy-node > strong {
+  font-weight: 600;
+}
+
+.cp-anatomy-description {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--ink-muted);
+  max-width: 62ch;
+}
+
+.cp-anatomy-layers {
+  margin-top: 16px;
+  border-top: 2px solid var(--ink);
+}
+
+.cp-anatomy-layer {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.9fr) 96px minmax(0, 2fr);
+  gap: 8px 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ink-rule);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+@media (max-width: 600px) {
+  .cp-anatomy-layer {
+    grid-template-columns: minmax(0, 1fr) 96px;
+  }
+
+  .cp-anatomy-layer > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.cp-anatomy-layer > code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  background: none;
+  padding: 0;
+  color: var(--ink);
+}
+
+.cp-anatomy-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.cp-anatomy-status[data-status='signed'],
+.cp-anatomy-status[data-status='authenticated'],
+.cp-anatomy-status[data-status='derived'],
+.cp-anatomy-status[data-status='bound'] {
+  color: var(--ink);
+}
+
+.cp-anatomy-layer > p {
+  color: var(--ink-muted);
+}
+
+/* ---- Pager, outline, search ------------------------------------------- */
+
+.cp-docs-pager {
+  margin-top: 64px;
+  border-top: 2px solid var(--color-text);
+  padding-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.cp-docs-pager a {
+  display: block;
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.cp-docs-pager a:hover {
+  color: var(--link);
+}
+
+.cp-docs-pager a > .cp-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.cp-docs-pager a[data-next] {
+  text-align: right;
+}
+
+.cp-docs-outline {
+  position: sticky;
+  top: 24px;
+}
+
+.cp-docs-outline > .cp-label {
+  display: block;
+  border-top: 2px solid var(--color-text);
+  padding-top: 12px;
+}
+
+.cp-docs-outline a {
+  display: block;
+  padding: 6px 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.cp-docs-outline a:hover,
+.cp-docs-outline a[data-active] {
+  color: var(--color-text);
+}
+
+.cp-docs-outline a[data-active]::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  vertical-align: 2px;
+  background: var(--color-accent);
+}
+
+.cp-docs-twin {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-divider);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.cp-docs-twin a {
+  color: var(--faint);
+  text-decoration: none;
+}
+
+.cp-docs-twin a:hover {
+  color: var(--link);
+}
+
+.cp-dialog {
+  width: min(600px, calc(100vw - 32px));
+  padding: 0;
+  margin: 10vh auto;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 2px solid var(--color-text);
+}
+
+.cp-dialog::backdrop {
+  background: color-mix(in srgb, #161514 70%, transparent);
+}
+
+.cp-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 6px 6px 16px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.cp-dialog-head > button {
+  margin-left: auto;
+}
+
+.cp-dialog input {
+  width: 100%;
+  padding: 12px 16px;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--screen);
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.cp-dialog input:focus-visible {
+  outline-offset: -2px;
+}
+
+.cp-dialog-results {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.cp-dialog-results > a,
+.cp-dialog-results > p {
+  display: block;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.cp-dialog-results > a:hover,
+.cp-dialog-results > a:focus-visible {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+
+.cp-dialog-results > a > span {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--faint);
+}
+
+.cp-dialog-results > p {
+  color: var(--muted);
+}
+
+.cp-legal-article {
+  padding-top: 48px;
+}

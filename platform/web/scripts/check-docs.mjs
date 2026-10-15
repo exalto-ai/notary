@@ -69,7 +69,8 @@ for (const file of markdown) {
 // it so a rule about wording cannot be sidestepped by moving a string.
 const publicDocs = [
   readFileSync(resolve(appRoot, 'src/content/docs.ts'), 'utf8'),
-  readFileSync(resolve(appRoot, 'src/site/pages/Docs.tsx'), 'utf8'),
+  readFileSync(resolve(appRoot, 'src/site/public/Docs.tsx'), 'utf8'),
+  readFileSync(resolve(appRoot, 'src/site/public/DocComponents.tsx'), 'utf8'),
   ...readdirSync(resolve(appRoot, 'src/content/docs'))
     .filter((name) => extname(name) === '.mdx')
     .sort()

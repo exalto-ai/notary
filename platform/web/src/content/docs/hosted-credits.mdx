@@ -1,0 +1,30 @@
+export const title = 'What it costs.'
+export const lead = 'Local capture is free, always. You pay for what you seal. Your account shows the current plan, the balances, and the usage behind them.'
+
+## Capture is free
+
+Recording happens on your machine, and nothing about it is metered: capturing, keeping encrypted captures in your archive, searching them, and verifying packages. None of it needs an account, and the notary's part during capture costs you nothing.
+
+## Sealing is what you pay for
+
+Sealing asks Exalto Seal to witness and countersign a trace, and it is the only step with a cost. Every account starts with a free sealing allowance each month. Plans raise that allowance, and any plan can buy more sealing that does not expire. Monthly allowances refresh on the account reset date and do not roll over; purchased sealing is used after the monthly allowance.
+
+Current plans, prices and the balance left this month are on the [usage page](/app/usage) of your account.
+
+## Sharing and storage
+
+Sharing a sealed trace hosts the exact verified package at a stable link. Each plan includes room for the packages you share; rejected, failed, expired and purged uploads do not count against it.
+
+## Allowances without an account
+
+Public hosted use, without an account, is metered by a rotating, keyed subject derived from the network address, one IPv4 address or one IPv6 /64 prefix. The raw address is not stored in admission records or sent to a notary worker. This is a coarse abuse control, not an identity claim: people behind the same NAT, gateway or VPN can share an allowance, and one person may appear under different addresses.
+
+## Evidence is unchanged
+
+Plans and credit bookkeeping do not change TLSNotary evidence, trace-package verification, local capture retention, or the trust claim. Self-hosted notaries do not need the hosted credit ledger unless their operator deliberately adopts it.
+
+<Callout title="From the command line">
+
+A connected local service reports the same account summary with `capture account show --json`.
+
+</Callout>

@@ -1,0 +1,66 @@
+export const title = 'Share a sealed trace.'
+export const lead = 'Sharing is a deliberate upload of one already-sealed package. The local service verifies it and shows the full disclosed conversation before it contacts Exalto Seal.'
+
+## Connect the local service
+
+Open a Sealed Trace in the local workspace, choose Share, or begin the documented `POST /v1/account` device flow and poll its returned request identifier at the required interval.
+
+### Choose visibility
+
+Review the conversation and tool content from the exact `.llmtrace` package, then choose Unlisted or Listed, an optional password, and an optional expiration. Unlisted stays out of public Traces but is not private: anyone with an unprotected, unexpired URL can open it.
+
+## Manage access after admission
+
+From the originating local Trace or Account → Traces, you can copy or open the canonical link, change Listed or Unlisted visibility, replace or remove a password, change or clear an expiration of up to 365 days, and stop sharing. Protected Listed traces remain discoverable, but their conversation previews are withheld.
+
+### Share one Sealed Trace
+
+```sh
+capture --json traces share trc-example --visibility unlisted
+```
+
+```http
+PUT /v1/traces/{trace_id}/share
+{"visibility":"unlisted"}
+```
+
+### Script-friendly output
+
+Poll the same Trace share singleton on the loopback administration API so the browser or agent never receives the vault-held hosted credential. Do not treat the trace as reachable until `progress` is `shared`, and use the `share_url` the service returns rather than building one; the public Trace pages are moving to seal.exalto.ai, and the link follows.
+
+```json
+{"trace_id":"trc-…","progress":"shared","visibility":"unlisted","access_enabled":true,"password_protected":false,"expires_at_unix_ms":null,"failure_code":null,"share_url":"https://exalto.ai/s/trc-…","package_url":"https://api.exalto.ai/api/public/traces/trc-…/package.llmtrace","updated_at_unix_ms":1785294000000}
+```
+
+## The upload boundary
+
+<Columns>
+  <Column title="Uploaded">
+    - `evidence.tlsn` and `manifest.json`
+    - `request.disclosed.http` with all header values hidden by default
+    - `response.disclosed.http` with authenticated provider output
+    - the deterministic `trace.otlp.json`
+  </Column>
+  <Column title="Never uploaded">
+    - encrypted `.llmcapture` state
+    - API-key or cookie values
+    - unselected captures from the same session
+    - extra files or symlink targets
+  </Column>
+</Columns>
+
+### Admission checks
+
+The local service and hosted admission service validate the deterministic archive, verify its evidence, require hidden header values, and scan every archive entry and nested disclosed body for credential patterns and high-entropy secrets. After storage, admission downloads the public package and requires its size, SHA-256 digest, and exact bytes to match the package already verified before exposing the link.
+
+### Current consent boundary
+
+The admission service inspects disclosed request and response bodies, system context, and tool data to verify and reproduce the shared view. Every HTTP header value is hidden except the exact structural value `Transfer-Encoding: chunked`.
+
+### Exact package retention
+
+An admitted shared Trace keeps the exact verified `.llmtrace` bytes, size, and SHA-256 digest. The public Trace page makes that package available for independent verification; the encrypted `.llmcapture` never leaves the local vault.
+
+### Retry behavior
+
+An upload or API failure does not change or delete the local package. Submitting the same capture with the same visibility reuses the archive-derived idempotency key and resumes the retry-safe share job.

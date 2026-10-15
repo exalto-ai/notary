@@ -3,11 +3,17 @@ export const lead = 'Turn one encrypted capture into a portable evidence package
 
 ## Seal one interaction
 
-Select a Captured Trace in the native app, local dashboard, or administration API. The service atomically commits `trace-packages/<trace-id>.llmtrace`, records that exact package in Trace metadata, and retains the encrypted source capture.
+Select a Captured Trace in the native app, local dashboard, command line or administration API. The service atomically commits `trace-packages/<trace-id>.llmtrace`, records that exact package in Trace metadata, and retains the encrypted source capture.
 
 ```sh
-curl -X POST http://127.0.0.1:8788/v1/traces/trc-example/notarizations
+capture traces seal trc-example --wait
 ```
+
+```http
+POST /v1/traces/{trace_id}/notarizations
+```
+
+Sealing is asynchronous. Without `--wait`, the response carries an `op-…` operation identifier; poll `GET /v1/operations/{operation_id}` until its `state` is `succeeded`, `failed` or `interrupted`.
 
 <Steps>
   <Step title="Select a compatible notary">
@@ -58,14 +64,21 @@ The `.llmtrace` package carries all cryptographic evidence and can be verified i
 
 ## Verify a portable package
 
-Use the local CLI to verify on your machine, or upload the package on the public Verify page. The hosted page checks the package without saving it.
+Use the local CLI to verify on your machine, or upload the package at [seal.exalto.ai/verify](https://seal.exalto.ai/verify). The hosted page checks a `.llmtrace` file without saving it. The CLI accepts either a Trace held by the local service or a `.llmtrace` file.
 
 ```sh
-notaryctl traces verify ./capture.llmtrace
+capture --json traces verify trc-example
+capture --json traces verify ./capture.llmtrace
 ```
 
-```http
-POST /api/verify
+The result's `outcome` is `passed`, `failed` or `unsupported`, with `verified_at_unix_ms`, `notary_key_id`, `trust_source` and, on failure, a `failure_code`. Report exactly that; opening a package is not verifying it.
+
+The same check is available without installing anything. Send the package bytes to the hosted verifier and read `verified`, the authenticated `provider` and `host`, `authenticated_at_unix_ms`, `notary_key_id`, `trust_source` and the package and content digests:
+
+```sh
+curl -fsS https://api.exalto.ai/api/verify \
+  -H 'Content-Type: application/vnd.exalto.notary.trace-package+zip' \
+  --data-binary @capture.llmtrace
 ```
 
 For a Trace already held by the local service:
