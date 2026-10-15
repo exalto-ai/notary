@@ -13,6 +13,7 @@ import { Settings } from './pages/account/Settings';
 import { Traces } from './pages/account/Traces';
 import { Usage } from './pages/account/Usage';
 import { allowedReturnTo, SignIn } from './pages/SignIn';
+import { reportedHeight } from './public/XEmbed';
 import { isFile } from './router';
 import { cssVariablesResolver, theme } from './theme';
 
@@ -334,6 +335,54 @@ test('leads the root with the download and reaches the account when signed in', 
     .element(page.getByRole('heading', { name: /Sometimes the exchange itself/ }))
     .toBeVisible();
   await expect.element(page.getByRole('link', { name: 'Account' })).toBeVisible();
+});
+
+test('the X post is framed from X, with nothing from X running on this origin', async () => {
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  const { container } = mount(<App />);
+  await expect.element(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  await waitFor(() => expect(container.querySelector('.cp-embed iframe')).not.toBeNull());
+  const frame = container.querySelector<HTMLIFrameElement>('.cp-embed iframe');
+  expect(frame?.getAttribute('src')).toMatch(
+    /^https:\/\/platform\.twitter\.com\/embed\/Tweet\.html\?id=2108184948548976921&/,
+  );
+  expect(frame?.getAttribute('src')).toContain(`origin=${encodeURIComponent(location.origin)}`);
+  expect(frame?.getAttribute('sandbox')).toContain('allow-scripts');
+  // Until X reports a height there is nothing to show but the link.
+  expect(frame?.style.height).toBe('0px');
+  expect(document.querySelector('script[src*="twitter.com"]')).toBeNull();
+  // The frame reports its height; only a message from X's origin and this
+  // frame is believed.
+  expect(
+    reportedHeight({
+      'twttr.embed': { method: 'twttr.private.resize', params: [{ height: 612 }] },
+    }),
+  ).toBe(612);
+  expect(
+    reportedHeight('{"twttr.embed":{"method":"twttr.private.resize","params":[{"height":300}]}}'),
+  ).toBe(300);
+  expect(reportedHeight({ 'twttr.embed': { method: 'twttr.private.rendered' } })).toBeNull();
+  expect(reportedHeight('not json')).toBeNull();
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      origin: 'https://platform.twitter.com',
+      source: frame?.contentWindow ?? null,
+      data: { 'twttr.embed': { method: 'twttr.private.resize', params: [{ height: 612 }] } },
+    }),
+  );
+  await waitFor(() => expect(frame?.style.height).toBe('612px'));
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      origin: 'https://evil.example',
+      source: frame?.contentWindow ?? null,
+      data: { 'twttr.embed': { method: 'twttr.private.resize', params: [{ height: 1 }] } },
+    }),
+  );
+  expect(frame?.style.height).toBe('612px');
+  // The reference survives without the frame.
+  await expect
+    .element(page.getByRole('link', { name: /A post on X by Clément Delangue/ }))
+    .toBeInTheDocument();
 });
 
 test('the public shell offers sign in and the hero replay reaches its receipt', async () => {

@@ -1226,42 +1226,33 @@
 }
 
 .cp-embed {
-  border: 1px dashed var(--color-divider);
-  padding: 18px 16px;
-}
-
-.cp-embed[data-live] {
-  border-style: solid;
-  padding: 0;
+  border: 1px solid var(--color-divider);
   overflow: hidden;
 }
 
-.cp-embed-label {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  align-items: baseline;
+/* X's embed page in a cross-origin frame; it reports its own height. */
+.cp-embed iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
 }
 
-.cp-embed-label span + span {
-  font-size: 15px;
-  line-height: 22px;
-  color: var(--muted);
-}
-
-/* Until the widget script replaces it, the quote is a plain link box. */
-.cp-embed blockquote {
+/* The reference, wherever the frame does not render. */
+.cp-embed-link {
   margin: 0;
-  padding: 18px 16px;
-  font-size: 15px;
-  line-height: 22px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-divider);
+  font-size: 14px;
+  line-height: 20px;
 }
 
-.cp-embed blockquote a {
-  color: var(--color-text);
+.cp-embed-link a {
+  color: var(--muted);
+  text-decoration: none;
 }
 
-.cp-embed blockquote a:hover {
+.cp-embed-link a:hover {
   color: var(--link);
 }
 
