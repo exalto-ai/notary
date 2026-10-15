@@ -20,7 +20,7 @@
       "permanent": false
     },
     {
-      "source": "/docs/:page",
+      "source": "/docs/:page([a-z0-9-]+)",
       "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
       "destination": "/docs/:page.md",
       "permanent": false

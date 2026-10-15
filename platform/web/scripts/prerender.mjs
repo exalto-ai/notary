@@ -43,6 +43,9 @@ const routes = publicRoutes();
 const escapeAttribute = (value) =>
   value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
 const escapeText = (value) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
+// String.prototype.replace reads `$&`, `$'` and friends in a string
+// replacement; rendered HTML (a `$` prompt before a quote) must go in as is.
+const literal = (value) => () => value;
 
 // ---- Markdown ---------------------------------------------------------------
 
@@ -292,42 +295,52 @@ for (const route of routes) {
   const { html } = render(route.path);
   const twinPath = `${route.path === '/' ? '/index' : route.path}.md`;
   const page = template
-    .replace('<div id="root"></div>', `<div id="root">${html}</div>`)
-    .replace(/<title>[^<]*<\/title>/, `<title>${escapeText(route.title)}</title>`)
+    .replace('<div id="root"></div>', literal(`<div id="root">${html}</div>`))
+    .replace(/<title>[^<]*<\/title>/, literal(`<title>${escapeText(route.title)}</title>`))
     .replace(
       /<meta name="description" content="[^"]*" \/>/,
-      `<meta name="description" content="${escapeAttribute(route.description)}" />`,
+      literal(`<meta name="description" content="${escapeAttribute(route.description)}" />`),
     )
     .replace(
       /<link rel="canonical" href="[^"]*" \/>/,
-      `<link rel="canonical" href="${origin}${route.path}" />`,
+      literal(`<link rel="canonical" href="${origin}${route.path}" />`),
     )
     .replace(
       /<meta property="og:url" content="[^"]*" \/>/,
-      `<meta property="og:url" content="${origin}${route.path}" />`,
+      literal(`<meta property="og:url" content="${origin}${route.path}" />`),
     )
     .replace(
       /<link rel="alternate" type="text\/markdown" href="[^"]*" title="[^"]*" \/>/,
-      `<link rel="alternate" type="text/markdown" href="${twinPath}" title="This page as Markdown" />`,
+      literal(
+        `<link rel="alternate" type="text/markdown" href="${twinPath}" title="This page as Markdown" />`,
+      ),
     );
   if (route.kind !== 'landing') {
     // The social card and structured data describe the product, not the page.
     const titled = page
       .replace(
         /<meta property="og:title" content="[^"]*" \/>/,
-        `<meta property="og:title" content="${escapeAttribute(route.title)} · Exalto Capture" />`,
+        literal(
+          `<meta property="og:title" content="${escapeAttribute(route.title)} · Exalto Capture" />`,
+        ),
       )
       .replace(
         /<meta name="twitter:title" content="[^"]*" \/>/,
-        `<meta name="twitter:title" content="${escapeAttribute(route.title)} · Exalto Capture" />`,
+        literal(
+          `<meta name="twitter:title" content="${escapeAttribute(route.title)} · Exalto Capture" />`,
+        ),
       )
       .replace(
         /<meta property="og:description" content="[^"]*" \/>/,
-        `<meta property="og:description" content="${escapeAttribute(route.description)}" />`,
+        literal(
+          `<meta property="og:description" content="${escapeAttribute(route.description)}" />`,
+        ),
       )
       .replace(
         /<meta name="twitter:description" content="[^"]*" \/>/,
-        `<meta name="twitter:description" content="${escapeAttribute(route.description)}" />`,
+        literal(
+          `<meta name="twitter:description" content="${escapeAttribute(route.description)}" />`,
+        ),
       );
     write(`${route.file}.html`, titled);
   } else {
