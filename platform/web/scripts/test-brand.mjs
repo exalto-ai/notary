@@ -13,6 +13,7 @@ const captureTile = readFileSync(
 );
 const preview = readFileSync(resolve(root, 'public/social-preview.png'));
 const shell = readFileSync(resolve(root, 'src/site/components/Shell.tsx'), 'utf8');
+const publicShell = readFileSync(resolve(root, 'src/site/public/PublicShell.tsx'), 'utf8');
 const traces = readFileSync(resolve(root, 'src/site/pages/account/Traces.tsx'), 'utf8');
 
 function requireText(source, expected, label) {
@@ -42,6 +43,13 @@ requireText(shell, 'Exalto', 'site header family');
 requireText(shell, 'Capture', 'site header product');
 requireText(shell, "'Fraunces Variable'", 'wordmark typeface');
 requireText(shell, 'https://exalto.ai', 'site footer identity');
+// The public pages carry the same identity in their own shell: the Capture
+// mark beside a typeset "Exalto Capture", and the sibling product in the nav.
+requireText(publicShell, 'aria-label="Exalto Capture home"', 'public header identity');
+requireText(publicShell, '<span>Exalto Capture</span>', 'public header wordmark');
+requireText(publicShell, 'Proof of Thought ↗', 'public header sibling link');
+requireText(publicShell, 'Exalto Capture · Exalto', 'public footer identity');
+requireText(publicShell, 'The ECP specification uses', 'public footer legal notice');
 requireText(
   traces,
   'the hosted package holds the conversation you disclosed exactly as it was admitted',
@@ -51,6 +59,7 @@ for (const [label, source] of [
   ['HTML metadata', html],
   ['llms.txt', llms],
   ['site shell', shell],
+  ['public shell', publicShell],
   ['account traces', traces],
 ]) {
   for (const retired of ['Notary by Exalto', 'Continue to Notary', 'aria-label="Notary home"']) {
