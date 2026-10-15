@@ -21,7 +21,16 @@ function requireText(source, expected, label) {
     throw new Error(`${label} is missing ${JSON.stringify(expected)}`);
 }
 
-requireText(html, '<title>Exalto Capture</title>', 'default browser title');
+requireText(
+  html,
+  '<title>Exalto Capture · The flight recorder for your AI work</title>',
+  'default browser title',
+);
+requireText(
+  html,
+  'content="The flight recorder for your AI work. Capture your sessions on your machine, have a third party seal the ones you need to show, and let anyone verify them. The desktop app, the SDK and CLI, and the open protocol underneath."',
+  'meta description from the website copy doc',
+);
 if (!llms.startsWith('# Exalto Capture\n')) {
   throw new Error('llms.txt must begin with the formal endorsed identity');
 }

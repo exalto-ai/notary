@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { href } from '../router';
 
 /** The Exalto Capture mark: viewfinder brackets around a record lens. */
@@ -36,11 +36,13 @@ const navLinks: Array<[string, string]> = [
   ['Docs', '/docs'],
 ];
 
+export type SessionState = 'pending' | 'signed-in' | 'signed-out';
+
 export function PublicHeader({
-  signedIn = false,
+  session = 'signed-out',
   current,
 }: {
-  signedIn?: boolean;
+  session?: SessionState;
   current?: 'docs';
 }) {
   return (
@@ -62,9 +64,20 @@ export function PublicHeader({
         <a href={proofOrigin} className="cp-nav-sibling">
           Proof of Thought ↗
         </a>
-        <a href={href(signedIn ? '/app/overview' : '/signin')} className="cp-nav-account">
-          {signedIn ? 'Account' : 'Sign in'}
-        </a>
+        {session === 'pending' ? (
+          // The control is about to be here either way; the wait keeps its
+          // footprint so the bar does not shift when the session answers.
+          <span className="cp-nav-account" aria-hidden="true" style={{ visibility: 'hidden' }}>
+            Account
+          </span>
+        ) : (
+          <a
+            href={href(session === 'signed-in' ? '/app/overview' : '/signin')}
+            className="cp-nav-account"
+          >
+            {session === 'signed-in' ? 'Account' : 'Sign in'}
+          </a>
+        )}
       </nav>
     </header>
   );
@@ -100,26 +113,21 @@ export function PublicFooter() {
 }
 
 /**
- * The public ground. It carries the tokens and the grid paper, and marks the
- * document so the body behind it is graphite too (overscroll, and the moment
- * before hydration).
+ * The public ground: the tokens and the grid paper. App.tsx marks the document
+ * (`html.cp-root`) so the body behind it is graphite too.
  */
 export function PublicLayout({
   children,
-  signedIn = false,
+  session = 'signed-out',
   current,
 }: {
   children: ReactNode;
-  signedIn?: boolean;
+  session?: SessionState;
   current?: 'docs';
 }) {
-  useEffect(() => {
-    document.documentElement.classList.add('cp-root');
-    return () => document.documentElement.classList.remove('cp-root');
-  }, []);
   return (
     <div className="cp">
-      <PublicHeader signedIn={signedIn} current={current} />
+      <PublicHeader session={session} current={current} />
       {children}
       <PublicFooter />
     </div>

@@ -13,6 +13,8 @@ import { Settings } from './pages/account/Settings';
 import { Traces } from './pages/account/Traces';
 import { Usage } from './pages/account/Usage';
 import { allowedReturnTo, SignIn } from './pages/SignIn';
+import { reportedHeight } from './public/XEmbed';
+import { isFile } from './router';
 import { cssVariablesResolver, theme } from './theme';
 
 afterEach(async () => {
@@ -123,7 +125,9 @@ function stubApi(routes: Record<string, (url: URL, init?: RequestInit) => Respon
 // ---- Shell and routing ----------------------------------------------------
 
 test('names every canonical section in the browser title', () => {
-  expect(documentTitle(undefined, undefined)).toBe('Exalto Capture');
+  expect(documentTitle(undefined, undefined)).toBe(
+    'Exalto Capture · The flight recorder for your AI work',
+  );
   expect(documentTitle('docs', 'share')).toBe('Docs · Exalto Capture');
   expect(documentTitle('signin', undefined)).toBe('Sign in · Exalto Capture');
   expect(documentTitle('authorize', undefined)).toBe('Connect device · Exalto Capture');
@@ -246,10 +250,22 @@ test('opens docs search independently from the mobile navigation', async () => {
 });
 
 test('reserves the account control while the session is still resolving', async () => {
+  window.history.replaceState({}, '', '/app/overview');
   stubApi({ '/api/account': () => new Promise(() => json({})) as unknown as Response });
   const { container } = mount(<App />);
   await waitFor(() => expect(container.querySelector('header .x-skeleton')).toBeTruthy());
   expect(container.querySelector('header a[href="/signin"]')).toBeNull();
+});
+
+test('the public shell keeps its footprint while the session resolves', async () => {
+  stubApi({ '/api/account': () => new Promise(() => json({})) as unknown as Response });
+  const { container } = mount(<App />);
+  await expect
+    .element(page.getByRole('heading', { name: /Sometimes the exchange itself/ }))
+    .toBeVisible();
+  expect(container.querySelector('header a[href="/signin"]')).toBeNull();
+  expect(container.querySelector('header a[href="/app/overview"]')).toBeNull();
+  expect(container.querySelector('header .cp-nav-account')).toBeTruthy();
 });
 
 test('keeps a signed-out visitor at the account route they asked for', async () => {
@@ -308,16 +324,111 @@ test('the appearance preference is the one the site already stored', () => {
 
 // ---- Landing --------------------------------------------------------------
 
-test('leads the root with the macOS download for signed-out and signed-in alike', async () => {
+test('leads the root with the download and reaches the account when signed in', async () => {
   stubApi({
     '/api/account': () => json(accountPayload()),
     '/api/usage': () => json(usagePayload()),
   });
   mount(<App />);
-  const downloads = page.getByRole('link', { name: /Download for macOS/ });
-  await expect.element(downloads.first()).toBeVisible();
-  await expect.element(page.getByRole('heading', { name: /Record every session/ })).toBeVisible();
-  await expect.element(page.getByRole('link', { name: 'Open dashboard' })).toBeVisible();
+  await expect.element(page.getByRole('link', { name: /Download Exalto Capture/ })).toBeVisible();
+  await expect
+    .element(page.getByRole('heading', { name: /Sometimes the exchange itself/ }))
+    .toBeVisible();
+  await expect.element(page.getByRole('link', { name: 'Account' })).toBeVisible();
+});
+
+test('the X post is framed from X, with nothing from X running on this origin', async () => {
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  const { container } = mount(<App />);
+  await expect.element(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  await waitFor(() => expect(container.querySelector('.cp-embed iframe')).not.toBeNull());
+  const frame = container.querySelector<HTMLIFrameElement>('.cp-embed iframe');
+  expect(frame?.getAttribute('src')).toMatch(
+    /^https:\/\/platform\.twitter\.com\/embed\/Tweet\.html\?id=2108184948548976921&/,
+  );
+  expect(frame?.getAttribute('src')).toContain(`origin=${encodeURIComponent(location.origin)}`);
+  expect(frame?.getAttribute('sandbox')).toContain('allow-scripts');
+  // Until X reports a height there is nothing to show but the link.
+  expect(frame?.style.height).toBe('0px');
+  expect(document.querySelector('script[src*="twitter.com"]')).toBeNull();
+  // The frame reports its height; only a message from X's origin and this
+  // frame is believed.
+  expect(
+    reportedHeight({
+      'twttr.embed': { method: 'twttr.private.resize', params: [{ height: 612 }] },
+    }),
+  ).toBe(612);
+  expect(
+    reportedHeight('{"twttr.embed":{"method":"twttr.private.resize","params":[{"height":300}]}}'),
+  ).toBe(300);
+  expect(reportedHeight({ 'twttr.embed': { method: 'twttr.private.rendered' } })).toBeNull();
+  expect(reportedHeight('not json')).toBeNull();
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      origin: 'https://platform.twitter.com',
+      source: frame?.contentWindow ?? null,
+      data: { 'twttr.embed': { method: 'twttr.private.resize', params: [{ height: 612 }] } },
+    }),
+  );
+  await waitFor(() => expect(frame?.style.height).toBe('612px'));
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      origin: 'https://evil.example',
+      source: frame?.contentWindow ?? null,
+      data: { 'twttr.embed': { method: 'twttr.private.resize', params: [{ height: 1 }] } },
+    }),
+  );
+  expect(frame?.style.height).toBe('612px');
+  // The reference survives without the frame.
+  await expect
+    .element(page.getByRole('link', { name: /A post on X by Clément Delangue/ }))
+    .toBeInTheDocument();
+});
+
+test('the public shell offers sign in and the hero replay reaches its receipt', async () => {
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  mount(<App />);
+  await expect.element(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  // Jumping to the last step completes the replay without waiting for it.
+  await page.getByRole('button', { name: 'Show step 5, Verify' }).click();
+  await expect.element(page.getByText('Verified', { exact: true })).toBeVisible();
+  await expect.element(page.getByText('seal.exalto.ai/trc-8f3k2q')).toBeVisible();
+  // One byte changed in the disclosure demo fails integrity, and only integrity.
+  await page.getByRole('button', { name: 'Change one byte' }).click();
+  await expect.element(page.getByText(/fails at integrity/)).toBeVisible();
+  await page.getByRole('button', { name: 'Reset' }).click();
+  await expect.element(page.getByText(/trc-8f3k2q · passes/)).toBeVisible();
+  // A private cell shows the private card; clicking it again discloses it.
+  await page.getByRole('button', { name: 'Item 1, private' }).click();
+  await expect.element(page.getByRole('button', { name: 'Item 1, disclosed' })).toBeVisible();
+  await expect.element(page.getByText('4 disclosed · 46 private')).toBeVisible();
+});
+
+test('route links navigate in place while served files are left to the browser', async () => {
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  mount(<App />);
+  await expect.element(page.getByRole('link', { name: 'Read the docs' })).toBeVisible();
+  // The router listens on the document; a window listener runs after it and
+  // can see whether it claimed the click, then stop the browser leaving.
+  const claimed: boolean[] = [];
+  const observe = (event: MouseEvent) => {
+    claimed.push(event.defaultPrevented);
+    event.preventDefault();
+  };
+  window.addEventListener('click', observe);
+  try {
+    document.querySelector<HTMLAnchorElement>('a[href="/llms.txt"]')?.click();
+    document.querySelector<HTMLAnchorElement>('a[href="/docs"]')?.click();
+  } finally {
+    window.removeEventListener('click', observe);
+  }
+  expect(claimed).toEqual([false, true]);
+  expect(isFile('/llms.txt')).toBe(true);
+  expect(isFile('/docs/getting-started.md')).toBe(true);
+  expect(isFile('/install.sh')).toBe(true);
+  expect(isFile('/docs/getting-started')).toBe(false);
+  expect(isFile('/')).toBe(false);
+  expect(window.location.pathname).toBe('/docs');
 });
 
 test('the one filled action on a screen is actually filled', async () => {

@@ -73,45 +73,34 @@ html.cp-root body {
   text-wrap: pretty;
 }
 
-.cp h1,
-.cp h2,
-.cp h3,
-.cp h4,
-.cp p,
-.cp figure,
-.cp dl,
-.cp dd,
-.cp ol,
-.cp ul {
+/* Element defaults carry no specificity (`:where`), so a role class such as
+   .cp-h1 or .cp-caption always wins over them. */
+:where(.cp) :is(h1, h2, h3, h4, p, figure, dl, dd, ol, ul) {
   margin: 0;
 }
 
-.cp ol,
-.cp ul {
+:where(.cp) :is(ol, ul) {
   padding: 0;
   list-style: none;
 }
 
-.cp h1,
-.cp h2,
-.cp h3,
-.cp h4 {
+:where(.cp) :is(h1, h2, h3, h4) {
   font-family: var(--font-heading);
   font-weight: 800;
   font-variation-settings: normal;
-  letter-spacing: normal;
+  letter-spacing: -0.015em;
 }
 
-.cp a {
+:where(.cp) a {
   color: var(--link);
   text-underline-offset: 3px;
 }
 
-.cp a:hover {
+:where(.cp) a:hover {
   color: var(--link-hover);
 }
 
-.cp button {
+:where(.cp) button {
   font: inherit;
   color: inherit;
 }
@@ -123,16 +112,15 @@ html.cp-root body {
 .cp :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+  border-radius: 0;
 }
 
 .cp ::selection {
   background: color-mix(in srgb, var(--color-accent) 40%, transparent);
 }
 
-.cp code,
-.cp kbd,
-.cp pre,
-.cp .cp-mono {
+:where(.cp) :is(code, kbd, pre),
+.cp-mono {
   font-family: var(--font-mono);
   font-variation-settings: normal;
 }
