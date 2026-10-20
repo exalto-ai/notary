@@ -13,7 +13,6 @@ import { Settings } from './pages/account/Settings';
 import { Traces } from './pages/account/Traces';
 import { Usage } from './pages/account/Usage';
 import { allowedReturnTo, SignIn } from './pages/SignIn';
-import { reportedHeight } from './public/XEmbed';
 import { isFile } from './router';
 import { cssVariablesResolver, theme } from './theme';
 
@@ -370,52 +369,18 @@ test('leads the root with the download and reaches the account when signed in', 
   await expect.element(page.getByRole('link', { name: 'Account' })).toBeVisible();
 });
 
-test('the X post is framed from X, with nothing from X running on this origin', async () => {
+test('the X post is a picture with its address under it, nothing from X on this origin', async () => {
   stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
   const { container } = mount(<App />);
   await expect.element(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
-  await waitFor(() => expect(container.querySelector('.cp-embed iframe')).not.toBeNull());
-  const frame = container.querySelector<HTMLIFrameElement>('.cp-embed iframe');
-  expect(frame?.getAttribute('src')).toMatch(
-    /^https:\/\/platform\.twitter\.com\/embed\/Tweet\.html\?id=2108184948548976921&/,
+  const post = container.querySelector<HTMLImageElement>('.cp-post img');
+  expect(post?.getAttribute('src')).toBe('/art/delangue-post.webp');
+  expect(post?.alt).toContain('Defenders can’t learn from what they can’t see.');
+  expect(post?.closest('a')).toBeNull();
+  expect(container.querySelector('.cp-post figcaption a')?.getAttribute('href')).toBe(
+    'https://x.com/ClementDelangue/status/2108184948548976921',
   );
-  expect(frame?.getAttribute('src')).toContain(`origin=${encodeURIComponent(location.origin)}`);
-  expect(frame?.getAttribute('sandbox')).toContain('allow-scripts');
-  // Until X reports a height there is nothing to show but the link.
-  expect(frame?.style.height).toBe('0px');
-  expect(document.querySelector('script[src*="twitter.com"]')).toBeNull();
-  // The frame reports its height; only a message from X's origin and this
-  // frame is believed.
-  expect(
-    reportedHeight({
-      'twttr.embed': { method: 'twttr.private.resize', params: [{ height: 612 }] },
-    }),
-  ).toBe(612);
-  expect(
-    reportedHeight('{"twttr.embed":{"method":"twttr.private.resize","params":[{"height":300}]}}'),
-  ).toBe(300);
-  expect(reportedHeight({ 'twttr.embed': { method: 'twttr.private.rendered' } })).toBeNull();
-  expect(reportedHeight('not json')).toBeNull();
-  window.dispatchEvent(
-    new MessageEvent('message', {
-      origin: 'https://platform.twitter.com',
-      source: frame?.contentWindow ?? null,
-      data: { 'twttr.embed': { method: 'twttr.private.resize', params: [{ height: 612 }] } },
-    }),
-  );
-  await waitFor(() => expect(frame?.style.height).toBe('612px'));
-  window.dispatchEvent(
-    new MessageEvent('message', {
-      origin: 'https://evil.example',
-      source: frame?.contentWindow ?? null,
-      data: { 'twttr.embed': { method: 'twttr.private.resize', params: [{ height: 1 }] } },
-    }),
-  );
-  expect(frame?.style.height).toBe('612px');
-  // The reference survives without the frame.
-  await expect
-    .element(page.getByRole('link', { name: /A post on X by Clément Delangue/ }))
-    .toBeInTheDocument();
+  expect(document.querySelector('iframe, script[src*="twitter.com"]')).toBeNull();
 });
 
 test('the public shell offers sign in and the hero replay reaches its receipt', async () => {

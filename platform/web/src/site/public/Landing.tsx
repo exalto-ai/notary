@@ -7,7 +7,6 @@ import { HeroReplay } from './HeroReplay';
 import { useCopied } from './hooks';
 import { proofOrigin, sealOrigin } from './PublicShell';
 import { COPY, type CopyKey } from './replay';
-import { XEmbed } from './XEmbed';
 
 // Copy is verbatim from "Exalto Capture + Proof of Thought: website copy"
 // (Capture section, Oct 14 2026) and audited by copy.test.tsx. Lines that are
@@ -471,7 +470,22 @@ export function Landing() {
               responses it produced, the tool calls it requested. Sealed, those records can go to
               other teams without asking them to trust the source.
             </p>
-            <XEmbed url={delanguePost} author="Clément Delangue" label="A post on X by" />
+            <figure
+              className="cp-post"
+              data-md-alt="Clément Delangue (@ClementDelangue) on X, 8 Oct 2026: “We urgently need more public traces of AI agents attacking and defending systems. Defenders can’t learn from what they can’t see. If you have traces and are being pressured to keep them private, my DMs are open. Let’s level the playing field and fight the asymmetry and lack of transparency in AI!” https://x.com/ClementDelangue/status/2108184948548976921"
+            >
+              <img
+                src="/art/delangue-post.webp"
+                alt="Post by clem (@ClementDelangue) on X, 8 Oct 2026: We urgently need more public traces of AI agents attacking and defending systems. Defenders can’t learn from what they can’t see. If you have traces and are being pressured to keep them private, my DMs are open. Let’s level the playing field and fight the asymmetry and lack of transparency in AI!"
+                width={1172}
+                height={618}
+                loading="lazy"
+                decoding="async"
+              />
+              <figcaption>
+                <a href={delanguePost}>x.com/ClementDelangue/status/2108184948548976921 ↗</a>
+              </figcaption>
+            </figure>
           </div>
         </article>
 
