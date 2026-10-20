@@ -1225,34 +1225,33 @@
   font-weight: 600;
 }
 
-.cp-embed {
+.cp-post {
   border: 1px solid var(--color-divider);
-  overflow: hidden;
+  background: #000;
 }
 
-/* X's embed page in a cross-origin frame; it reports its own height. */
-.cp-embed iframe {
+.cp-post img {
   display: block;
   width: 100%;
-  border: 0;
-  background: transparent;
+  height: auto;
 }
 
-/* The reference, wherever the frame does not render. */
-.cp-embed-link {
-  margin: 0;
+.cp-post figcaption {
   padding: 12px 16px;
   border-top: 1px solid var(--color-divider);
-  font-size: 14px;
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: 13px;
   line-height: 20px;
+  overflow-wrap: anywhere;
 }
 
-.cp-embed-link a {
+.cp-post figcaption a {
   color: var(--muted);
   text-decoration: none;
 }
 
-.cp-embed-link a:hover {
+.cp-post figcaption a:hover {
   color: var(--link);
 }
 
