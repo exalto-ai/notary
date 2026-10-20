@@ -21,7 +21,7 @@ Every page below has a Markdown twin at the same address with `.md` added. The w
 
 ## The site
 
-- [Landing page](%CAPTURE_ORIGIN%/index.md): what Exalto Capture is, how it works, the quickstart, the pieces, applications, the trust model, and the prompt to hand to an agent.
+- [Landing page](%CAPTURE_ORIGIN%/index.md): what Exalto Capture is, how it works, the quickstart, the components, applications, the trust model, and the prompt to hand to an agent.
 - [The local service's OpenAPI contract](http://127.0.0.1:8788/openapi.json): published by a running `captured`; the authority for every route, field and status.
 - [Install script](%CAPTURE_ORIGIN%/install.sh): `curl -fsSL %CAPTURE_ORIGIN%/install.sh | sh` installs `capture` and `captured` for Apple silicon macOS and Linux.
 - [Public Runtime source](https://github.com/exalto-ai/notary-runtime): the protocol, daemon, CLI, generic notary, dashboard, updater and verifier.

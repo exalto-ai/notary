@@ -350,18 +350,18 @@ export function Landing() {
         </p>
       </section>
 
-      <section id="pieces" className="cp-wrap cp-section cp-pieces" aria-labelledby="pieces-title">
-        <Strip log="005" name="What Capture is" anchor="pieces" />
-        <h2 id="pieces-title" className="cp-h2">
+      <section id="components" className="cp-wrap cp-section cp-components" aria-labelledby="components-title">
+        <Strip log="005" name="What Capture is" anchor="components" />
+        <h2 id="components-title" className="cp-h2">
           The Exalto Capture Stack
         </h2>
-        <div className="cp-pieces-table">
-          <div className="cp-pieces-head" aria-hidden="true" data-md="skip">
+        <div className="cp-components-table">
+          <div className="cp-components-head" aria-hidden="true" data-md="skip">
             <span>Component</span>
             <span>What it does</span>
             <span>Who it is for</span>
           </div>
-          <div id="app" className="cp-pieces-row">
+          <div id="app" className="cp-components-row">
             <h3 className="cp-h3-row">Exalto Capture Desktop App</h3>
             <p>
               The flight recorder. Record your AI exchanges as they happen, on your machine. Start
@@ -369,7 +369,7 @@ export function Landing() {
             </p>
             <p>Anyone with Claude Code, Codex, a chatbot or their own tools</p>
           </div>
-          <div id="sdk" className="cp-pieces-row">
+          <div id="sdk" className="cp-components-row">
             <h3 className="cp-h3-row">Exalto Capture SDK and CLI</h3>
             <p>
               Build the flight recorder into your own products and services: capture, seal and
@@ -378,7 +378,7 @@ export function Landing() {
             </p>
             <p>Developers, routers, eval and security teams</p>
           </div>
-          <div id="seal" className="cp-pieces-row">
+          <div id="seal" className="cp-components-row">
             <h3 className="cp-h3-row">Exalto Seal, the "notary"</h3>
             <p>
               Binds a trace to the provider, the time and the content, so anyone can verify it
@@ -388,13 +388,13 @@ export function Landing() {
             </p>
             <p>Everyone</p>
           </div>
-          <div id="protocol" className="cp-pieces-row">
+          <div id="protocol" className="cp-components-row">
             <h3 className="cp-h3-row">The Exalto Capture Protocol (ECP)</h3>
             <p>The open protocol underneath all of it. Use Exalto’s Seal notary or run your own.</p>
             <p>Operators of compatible notaries; builders</p>
           </div>
         </div>
-        <div className="cp-pieces-blocks">
+        <div className="cp-components-blocks">
           <div>
             <h3 className="cp-h3">An open protocol. A choice of who to seal with.</h3>
             <p>
