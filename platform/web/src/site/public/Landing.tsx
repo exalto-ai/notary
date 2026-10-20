@@ -153,11 +153,11 @@ export function Landing() {
       <header id="top" className="cp-wrap cp-hero">
         <div className="cp-titleblock" data-md="skip">
           <div>
-            <div className="cp-label">Product</div>
+            <div className="cp-label">App and SDK</div>
             <div className="cp-titleblock-value">Exalto Capture</div>
           </div>
           <div>
-            <div className="cp-label">Subject</div>
+            <div className="cp-label">What it is</div>
             <div className="cp-titleblock-value">The flight recorder for your AI work</div>
           </div>
           <div>
@@ -165,7 +165,7 @@ export function Landing() {
             <a href="/llms.txt">capture.exalto.ai/llms.txt</a>
           </div>
           <div>
-            <div className="cp-label">Log</div>
+            <div className="cp-label">Overview</div>
             <div className="cp-titleblock-value cp-tabular">001</div>
           </div>
         </div>
@@ -178,8 +178,8 @@ export function Landing() {
               Exalto Capture · You capture. A third party seals. Anyone can verify.
             </p>
             <p className="cp-lead">
-              What a chatbot told you, what an agent did, what a paid API returned. Capture it on
-              your machine as it happens. Seal it. Anyone can verify.
+              What an agent did, what a chatbot told you, what a paid API returned. Capture it on
+              your side as it happens. Seal it. Anyone can verify.
             </p>
           </div>
           <div className="cp-hero-actions">
@@ -205,7 +205,7 @@ export function Landing() {
         <FigHead
           num="01"
           title="An eval run, on the record."
-          right="Illustrative replay · 15 Oct 2026"
+          right="Example trace replay · 15 Oct 2026"
         />
         <HeroReplay copied={copied} copy={copy} />
         <p className="cp-caption">
@@ -221,9 +221,10 @@ export function Landing() {
             <p className="cp-recorder-lead">
               Exalto Capture is the flight recorder for your AI work. Start it, point Claude Code,
               Codex, or your own tools at it, and every session is recorded on your machine,
-              witnessed by the notary you select at setup. Nobody looks at it in normal operation.
-              When something needs proof, seal the trace and hand it to anyone. Until that day, it’s
-              just a folder on your computer that nobody, including the notary, can read.
+              witnessed by the third-party "notary" (e.g. Exalto Seal) you select at setup. Nobody
+              looks at it in normal operation. When something needs proof, seal the trace and hand
+              it to anyone. Until that day, it’s just a folder on your computer that nobody,
+              including the notary, can read.
             </p>
             <dl data-md="definitions">
               <div>
@@ -237,9 +238,9 @@ export function Landing() {
                 <dt>Why now</dt>
                 <dd>
                   As agents take on more of the work, customers, reviewers, auditors and
-                  counterparties will ask how a result was produced. Exalto makes that evidence
-                  simple to keep, share and verify, whether you ship agents or sign off on their
-                  work.
+                  counterparties will ask how a result was produced. Exalto Capture makes that
+                  evidence simple to keep, share and verify, whether you ship agents or sign off on
+                  their work.
                 </dd>
               </div>
               <div>
@@ -258,22 +259,22 @@ export function Landing() {
         <Strip log="003" name="How it works" anchor="how-it-works" />
         <div className="cp-how-open">
           <h2 id="how-title" className="cp-h2">
-            A transcript is just text. A sealed trace is proof.
+            A transcript or screenshot can be edited. A sealed trace is actual proof.
           </h2>
           <div className="cp-how-copy">
             <p className="cp-body">
-              Anyone can type a transcript, edit one, screenshot one. That’s why “here’s what the AI
-              said” does not count.
+              Anyone can edit a transcript or alter a screenshot. That’s why “here’s what the AI
+              said” cannot be trusted.
             </p>
             <p className="cp-body cp-muted">
-              The insight: your session already runs over an encrypted, authenticated connection to
-              the AI provider. The protocol relays that session through an independent notary that
-              witnesses exactly what crossed the wire without ever being able to read it. Using
-              multiparty TLS, your machine and the notary split the session keys so the notary
-              co-signs the encrypted traffic in real time without holding the decryption key, and
-              when you selectively disclose an exchange later, the math proves it came from the
-              provider while keeping your API keys and unshared work completely private. Old
-              cryptography, pointed at a new problem.
+              Your session already runs over an encrypted, authenticated connection to the AI
+              provider. The protocol relays that session through an independent "notary" (e.g.
+              Exalto Seal) that witnesses exactly what crossed the wire without ever being able to
+              read it. Using multiparty TLS, your machine and the notary split the session keys so
+              the notary co-signs the encrypted traffic in real time without holding the decryption
+              key, and when you selectively disclose an exchange later, the math proves it came from
+              the provider while keeping your API keys and unshared work completely private. Old
+              cryptography, pointed at a pressing new problem.
             </p>
           </div>
         </div>
@@ -285,11 +286,11 @@ export function Landing() {
           <div className="cp-cells">
             <div>
               <h3>Provenance</h3>
-              <p>It came from that AI provider.</p>
+              <p>It came from a specific AI provider.</p>
             </div>
             <div>
               <h3>Integrity</h3>
-              <p>It hasn’t been changed.</p>
+              <p>It hasn’t been altered.</p>
             </div>
             <div>
               <h3>Time</h3>
@@ -306,7 +307,7 @@ export function Landing() {
         <div className="cp-disclose-head">
           <FigHead
             num="04"
-            title="Disclose the exchange you cite. Keep the rest."
+            title="Disclose the exchange you want to share. Keep the rest."
             right="Interactive · reasoning-50"
           />
         </div>
@@ -315,7 +316,7 @@ export function Landing() {
         </div>
         <p className="cp-caption">
           Header values are hidden in every sealed trace, so your API key never travels. Request and
-          response bodies are what you disclose.
+          response bodies are what you can choose to disclose.
         </p>
       </section>
 
@@ -349,57 +350,62 @@ export function Landing() {
         </p>
       </section>
 
-      <section id="pieces" className="cp-wrap cp-section cp-pieces" aria-labelledby="pieces-title">
-        <Strip log="005" name="What Capture is" anchor="pieces" />
-        <h2 id="pieces-title" className="cp-h2">
-          What Capture is
+      <section
+        id="components"
+        className="cp-wrap cp-section cp-components"
+        aria-labelledby="components-title"
+      >
+        <Strip log="005" name="The components of the stack" anchor="components" />
+        <h2 id="components-title" className="cp-h2">
+          The Exalto Capture Stack
         </h2>
-        <div className="cp-pieces-table">
-          <div className="cp-pieces-head" aria-hidden="true" data-md="skip">
-            <span>Piece</span>
+        <div className="cp-components-table">
+          <div className="cp-components-head" aria-hidden="true" data-md="skip">
+            <span>Component</span>
             <span>What it does</span>
             <span>Who it is for</span>
           </div>
-          <div id="app" className="cp-pieces-row">
-            <h3 className="cp-h3-row">Exalto Capture, the app (desktop)</h3>
+          <div id="app" className="cp-components-row">
+            <h3 className="cp-h3-row">Exalto Capture Desktop App</h3>
             <p>
               The flight recorder. Record your AI exchanges as they happen, on your machine. Start
-              it and work normally; every session lands here, on your machine. Free, always.
+              it and after the initial setup work normally; every session lands here, on your
+              machine. Free, always.
             </p>
             <p>Anyone with Claude Code, Codex, a chatbot or their own tools</p>
           </div>
-          <div id="sdk" className="cp-pieces-row">
-            <h3 className="cp-h3-row">Capture SDK and CLI</h3>
+          <div id="sdk" className="cp-components-row">
+            <h3 className="cp-h3-row">Exalto Capture SDK and CLI</h3>
             <p>
               Build the flight recorder into your own products and services: capture, seal and
               verify from your code. The spec, the OpenTelemetry trace format and the offline
-              verifier are open. <a href={href('/docs')}>The docs</a>.
+              verifier are all open source. <a href={href('/docs')}>The docs</a>.
             </p>
             <p>Developers, routers, eval and security teams</p>
           </div>
-          <div id="seal" className="cp-pieces-row">
-            <h3 className="cp-h3-row">Exalto Seal, the notary</h3>
+          <div id="seal" className="cp-components-row">
+            <h3 className="cp-h3-row">Exalto Seal, the "notary"</h3>
             <p>
               Binds a trace to the provider, the time and the content, so anyone can verify it
               later. Share a link, and anyone can verify it too. The third party that countersigns
               and timestamps, and never sees plaintext. Sealing is the only thing you pay for;
               sealed traces and docs live at seal.exalto.ai.
             </p>
-            <p>Everyone; the default notary at setup</p>
+            <p>Everyone</p>
           </div>
-          <div id="protocol" className="cp-pieces-row">
-            <h3 className="cp-h3-row">The open protocol (ECP)</h3>
-            <p>The open protocol underneath all of it. Use Exalto’s notary or run your own.</p>
+          <div id="protocol" className="cp-components-row">
+            <h3 className="cp-h3-row">The Exalto Capture Protocol (ECP)</h3>
+            <p>The open protocol underneath all of it. Use Exalto’s Seal notary or run your own.</p>
             <p>Operators of compatible notaries; builders</p>
           </div>
         </div>
-        <div className="cp-pieces-blocks">
+        <div className="cp-components-blocks">
           <div>
-            <h3 className="cp-h3">An open protocol. A choice of notary.</h3>
+            <h3 className="cp-h3">An open protocol. A choice of who to seal with.</h3>
             <p>
-              One standard at the base. Tools, notaries, and apps stack on top. Exalto Seal is just
-              one notary among many to come: seal with ours, with a third party’s, or with one you
-              run yourself.
+              One open standard at the base. Tools, notaries, and apps stack on top. Exalto Seal is
+              just one notary among many: seal with ours, with a third party’s, or with one you run
+              for your organization.
             </p>
           </div>
           <div>
@@ -439,7 +445,7 @@ export function Landing() {
         <Strip log="006" name="Applications" anchor="applications" />
         <div className="cp-apps-open">
           <h2 id="apps-title" className="cp-h2-large">
-            Sealed traces make verification cheap.
+            Sealed traces lower the cost of verification.
           </h2>
           <p>Cheap verification changes behavior and increases trust.</p>
         </div>
@@ -546,8 +552,8 @@ export function Landing() {
               proof that someone reviewed it; with agents writing the code, the proof has to show
               what the human checked. The developer seals the session and links it from the commit:
               what the agent was asked, what it changed, what the developer verified. Provenance per
-              commit, checkable by anyone with access. The same record answers a regulator or an
-              acquirer years later, across every commit rather than a sample.
+              commit, checkable by anyone with access. The same record answers a regulator or
+              third-party years later, across every commit rather than a sample.
             </p>
             <p className="cp-strong">Works with Codex and Claude Code today.</p>
           </div>
@@ -585,7 +591,7 @@ export function Landing() {
             <p>Who was behind the keyboard.</p>
           </div>
           <div className="cp-trust-row">
-            <p>The named notary witnessed them at the stated time.</p>
+            <p>The named "notary" service witnessed them at the stated time.</p>
             <p>
               On its own, that no other AI or device was used.{' '}
               <b>Enforced capture closes that gap too.</b>

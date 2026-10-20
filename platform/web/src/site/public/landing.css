@@ -1003,23 +1003,23 @@
 
 /* ---- 05 What Capture is ------------------------------------------------ */
 
-.cp-pieces h2 {
+.cp-components h2 {
   margin-top: 48px;
 }
 
-.cp-pieces-table {
+.cp-components-table {
   margin-top: 40px;
   border-top: 2px solid var(--color-text);
 }
 
-.cp-pieces-head,
-.cp-pieces-row {
+.cp-components-head,
+.cp-components-row {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr) minmax(0, 1fr);
   border-bottom: 1px solid var(--color-divider);
 }
 
-.cp-pieces-head {
+.cp-components-head {
   gap: 4px 28px;
   padding: 8px 0;
   font-size: 10px;
@@ -1030,58 +1030,58 @@
   color: var(--faint);
 }
 
-.cp-pieces-row {
+.cp-components-row {
   gap: 10px 28px;
   padding: 22px 0;
 }
 
-.cp-pieces-row > * {
+.cp-components-row > * {
   min-width: 0;
 }
 
-.cp-pieces-row > p:first-of-type {
+.cp-components-row > p:first-of-type {
   font-size: 17px;
   line-height: 1.6;
 }
 
-.cp-pieces-row > p + p {
+.cp-components-row > p + p {
   font-size: 14px;
   line-height: 22px;
   color: var(--muted);
 }
 
 @media (max-width: 600px) {
-  .cp-pieces-head {
+  .cp-components-head {
     display: none;
   }
 
-  .cp-pieces-row {
+  .cp-components-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
 }
 
-.cp-pieces-blocks {
+.cp-components-blocks {
   margin-top: 72px;
   display: flex;
   flex-wrap: wrap;
   gap: 48px 64px;
 }
 
-.cp-pieces-blocks > div {
+.cp-components-blocks > div {
   flex: 1 1 380px;
   min-width: 0;
   max-width: 560px;
 }
 
-.cp-pieces-blocks p {
+.cp-components-blocks p {
   margin-top: 16px;
   font-size: 17px;
   line-height: 1.6;
   color: var(--muted);
 }
 
-.cp-pieces-blocks .cp-ulink {
+.cp-components-blocks .cp-ulink {
   margin-top: 20px;
 }
 
