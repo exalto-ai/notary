@@ -8,10 +8,10 @@ import { App } from '../App';
 import { landingTitle } from '../documentTitle';
 import { cssVariablesResolver, theme } from '../theme';
 
-// The landing copy audit. The strings come verbatim from "Exalto Capture +
+// The landing copy audit. The strings started verbatim from "Exalto Capture +
 // Proof of Thought: website copy" (Capture section, Oct 14 2026) by way of the
-// design handoff's check-copy-capture.mjs, and are checked against the
-// rendered page rather than the source, so a line cannot go missing by being
+// design handoff's check-copy-capture.mjs, with the edits made on the site
+// since; they are checked against the rendered page rather than the source, so a line cannot go missing by being
 // moved, split or shadowed by a component.
 
 afterEach(() => {
@@ -48,15 +48,15 @@ const banned: Array<[RegExp, string]> = [
 const required = [
   'Sometimes the exchange itself is the evidence.',
   'Exalto Capture · You capture. A third party seals. Anyone can verify.',
-  'What a chatbot told you, what an agent did, what a paid API returned. Capture it on your machine as it happens. Seal it. Anyone can verify.',
+  'What an agent did, what a chatbot told you, what a paid API returned. Capture it on your side as it happens. Seal it. Anyone can verify.',
   'Download Exalto Capture',
   'Read the docs',
   'Verify a trace',
-  "Exalto Capture is the flight recorder for your AI work. Start it, point Claude Code, Codex, or your own tools at it, and every session is recorded on your machine, witnessed by the notary you select at setup. Nobody looks at it in normal operation. When something needs proof, seal the trace and hand it to anyone. Until that day, it's just a folder on your computer that nobody, including the notary, can read.",
+  'Exalto Capture is the flight recorder for your AI work. Start it, point Claude Code, Codex, or your own tools at it, and every session is recorded on your machine, witnessed by the third-party "notary" (e.g. Exalto Seal) you select at setup. Nobody looks at it in normal operation. When something needs proof, seal the trace and hand it to anyone. Until that day, it\'s just a folder on your computer that nobody, including the notary, can read.',
   'Developers who ship agents, run evals, route models or sell tool calls, and anyone who wants a record of their AI work that other people can verify.',
-  'As agents take on more of the work, customers, reviewers, auditors and counterparties will ask how a result was produced. Exalto makes that evidence simple to keep, share and verify, whether you ship agents or sign off on their work.',
+  'As agents take on more of the work, customers, reviewers, auditors and counterparties will ask how a result was produced. Exalto Capture makes that evidence simple to keep, share and verify, whether you ship agents or sign off on their work.',
   'Local capture is free, always. You pay for what you seal.',
-  'Sealed traces make verification cheap.',
+  'Sealed traces lower the cost of verification.',
   'Cheap verification changes behavior and increases trust.',
   'Traces for AI R&D, evaluation and investigation',
   'Give others evidence they can verify.',
@@ -74,25 +74,25 @@ const required = [
   "The same applies to a shopping agent acting on a user's mandate: connect the authorization, merchant terms and order confirmation to show what was approved, what was ordered and what was confirmed.",
   'The audited commit',
   'Provenance per commit, checkable by anyone with access.',
-  'A pull request lands with a coding agent behind it. Change controls already require proof that someone reviewed it; with agents writing the code, the proof has to show what the human checked. The developer seals the session and links it from the commit: what the agent was asked, what it changed, what the developer verified. Provenance per commit, checkable by anyone with access. The same record answers a regulator or an acquirer years later, across every commit rather than a sample.',
+  'A pull request lands with a coding agent behind it. Change controls already require proof that someone reviewed it; with agents writing the code, the proof has to show what the human checked. The developer seals the session and links it from the commit: what the agent was asked, what it changed, what the developer verified. Provenance per commit, checkable by anyone with access. The same record answers a regulator or third-party years later, across every commit rather than a sample.',
   'Works with Codex and Claude Code today.',
   'the published eval',
   'prompt-injection forensics',
-  'A transcript is just text. A sealed trace is proof.',
-  'Anyone can type a transcript, edit one, screenshot one. That\'s why "here\'s what the AI said" does not count.',
-  'The insight: your session already runs over an encrypted, authenticated connection to the AI provider. The protocol relays that session through an independent notary that witnesses exactly what crossed the wire without ever being able to read it. Using multiparty TLS, your machine and the notary split the session keys so the notary co-signs the encrypted traffic in real time without holding the decryption key, and when you selectively disclose an exchange later, the math proves it came from the provider while keeping your API keys and unshared work completely private. Old cryptography, pointed at a new problem.',
+  'A transcript or screenshot can be edited. A sealed trace is actual proof.',
+  'Anyone can edit a transcript or alter a screenshot. That\'s why "here\'s what the AI said" cannot be trusted.',
+  'Your session already runs over an encrypted, authenticated connection to the AI provider. The protocol relays that session through an independent "notary" (e.g. Exalto Seal) that witnesses exactly what crossed the wire without ever being able to read it. Using multiparty TLS, your machine and the notary split the session keys so the notary co-signs the encrypted traffic in real time without holding the decryption key, and when you selectively disclose an exchange later, the math proves it came from the provider while keeping your API keys and unshared work completely private. Old cryptography, pointed at a pressing new problem.',
   'A sealed trace establishes',
-  'Provenance It came from that AI provider.',
-  "Integrity It hasn't been changed.",
+  'Provenance It came from a specific AI provider.',
+  "Integrity It hasn't been altered.",
   'Time It existed by that moment.',
   'Nothing readable ever leaves your machine. Nobody, including us, sees your work. The cryptography is TLSNotary , open source. More in the spec .',
   'What Capture is',
-  'Exalto Capture, the app (desktop) The flight recorder. Record your AI exchanges as they happen, on your machine. Start it and work normally; every session lands here, on your machine. Free, always. Anyone with Claude Code, Codex, a chatbot or their own tools',
-  'Capture SDK and CLI Build the flight recorder into your own products and services: capture, seal and verify from your code. The spec, the OpenTelemetry trace format and the offline verifier are open. The docs . Developers, routers, eval and security teams',
-  'Exalto Seal, the notary Binds a trace to the provider, the time and the content, so anyone can verify it later. Share a link, and anyone can verify it too. The third party that countersigns and timestamps, and never sees plaintext. Sealing is the only thing you pay for; sealed traces and docs live at seal.exalto.ai. Everyone; the default notary at setup',
-  "The open protocol (ECP) The open protocol underneath all of it. Use Exalto's notary or run your own. Operators of compatible notaries; builders",
-  'An open protocol. A choice of notary.',
-  "One standard at the base. Tools, notaries, and apps stack on top. Exalto Seal is just one notary among many to come: seal with ours, with a third party's, or with one you run yourself.",
+  'Exalto Capture Desktop App The flight recorder. Record your AI exchanges as they happen, on your machine. Start it and after the initial setup work normally; every session lands here, on your machine. Free, always. Anyone with Claude Code, Codex, a chatbot or their own tools',
+  'Exalto Capture SDK and CLI Build the flight recorder into your own products and services: capture, seal and verify from your code. The spec, the OpenTelemetry trace format and the offline verifier are all open source. The docs . Developers, routers, eval and security teams',
+  'Exalto Seal, the "notary" Binds a trace to the provider, the time and the content, so anyone can verify it later. Share a link, and anyone can verify it too. The third party that countersigns and timestamps, and never sees plaintext. Sealing is the only thing you pay for; sealed traces and docs live at seal.exalto.ai. Everyone',
+  "The Exalto Capture Protocol (ECP) The open protocol underneath all of it. Use Exalto's Seal notary or run your own. Operators of compatible notaries; builders",
+  'An open protocol. A choice of who to seal with.',
+  "One open standard at the base. Tools, notaries, and apps stack on top. Exalto Seal is just one notary among many: seal with ours, with a third party's, or with one you run for your organization.",
   'Yours to build.',
   'Sealed traces are a new primitive. The spec, the OpenTelemetry trace format, and the verifier are open.',
   '→ build on the protocol',
@@ -103,7 +103,7 @@ const required = [
   'On its own, that every interaction was disclosed. With capture enforced across an organization, it can.',
   'They have not changed since capture.',
   'Who was behind the keyboard.',
-  'The named notary witnessed them at the stated time.',
+  'The named "notary" service witnessed them at the stated time.',
   'On its own, that no other AI or device was used. Enforced capture closes that gap too.',
   'The exact timeline as it actually unfolded.',
   'That an output was correct, lawful, or wise.',
