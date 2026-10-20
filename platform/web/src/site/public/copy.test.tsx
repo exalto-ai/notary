@@ -86,7 +86,7 @@ const required = [
   "Integrity It hasn't been altered.",
   'Time It existed by that moment.',
   'Nothing readable ever leaves your machine. Nobody, including us, sees your work. The cryptography is TLSNotary , open source. More in the spec .',
-  'What Capture is',
+  'The Exalto Capture Stack',
   'Exalto Capture Desktop App The flight recorder. Record your AI exchanges as they happen, on your machine. Start it and after the initial setup work normally; every session lands here, on your machine. Free, always. Anyone with Claude Code, Codex, a chatbot or their own tools',
   'Exalto Capture SDK and CLI Build the flight recorder into your own products and services: capture, seal and verify from your code. The spec, the OpenTelemetry trace format and the offline verifier are all open source. The docs . Developers, routers, eval and security teams',
   'Exalto Seal, the "notary" Binds a trace to the provider, the time and the content, so anyone can verify it later. Share a link, and anyone can verify it too. The third party that countersigns and timestamps, and never sees plaintext. Sealing is the only thing you pay for; sealed traces and docs live at seal.exalto.ai. Everyone',
