@@ -137,7 +137,7 @@ export const RECEIPT: readonly Receipt[] = [
     integ: 'sha256 9c41…e07b · 6 entries',
     time: '14:03:52 UTC · Exalto Seal',
     mark: '✓',
-    note: 'Verified against the notary’s public key. Anyone can verify.',
+    note: 'Verified against the Exalto Seal’s public key. Anyone can verify.',
     link: 'seal.exalto.ai/trc-8f3k2q',
     sealed: true,
   },
