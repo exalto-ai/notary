@@ -222,9 +222,10 @@ export function Landing() {
             <p className="cp-recorder-lead">
               Exalto Capture is the flight recorder for your AI work. Start it, point Claude Code,
               Codex, or your own tools at it, and every session is recorded on your machine,
-              witnessed by the third-party "notary" (e.g. Exalto Seal) you select at setup. Nobody looks at it in normal operation.
-              When something needs proof, seal the trace and hand it to anyone. Until that day, it’s
-              just a folder on your computer that nobody, including the notary, can read.
+              witnessed by the third-party "notary" (e.g. Exalto Seal) you select at setup. Nobody
+              looks at it in normal operation. When something needs proof, seal the trace and hand
+              it to anyone. Until that day, it’s just a folder on your computer that nobody,
+              including the notary, can read.
             </p>
             <dl data-md="definitions">
               <div>
@@ -238,9 +239,9 @@ export function Landing() {
                 <dt>Why now</dt>
                 <dd>
                   As agents take on more of the work, customers, reviewers, auditors and
-                  counterparties will ask how a result was produced. Exalto Capture makes that evidence
-                  simple to keep, share and verify, whether you ship agents or sign off on their
-                  work.
+                  counterparties will ask how a result was produced. Exalto Capture makes that
+                  evidence simple to keep, share and verify, whether you ship agents or sign off on
+                  their work.
                 </dd>
               </div>
               <div>
@@ -267,13 +268,13 @@ export function Landing() {
               said” cannot be trusted.
             </p>
             <p className="cp-body cp-muted">
-              Your session already runs over an encrypted, authenticated connection to
-              the AI provider. The protocol relays that session through an independent "notary" (e.g. Exalto Seal) that
-              witnesses exactly what crossed the wire without ever being able to read it. Using
-              multiparty TLS, your machine and the notary split the session keys so the notary
-              co-signs the encrypted traffic in real time without holding the decryption key, and
-              when you selectively disclose an exchange later, the math proves it came from the
-              provider while keeping your API keys and unshared work completely private. Old
+              Your session already runs over an encrypted, authenticated connection to the AI
+              provider. The protocol relays that session through an independent "notary" (e.g.
+              Exalto Seal) that witnesses exactly what crossed the wire without ever being able to
+              read it. Using multiparty TLS, your machine and the notary split the session keys so
+              the notary co-signs the encrypted traffic in real time without holding the decryption
+              key, and when you selectively disclose an exchange later, the math proves it came from
+              the provider while keeping your API keys and unshared work completely private. Old
               cryptography, pointed at a pressing new problem.
             </p>
           </div>
@@ -350,7 +351,11 @@ export function Landing() {
         </p>
       </section>
 
-      <section id="components" className="cp-wrap cp-section cp-components" aria-labelledby="components-title">
+      <section
+        id="components"
+        className="cp-wrap cp-section cp-components"
+        aria-labelledby="components-title"
+      >
         <Strip log="005" name="The components of the stack" anchor="components" />
         <h2 id="components-title" className="cp-h2">
           The Exalto Capture Stack
@@ -365,7 +370,8 @@ export function Landing() {
             <h3 className="cp-h3-row">Exalto Capture Desktop App</h3>
             <p>
               The flight recorder. Record your AI exchanges as they happen, on your machine. Start
-              it and after the initial setup work normally; every session lands here, on your machine. Free, always.
+              it and after the initial setup work normally; every session lands here, on your
+              machine. Free, always.
             </p>
             <p>Anyone with Claude Code, Codex, a chatbot or their own tools</p>
           </div>
@@ -398,9 +404,9 @@ export function Landing() {
           <div>
             <h3 className="cp-h3">An open protocol. A choice of who to seal with.</h3>
             <p>
-              One open standard at the base. Tools, notaries, and apps stack on top. Exalto Seal is just
-              one notary among many: seal with ours, with a third party’s, or with one you
-              run for your organization.
+              One open standard at the base. Tools, notaries, and apps stack on top. Exalto Seal is
+              just one notary among many: seal with ours, with a third party’s, or with one you run
+              for your organization.
             </p>
           </div>
           <div>
@@ -532,7 +538,8 @@ export function Landing() {
               proof that someone reviewed it; with agents writing the code, the proof has to show
               what the human checked. The developer seals the session and links it from the commit:
               what the agent was asked, what it changed, what the developer verified. Provenance per
-              commit, checkable by anyone with access. The same record answers a regulator or third-party years later, across every commit rather than a sample.
+              commit, checkable by anyone with access. The same record answers a regulator or
+              third-party years later, across every commit rather than a sample.
             </p>
             <p className="cp-strong">Works with Codex and Claude Code today.</p>
           </div>
