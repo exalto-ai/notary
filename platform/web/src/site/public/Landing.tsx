@@ -351,7 +351,7 @@ export function Landing() {
       </section>
 
       <section id="pieces" className="cp-wrap cp-section cp-pieces" aria-labelledby="pieces-title">
-        <Strip log="005" name="What Capture is" anchor="components" />
+        <Strip log="005" name="What Capture is" anchor="pieces" />
         <h2 id="pieces-title" className="cp-h2">
           The Exalto Capture Stack
         </h2>
