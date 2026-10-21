@@ -581,7 +581,9 @@ html.cp-root body {
 .cp-nav {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  /* Baselines, not boxes: the sibling link's underline hangs below the text
+     without lifting the text above its neighbours. */
+  align-items: baseline;
   gap: 8px 28px;
   margin-left: auto;
 }

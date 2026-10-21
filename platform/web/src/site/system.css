@@ -490,6 +490,45 @@ h1 {
   height: 1px;
 }
 
+/* ---- Centered card (sign in, device approval) --------------------------- */
+
+.x-centered {
+  min-height: calc(100vh - 220px);
+  display: grid;
+  place-items: center;
+  padding: 48px var(--x-gutter);
+}
+
+/* ---- Plain list (device approval) --------------------------------------- */
+
+.x-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+}
+
+.x-list > li {
+  padding: 9px 0 9px 20px;
+  border-top: 1px solid var(--x-rule);
+  font-size: 14px;
+  position: relative;
+}
+
+.x-list > li:first-child {
+  border-top: 0;
+}
+
+.x-list > li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18px;
+  width: 9px;
+  height: 1px;
+  background: var(--x-rule-firm);
+}
+
 /* ---- Loading ------------------------------------------------------------ */
 /* A placeholder is a shape, not a spinner. It never animates faster than the
    thing it is standing in for would have arrived. */
