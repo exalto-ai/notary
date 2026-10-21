@@ -300,6 +300,18 @@ test('the public shell keeps its footprint while the session resolves', async ()
   expect(container.querySelector('header .cp-nav-account')).toBeTruthy();
 });
 
+test('the sign-in card sits in the middle of the page', async () => {
+  window.history.replaceState({}, '', '/signin');
+  stubApi({ '/api/account': () => json({ message: 'unauthorized' }, 401) });
+  const { container } = mount(<App />);
+  await expect.element(page.getByRole('heading', { level: 1 })).toBeVisible();
+  const card = container.querySelector<HTMLElement>('.x-centered > .x-record');
+  expect(card).not.toBeNull();
+  const box = card?.getBoundingClientRect();
+  const middle = (box?.left ?? 0) + (box?.width ?? 0) / 2;
+  expect(Math.abs(middle - window.innerWidth / 2)).toBeLessThan(2);
+});
+
 test('keeps a signed-out visitor at the account route they asked for', async () => {
   window.history.replaceState({}, '', '/app/traces');
   stubApi({
