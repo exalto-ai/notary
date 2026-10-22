@@ -340,16 +340,27 @@ Settings is one grouped form:
 - **Connections**: **Chat in Capture** names the saved chat connections, and
   **Manage…** opens the same Connections dialog as Chat. **Codex and Claude
   Code** has **Set up…**, which reopens guided setup at its tool choice.
-- **Account** (the account card).
-- **Sealing**: the sealing service and its state, with signer, operator,
-  endpoint, key, and cutoffs under **Details**.
+- **Sealing**: the sealing service and its state, then the account card.
 - **Privacy**: vault protection, and prompt previews, which stay on this Mac
   outside the vault.
-- **Appearance** (System, Light, or Dark), **General** (open at sign-in and
-  signed updates), and **Advanced** (provider proxy, OpenAPI URL, and builds).
+- **General**: theme (System, Light, or Dark), open at sign-in, and signed
+  updates.
 
-The same sections appear while the local service is off, with **Start local
-service** in place of the account card and sealing service.
+**Advanced** opens a second page with the detail the main form leaves out:
+
+- **Codex and Claude Code**: **Copy profile** for the Codex CLI
+  `exalto-capture` profile and **Copy command** for the Claude Code launch
+  command, which uses `ANTHROPIC_API_KEY`.
+- **API base URLs**: one row per fixed provider route, with its local base URL
+  and a copy button. Keys and model selection stay in the originating client.
+- **Sealing service**: where the service comes from, and the signer, operator,
+  endpoint, key, and cutoffs of each record. Changing the service requires an
+  administrator-managed configuration.
+- **Local service**: provider proxy, OpenAPI URL, and builds.
+
+While the local service is off, Settings shows **Start local service** in place
+of the account card and sealing service, and Advanced lists only the provider
+proxy and build.
 
 Appearance defaults to System and follows macOS changes live. A Light or Dark
 choice is stored under `exalto-capture-color-scheme` and applies to every view,

@@ -7,7 +7,6 @@ import {
 } from '../../../runtime/apps/admin-dashboard/src/Dashboard';
 import type { DashboardRoute } from '../../../runtime/apps/admin-dashboard/src/routes';
 import {
-  AppearanceSection,
   GeneralSection,
   PreferenceRow,
   PreferenceSection,
@@ -221,7 +220,6 @@ export function SettingsView({
                 <span className="preference-value">{vault.label}</span>
               </PreferenceRow>
             </PreferenceSection>
-            <AppearanceSection />
             <GeneralSection settings={desktopSettings} onAction={handleDesktopAction} />
             <PreferenceSection title="Advanced">
               <PreferenceRow label="Provider proxy">

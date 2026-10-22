@@ -680,27 +680,20 @@ describe('Exalto Capture desktop shell', () => {
           (heading) => heading.textContent,
         ),
       )
-      .toEqual([
-        'Connections',
-        'Account',
-        'Sealing',
-        'Privacy',
-        'Appearance',
-        'General',
-        'Advanced',
-      ]);
+      .toEqual(['Connections', 'Sealing', 'Privacy', 'General']);
     expect(document.querySelector('.workspace-frame')).toBeNull();
     expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
-    await expect
-      .element(page.getByText('http://127.0.0.1:8788/openapi.json', { exact: true }))
-      .toBeVisible();
-    expect(document.querySelectorAll('.preferences a[target="_blank"]')).toHaveLength(0);
     (
       page
         .getByRole('switch', { name: 'Open Exalto Capture at sign-in' })
         .element() as HTMLInputElement
     ).click();
     await expect.poll(() => localStorage.getItem('notary-launch-at-login')).toBe('true');
+    await userEvent.click(page.getByRole('button', { name: 'Advanced' }));
+    await expect
+      .element(page.getByText('http://127.0.0.1:8788/openapi.json', { exact: true }))
+      .toBeVisible();
+    expect(document.querySelectorAll('.preferences a[target="_blank"]')).toHaveLength(0);
   });
 
   test('keeps the same Settings sections while the local service is off', async () => {
@@ -711,7 +704,7 @@ describe('Exalto Capture desktop shell', () => {
           (heading) => heading.textContent,
         ),
       )
-      .toEqual(['Connections', 'Account', 'Privacy', 'Appearance', 'General', 'Advanced']);
+      .toEqual(['Connections', 'Account', 'Privacy', 'General', 'Advanced']);
     await expect
       .element(page.getByRole('switch', { name: 'Capture new requests' }))
       .not.toBeInTheDocument();
