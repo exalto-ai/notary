@@ -3,27 +3,11 @@ import { notifications } from '@mantine/notifications';
 import { useQuery } from '@tanstack/react-query';
 import { Copy, ShieldCheck, Unplug } from 'lucide-react';
 import type { LocalApi, Status } from '../api';
+import { claudeCommand, codexProfile } from '../clientSetup';
 import { ProviderIdentity } from '../ProviderIdentity';
 import { EmptyState, Fact, LoadingState, QueryError, StatusLabel } from '../shared';
 
 type ProviderRoute = Awaited<ReturnType<LocalApi['providers']>>['providers'][number];
-
-const codexConfig = (baseUrl: string) => `[profiles.exalto-capture]
-model_provider = "exalto-capture"
-
-[model_providers.exalto-capture]
-name = "Exalto Capture, ChatGPT plan"
-base_url = "${baseUrl}"
-requires_openai_auth = true
-wire_api = "responses"
-supports_websockets = false`;
-
-// Claude capture uses an API key, never a claude.ai subscription session;
-// see docs/agent-onboarding-policy.md.
-const claudeCommand = (baseUrl: string) => `test -n "$ANTHROPIC_API_KEY" && \\
-env -u ANTHROPIC_AUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN \\
-  ANTHROPIC_BASE_URL=${baseUrl} \\
-  claude`;
 
 const apiKeyEnvironment: Record<string, string> = {
   anthropic: 'ANTHROPIC_API_KEY',
@@ -79,7 +63,7 @@ function ClientSetupCard({
 }) {
   const codex = client === 'codex';
   const name = codex ? 'Codex CLI' : 'Claude Code';
-  const setup = codex ? codexConfig(route.proxy_base_url) : claudeCommand(route.proxy_base_url);
+  const setup = codex ? codexProfile(route.proxy_base_url) : claudeCommand(route.proxy_base_url);
   return (
     <Paper className="settings-panel provider-route">
       <Group justify="space-between" align="flex-start">
