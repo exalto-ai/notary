@@ -14,7 +14,7 @@ import { AccountConnectionCard } from '../AccountConnection';
 import type { LocalApi, Notary, Status } from '../api';
 import { claudeCommand, codexProfile } from '../clientSetup';
 import { formatNotaryBoundary, orderNotaries } from '../notaryLifecycle';
-import { formatBytes, StatusLabel } from '../shared';
+import { Fact, formatBytes, StatusLabel } from '../shared';
 
 /** Desktop-owned settings the app passes into the embedded Preferences. */
 export type DesktopSettingsState = {
@@ -105,7 +105,7 @@ function updateDetail(settings: DesktopSettingsState) {
   return update?.message ?? undefined;
 }
 
-export function GeneralSection({
+function GeneralSection({
   settings,
   onAction,
 }: {
@@ -209,34 +209,16 @@ function SealingServiceDetails({ api }: { api: LocalApi }) {
         <summary>Details</summary>
         {records.map((record) => (
           <dl key={record.key_id} className="receipt-list">
-            <div>
-              <dt>Signer</dt>
-              <dd>{record.name.trim() || 'Not reported'}</dd>
-            </div>
-            <div>
-              <dt>Operator</dt>
-              <dd>{record.operator}</dd>
-            </div>
-            <div>
-              <dt>Endpoint</dt>
-              <dd>{record.endpoint}</dd>
-            </div>
-            <div>
-              <dt>Key ID</dt>
-              <dd>{record.key_id}</dd>
-            </div>
-            <div>
-              <dt>Status</dt>
-              <dd>{record.lifecycle}</dd>
-            </div>
-            <div>
-              <dt>Capture cutoff</dt>
-              <dd>{formatNotaryBoundary(record.valid_until_unix_ms)}</dd>
-            </div>
-            <div>
-              <dt>Sealing cutoff</dt>
-              <dd>{formatNotaryBoundary(record.notarize_until_unix_ms)}</dd>
-            </div>
+            <Fact label="Signer" value={record.name.trim() || 'Not reported'} />
+            <Fact label="Operator" value={record.operator} />
+            <Fact label="Endpoint" value={record.endpoint} />
+            <Fact label="Key ID" value={record.key_id} />
+            <Fact label="Status" value={record.lifecycle} />
+            <Fact label="Capture cutoff" value={formatNotaryBoundary(record.valid_until_unix_ms)} />
+            <Fact
+              label="Sealing cutoff"
+              value={formatNotaryBoundary(record.notarize_until_unix_ms)}
+            />
           </dl>
         ))}
       </details>
@@ -256,20 +238,15 @@ function RouteSections({ api }: { api: LocalApi }) {
   const codex = routes.find((route) => route.id === 'openai_codex');
   const claude = routes.find((route) => route.id === 'anthropic');
   const apiRoutes = routes.filter((route) => route.id !== 'openai_codex');
-  if (providers.isLoading) {
+  if (!providers.data) {
     return (
       <PreferenceSection title="Routes">
-        <PreferenceRow label="Routes" detail="Loading" />
-      </PreferenceSection>
-    );
-  }
-  if (providers.error) {
-    return (
-      <PreferenceSection title="Routes">
-        <PreferenceRow label="Routes" detail="Unavailable">
-          <Button variant="outline" onClick={() => providers.refetch()}>
-            Try again
-          </Button>
+        <PreferenceRow label="Routes" detail={providers.error ? 'Unavailable' : 'Loading'}>
+          {providers.error && (
+            <Button variant="outline" onClick={() => providers.refetch()}>
+              Try again
+            </Button>
+          )}
         </PreferenceRow>
       </PreferenceSection>
     );
@@ -380,23 +357,30 @@ function AdvancedPage({
   );
 }
 
+/**
+ * The desktop app's Settings. With the local service off there is no status:
+ * `serviceOff` takes the place of the sealing service and account, and the
+ * service-backed rows and Advanced page are left out.
+ */
 export function DesktopSettingsView({
   status,
   api,
   apiBaseUrl,
   desktopSettings,
   connections,
+  serviceOff,
   onDesktopAction,
 }: {
-  status: Status;
+  status: Status | null;
   api: LocalApi;
   apiBaseUrl?: string;
   desktopSettings: DesktopSettingsState;
   connections?: ReactNode;
+  serviceOff?: ReactNode;
   onDesktopAction: (action: DesktopSettingsAction) => void;
 }) {
   const [advanced, setAdvanced] = useState(false);
-  if (advanced) {
+  if (advanced && status) {
     return (
       <AdvancedPage
         status={status}
@@ -410,28 +394,34 @@ export function DesktopSettingsView({
   return (
     <div className="view-page preferences">
       {connections}
-      <SealingSection api={api} />
+      {status ? (
+        <SealingSection api={api} />
+      ) : (
+        <PreferenceSection title="Sealing">{serviceOff}</PreferenceSection>
+      )}
       <PreferenceSection title="Privacy">
         <PreferenceRow label="Private traces">
           <span className="preference-value">{desktopSettings.vault_label}</span>
         </PreferenceRow>
-        <PreferenceRow label="Prompt previews" detail="Kept on this Mac outside the vault">
-          <span className="preference-value">
-            {status.preview_chars > 0
-              ? `${status.preview_chars.toLocaleString()} characters`
-              : 'Off'}
-          </span>
-        </PreferenceRow>
+        {status && (
+          <PreferenceRow label="Prompt previews" detail="Kept on this Mac outside the vault">
+            <span className="preference-value">
+              {status.preview_chars > 0
+                ? `${status.preview_chars.toLocaleString()} characters`
+                : 'Off'}
+            </span>
+          </PreferenceRow>
+        )}
       </PreferenceSection>
       <GeneralSection settings={desktopSettings} onAction={onDesktopAction} />
-      <AdvancedLink onOpen={() => setAdvanced(true)} />
+      {status && <AdvancedLink onOpen={() => setAdvanced(true)} />}
       {desktopSettings.notice && <p className="preference-notice">{desktopSettings.notice}</p>}
     </div>
   );
 }
 
 /** Routes, sealing service details, and local service facts, one level down. */
-export function AdvancedLink({ onOpen }: { onOpen: () => void }) {
+function AdvancedLink({ onOpen }: { onOpen: () => void }) {
   return (
     <section className="preference-section" aria-label="Advanced">
       <div className="preference-group">

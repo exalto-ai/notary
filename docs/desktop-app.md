@@ -359,8 +359,8 @@ Settings is one grouped form:
 - **Local service**: provider proxy, OpenAPI URL, and builds.
 
 While the local service is off, Settings shows **Start local service** in place
-of the account card and sealing service, and Advanced lists only the provider
-proxy and build.
+of the sealing service and account card, and leaves out prompt previews and
+Advanced, which need the service.
 
 Appearance defaults to System and follows macOS changes live. A Light or Dark
 choice is stored under `exalto-capture-color-scheme` and applies to every view,
