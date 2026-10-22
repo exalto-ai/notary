@@ -213,12 +213,14 @@ export function DesktopSettingsView({
   api,
   apiBaseUrl,
   desktopSettings,
+  connections,
   onDesktopAction,
 }: {
   status: Status;
   api: LocalApi;
   apiBaseUrl?: string;
   desktopSettings: DesktopSettingsState;
+  connections?: ReactNode;
   onDesktopAction: (action: DesktopSettingsAction) => void;
 }) {
   const openApiUrl = `${(apiBaseUrl ?? window.location.origin).replace(/\/$/, '')}/openapi.json`;
@@ -228,6 +230,7 @@ export function DesktopSettingsView({
   };
   return (
     <div className="view-page preferences">
+      {connections}
       <PreferenceSection title="Account">
         <AccountConnectionCard api={api} />
       </PreferenceSection>

@@ -438,15 +438,6 @@ function AppContent() {
                 <h1 data-tauri-drag-region>{viewMeta[view].title}</h1>
                 <p>{viewMeta[view].subtitle}</p>
               </div>
-              {view === 'providers' && (
-                <button
-                  className="mac-button is-primary"
-                  type="button"
-                  onClick={() => setSetupOpen(true)}
-                >
-                  Connection setup
-                </button>
-              )}
             </header>
           )}
           <div className="chat-view-container" hidden={view !== 'chat'}>
@@ -510,6 +501,7 @@ function AppContent() {
                 onCheckUpdate={() => void checkForDesktopUpdate()}
                 onRestartToUpdate={() => void restartToUpdate()}
                 onStartService={startLocalServiceFromWorkspace}
+                onOpenSetup={() => setSetupOpen(true)}
                 onNavigate={syncWorkspaceRoute}
               />
             </div>

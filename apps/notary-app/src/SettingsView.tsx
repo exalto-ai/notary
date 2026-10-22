@@ -20,6 +20,8 @@ import {
   localApi,
   setLaunchAtLogin,
 } from './bridge';
+import type { Connection } from './builtinBridge';
+import { ConnectionsSheet, connectionNames, readConnections } from './ProviderConnections';
 import {
   type TraceConstraint,
   type TraceTarget,
@@ -50,6 +52,47 @@ function dashboardRoute(
   return { view: route };
 }
 
+function connectionSummary(connections: Connection[] | null) {
+  if (!connections) return 'Checking';
+  if (!connections.length) return 'Not set up';
+  return connections.map((connection) => connectionNames[connection.id]).join(' · ');
+}
+
+/** What Capture records: the built-in chat's own connections, and the CLI tools set up to route through it. */
+function ConnectionsSection({ onOpenSetup }: { onOpenSetup: () => void }) {
+  const [connections, setConnections] = useState<Connection[] | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void readConnections()
+      .then(({ connections: saved }) => alive && setConnections(saved))
+      .catch(() => alive && setConnections([]));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return (
+    <PreferenceSection title="Connections">
+      <PreferenceRow label="Chat in Capture" detail={connectionSummary(connections)}>
+        <Button variant="outline" onClick={() => setSheetOpen(true)}>
+          Manage…
+        </Button>
+      </PreferenceRow>
+      <PreferenceRow
+        label="Codex and Claude Code"
+        detail="A separate CLI session that Capture records"
+      >
+        <Button variant="outline" onClick={onOpenSetup}>
+          Set up…
+        </Button>
+      </PreferenceRow>
+      {sheetOpen && (
+        <ConnectionsSheet onChange={setConnections} onClose={() => setSheetOpen(false)} />
+      )}
+    </PreferenceSection>
+  );
+}
+
 export function SettingsView({
   route,
   constraint,
@@ -63,6 +106,7 @@ export function SettingsView({
   onCheckUpdate,
   onRestartToUpdate,
   onStartService,
+  onOpenSetup,
   onNavigate,
 }: {
   route: WorkspaceView;
@@ -77,6 +121,7 @@ export function SettingsView({
   onCheckUpdate: () => void;
   onRestartToUpdate: () => void;
   onStartService: () => void;
+  onOpenSetup: () => void;
   onNavigate: (view: View, route?: DashboardRoute) => void;
 }) {
   const [launch, setLaunch] = useState(false);
@@ -150,6 +195,7 @@ export function SettingsView({
       <div className="native-page inline-dashboard-page">
         <main className="dashboard-shell dashboard-shell--inline dashboard-main">
           <div className="view-page preferences">
+            <ConnectionsSection onOpenSetup={onOpenSetup} />
             <PreferenceSection title="Account">
               <PreferenceRow
                 label="Local service is off"
@@ -200,6 +246,9 @@ export function SettingsView({
         apiBaseUrl="http://127.0.0.1:8788"
         route={dashboardRoute(route, constraint, traceTarget)}
         desktopSettings={desktopSettings}
+        desktopConnections={
+          route === 'settings' ? <ConnectionsSection onOpenSetup={onOpenSetup} /> : undefined
+        }
         onDesktopSettingsAction={handleDesktopAction}
         desktopShell
         onNavigate={(next) => onNavigate(next.view as View, next)}

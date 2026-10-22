@@ -41,8 +41,9 @@ from the macOS menu bar, and embeds the local workspace in its native window.
 The primary navigation contains only:
 
 - **Overview**, for starting and stopping private local capture.
+- **Chat**, for chatting in Capture with a Trace of each exchange.
 - **Traces**, for reviewing, sealing, verifying, exporting, and sharing traces.
-- **Settings**, with Preferences, AI connections, and Activity log sections.
+- **Settings**, for connections, sealing, privacy, and app behaviour.
 
 The Overview screen combines service startup and capture enablement in one
 action. Its primary control reflects the daemon-owned capture setting. When capture is off, the fixed loopback
@@ -297,7 +298,7 @@ Skipping account connection does not prevent local capture or verification.
 Connecting an account does not upload or share local traces. It authorizes only
 the hosted features the user later chooses to invoke.
 
-Onboarding, Preferences, and Share use one account card with three states:
+Onboarding, Settings, and Share use one account card with three states:
 
 - **Disconnected** offers **Connect account…**, which starts device approval and
   opens the approval page in the default browser.
@@ -332,24 +333,23 @@ on the originating trace. A successful share exposes **Copy link**,
 reuse the canonical link. Stopping sharing makes that link unavailable without
 deleting the local trace or changing its sealed state.
 
-## Settings, AI connections, and Activity
+## Settings
 
-Settings contains three sections in a compact subnavigation:
+Settings is one grouped form:
 
-1. **Preferences** is a grouped form: **Account** (the account card),
-   **Sealing** (the sealing service and its state, with signer, operator,
-   endpoint, key, and cutoffs under **Details**), **Privacy** (vault
-   protection, and prompt previews, which stay on this Mac outside the vault),
-   **Appearance** (System, Light, or Dark), **General** (open at sign-in and
-   signed updates), and **Advanced** (provider proxy, OpenAPI URL, and builds).
-   The same sections appear while the local service is off, with **Start local
-   service** in place of the account card.
-2. **AI connections** puts Codex CLI and Claude Code first, then lists fixed API
-   and SDK routes with their allowed hosts, local base URLs, readiness, capture
-   state, and setup details. Model selection remains in the originating tool.
-3. **Activity log** keeps severity, date, and trace ID visible. More filters
-   expose operation ID and the bounded raw event name. A trace-linked event
-   opens that trace; service-only events remain inspectable in Activity.
+- **Connections**: **Chat in Capture** names the saved chat connections, and
+  **Manage…** opens the same Connections dialog as Chat. **Codex and Claude
+  Code** has **Set up…**, which reopens guided setup at its tool choice.
+- **Account** (the account card).
+- **Sealing**: the sealing service and its state, with signer, operator,
+  endpoint, key, and cutoffs under **Details**.
+- **Privacy**: vault protection, and prompt previews, which stay on this Mac
+  outside the vault.
+- **Appearance** (System, Light, or Dark), **General** (open at sign-in and
+  signed updates), and **Advanced** (provider proxy, OpenAPI URL, and builds).
+
+The same sections appear while the local service is off, with **Start local
+service** in place of the account card and sealing service.
 
 Appearance defaults to System and follows macOS changes live. A Light or Dark
 choice is stored under `exalto-capture-color-scheme` and applies to every view,
