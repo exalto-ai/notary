@@ -1044,11 +1044,14 @@ describe('Notary admin dashboard', () => {
     await expect
       .element(page.getByText(/base_url = "http:\/\/127\.0\.0\.1:8787\/codex"/))
       .toBeVisible();
-    await expect.element(page.getByText(/model_provider = "capture-chatgpt"/)).toBeVisible();
+    await expect.element(page.getByText(/model_provider = "exalto-capture"/)).toBeVisible();
     await page.getByText('Setup Claude Code', { exact: true }).click();
     await expect
       .element(page.getByText(/ANTHROPIC_BASE_URL=http:\/\/127\.0\.0\.1:8787\/anthropic/))
       .toBeVisible();
+    // Claude capture keeps the API key and never falls back to a subscription login.
+    await expect.element(page.getByText(/test -n "\$ANTHROPIC_API_KEY" &&/)).toBeVisible();
+    await expect.element(page.getByText(/claude\.ai/)).not.toBeInTheDocument();
     await page.getByText('OpenAI route details', { exact: true }).click();
     await expect.element(page.getByText('api.openai.com', { exact: true }).first()).toBeVisible();
     await expect
