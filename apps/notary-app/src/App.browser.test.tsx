@@ -306,6 +306,14 @@ describe('Exalto Capture desktop shell', () => {
     expect(document.querySelector('.workspace-frame')).toBeNull();
   });
 
+  test('opens connection setup from Overview', async () => {
+    renderApp('?screen=capture-on');
+    await userEvent.click(page.getByRole('button', { name: 'Set up a connection' }));
+    await expect
+      .element(page.getByRole('heading', { name: 'Where would you like to chat?' }))
+      .toBeVisible();
+  });
+
   test('keeps native navigation in charge of service-backed views', async () => {
     renderApp('?screen=capture-on&view=traces');
     await expect.element(page.getByPlaceholder('Search traces')).toBeVisible();

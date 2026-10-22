@@ -52,28 +52,27 @@ function dashboardRoute(
   return { view: route };
 }
 
-function connectionSummary(connections: Connection[] | null) {
-  if (!connections) return 'Checking';
+function connectionSummary(connections: Connection[]) {
   if (!connections.length) return 'Not set up';
   return connections.map((connection) => connectionNames[connection.id]).join(' · ');
 }
 
 /** What Capture records: the built-in chat's own connections, and the CLI tools set up to route through it. */
 function ConnectionsSection({ onOpenSetup }: { onOpenSetup: () => void }) {
-  const [connections, setConnections] = useState<Connection[] | null>(null);
+  const [summary, setSummary] = useState('Checking');
   const [sheetOpen, setSheetOpen] = useState(false);
   useEffect(() => {
     let alive = true;
     void readConnections()
-      .then(({ connections: saved }) => alive && setConnections(saved))
-      .catch(() => alive && setConnections([]));
+      .then(({ connections }) => alive && setSummary(connectionSummary(connections)))
+      .catch(() => alive && setSummary('Unavailable'));
     return () => {
       alive = false;
     };
   }, []);
   return (
     <PreferenceSection title="Connections">
-      <PreferenceRow label="Chat in Capture" detail={connectionSummary(connections)}>
+      <PreferenceRow label="Chat in Capture" detail={summary}>
         <Button variant="outline" onClick={() => setSheetOpen(true)}>
           Manage…
         </Button>
@@ -87,7 +86,10 @@ function ConnectionsSection({ onOpenSetup }: { onOpenSetup: () => void }) {
         </Button>
       </PreferenceRow>
       {sheetOpen && (
-        <ConnectionsSheet onChange={setConnections} onClose={() => setSheetOpen(false)} />
+        <ConnectionsSheet
+          onChange={(connections) => setSummary(connectionSummary(connections))}
+          onClose={() => setSheetOpen(false)}
+        />
       )}
     </PreferenceSection>
   );

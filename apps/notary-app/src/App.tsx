@@ -475,6 +475,7 @@ function AppContent() {
                 )
               }
               onRetryConnections={() => void refresh(true)}
+              onOpenSetup={() => setSetupOpen(true)}
             />
           )}
           {lastWorkspaceRoute.current && (
