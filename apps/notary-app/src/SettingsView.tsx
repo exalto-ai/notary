@@ -7,8 +7,7 @@ import {
 } from '../../../runtime/apps/admin-dashboard/src/Dashboard';
 import type { DashboardRoute } from '../../../runtime/apps/admin-dashboard/src/routes';
 import {
-  AppearanceSection,
-  GeneralSection,
+  DesktopSettingsView,
   PreferenceRow,
   PreferenceSection,
 } from '../../../runtime/apps/admin-dashboard/src/views/DesktopSettingsView';
@@ -192,13 +191,16 @@ export function SettingsView({
     );
   }
 
-  if (!state.running && route === 'settings') {
+  if (!state.running) {
     return (
       <div className="native-page inline-dashboard-page">
         <main className="dashboard-shell dashboard-shell--inline dashboard-main">
-          <div className="view-page preferences">
-            <ConnectionsSection onOpenSetup={onOpenSetup} />
-            <PreferenceSection title="Account">
+          <DesktopSettingsView
+            status={null}
+            api={localApi}
+            desktopSettings={desktopSettings}
+            connections={<ConnectionsSection onOpenSetup={onOpenSetup} />}
+            serviceOff={
               <PreferenceRow
                 label="Local service is off"
                 detail={
@@ -215,26 +217,9 @@ export function SettingsView({
                   Start local service
                 </Button>
               </PreferenceRow>
-            </PreferenceSection>
-            <PreferenceSection title="Privacy">
-              <PreferenceRow label="Private traces">
-                <span className="preference-value">{vault.label}</span>
-              </PreferenceRow>
-            </PreferenceSection>
-            <AppearanceSection />
-            <GeneralSection settings={desktopSettings} onAction={handleDesktopAction} />
-            <PreferenceSection title="Advanced">
-              <PreferenceRow label="Provider proxy">
-                <code>{state.proxy_listener}</code>
-              </PreferenceRow>
-              <PreferenceRow label="Build">
-                <code>App {state.app_build_id}</code>
-              </PreferenceRow>
-            </PreferenceSection>
-            {desktopSettings.notice && (
-              <p className="preference-notice">{desktopSettings.notice}</p>
-            )}
-          </div>
+            }
+            onDesktopAction={handleDesktopAction}
+          />
         </main>
       </div>
     );

@@ -366,13 +366,13 @@ describe('Exalto Capture desktop shell', () => {
     await userEvent.click(page.getByRole('button', { name: 'Start local service' }));
     await expect.element(page.getByRole('alert')).toHaveTextContent('could not start');
     const alert = present(document.querySelector('[role="alert"]'), 'the start failure alert');
-    const advanced = present(
+    const privacy = present(
       Array.from(document.querySelectorAll('h2')).find(
-        (heading) => heading.textContent === 'Advanced',
+        (heading) => heading.textContent === 'Privacy',
       ),
-      'the Advanced heading',
+      'the Privacy heading',
     );
-    expect(alert.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(alert.compareDocumentPosition(privacy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   test('shows a neutral startup state instead of a false sealing failure', async () => {
@@ -680,27 +680,20 @@ describe('Exalto Capture desktop shell', () => {
           (heading) => heading.textContent,
         ),
       )
-      .toEqual([
-        'Connections',
-        'Account',
-        'Sealing',
-        'Privacy',
-        'Appearance',
-        'General',
-        'Advanced',
-      ]);
+      .toEqual(['Connections', 'Sealing', 'Privacy', 'General']);
     expect(document.querySelector('.workspace-frame')).toBeNull();
     expect(document.querySelector('.inline-dashboard-page')).not.toBeNull();
-    await expect
-      .element(page.getByText('http://127.0.0.1:8788/openapi.json', { exact: true }))
-      .toBeVisible();
-    expect(document.querySelectorAll('.preferences a[target="_blank"]')).toHaveLength(0);
     (
       page
         .getByRole('switch', { name: 'Open Exalto Capture at sign-in' })
         .element() as HTMLInputElement
     ).click();
     await expect.poll(() => localStorage.getItem('notary-launch-at-login')).toBe('true');
+    await userEvent.click(page.getByRole('button', { name: 'Advanced' }));
+    await expect
+      .element(page.getByText('http://127.0.0.1:8788/openapi.json', { exact: true }))
+      .toBeVisible();
+    expect(document.querySelectorAll('.preferences a[target="_blank"]')).toHaveLength(0);
   });
 
   test('keeps the same Settings sections while the local service is off', async () => {
@@ -711,7 +704,8 @@ describe('Exalto Capture desktop shell', () => {
           (heading) => heading.textContent,
         ),
       )
-      .toEqual(['Connections', 'Account', 'Privacy', 'Appearance', 'General', 'Advanced']);
+      .toEqual(['Connections', 'Sealing', 'Privacy', 'General']);
+    await expect.element(page.getByRole('button', { name: 'Advanced' })).not.toBeInTheDocument();
     await expect
       .element(page.getByRole('switch', { name: 'Capture new requests' }))
       .not.toBeInTheDocument();
